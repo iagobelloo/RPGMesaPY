@@ -1,0 +1,60 @@
+# ==========================================
+# .gitignore para RPGMesaPY (Python + Pygame)
+# ==========================================
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Ambientes Virtuais (Virtual Environments) ---
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Variáveis de Ambiente & Chaves de API (Segurança) ---
+.env
+.env.*
+!.env.example
+secrets.json
+api_key.txt
+
+# --- Testes & Cobertura (Pytest / Coverage) ---
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# --- Logs e Arquivos de Crash ---
+logs/*.log
+*.log
+!logs/.gitkeep
+
+# --- Saves de Jogo / Progresso Local do Jogador ---
+saves/*.json
+!saves/.gitkeep
+
+# --- Editores & IDEs ---
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Arquivos Temporários de Sistema Operacional ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*
