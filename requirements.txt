@@ -1,0 +1,4 @@
+# Dependências do RPGMesaPY (Python + Pygame D&D 5e VTT)
+pygame-ce>=2.5.0
+google-genai>=2.26.0
+pytest>=9.1.0
