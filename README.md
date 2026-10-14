@@ -4,8 +4,13 @@
 [![Pygame-CE](https://img.shields.io/badge/Pygame--CE-2.5%2B-green.svg?logo=python)](https://pyga.me/)
 [![Google Gemini API](https://img.shields.io/badge/Google_Gemini-2.5_Flash-orange.svg?logo=google)](https://ai.google.dev/)
 [![D&D 5e Ruleset](https://img.shields.io/badge/Ruleset-D%26D_5e_SRD-red.svg)](https://dnd.wizards.com/)
+[![Development: AI-Coded](https://img.shields.io/badge/Development-AI--Coded%20%7C%20Human--Directed-blueviolet.svg)](https://github.com/iagobelloo/RPGMesaPY)
 [![Tests](https://img.shields.io/badge/Tests-Pytest_Passing-brightgreen.svg)](https://docs.pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> [!IMPORTANT]
+> **🤖 Nota de Autoria e Metodologia (Desenvolvimento Guiado por IA):**  
+> Este projeto está sendo **100% desenvolvido e codificado por Inteligência Artificial**, sob a **direção criativa, comando e validação de [@iagobelloo](https://github.com/iagobelloo)**. O papel humano atua como *Director / Product Owner* (definindo escopo, regras D&D 5e, arte e arquitetura), enquanto toda a implementação do código, lógica matemática, interface gráfica e testes são gerados autonomamente via IA.
 
 O **RPGMesaPY** é uma plataforma **VTT (Virtual Tabletop) 2D** desenvolvida em Python e Pygame, projetada para proporcionar uma experiência imersiva de RPG de mesa solo ou guiado, ambientada em um universo de **Grounded Dark Fantasy (Grimdark Tático)**.
 
@@ -158,6 +163,22 @@ Para rodar uma suíte específica:
 ```bash
 python -m pytest tests/test_combat_system.py
 ```
+
+---
+
+## 🤖 Metodologia & Autoria: AI-Driven Development
+
+Este repositório documenta um caso prático e extensivo de **Desenvolvimento de Software Guiado por Inteligência Artificial** (*Prompt-Driven Development / Vibe Coding*):
+
+* **Direção, Especificação e Comando:** [@iagobelloo](https://github.com/iagobelloo)  
+  * Atuação como *Product Owner* e *Game Designer*.
+  * Definição de visão estética, regras canônicas de D&D 5e e persona de Maelor.
+  * Engenharia de prompts e validação dos sistemas implementados.
+* **Execução, Arquitetura e Código:** **Inteligência Artificial (Google Antigravity / Gemini)**  
+  * Criação e implementação autônoma de 100% da base de código em Python/Pygame.
+  * Arquitetura em camadas (MVC estrito: Engine, UI, AI Master).
+  * Construção das suítes de testes unitários e de integração (`tests/`).
+  * Geração e padronização das bases de dados JSON (`data/`) e documentações técnicas (`docs/`).
 
 ---
 

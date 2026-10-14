@@ -1,6 +1,9 @@
 """
-Módulo Principal do VTT (Front-End Pygame).
+Módulo Principal do VTT (Front-End Pygame) - RPGMesaPY.
 Orquestra a Interface Gráfica, capturando cliques e delegando ao SessionManager.
+
+Desenvolvido por Inteligência Artificial (Google Antigravity / Gemini)
+sob direção criativa e comando de Iago Bello (@iagobelloo).
 """
 import os
 import sys
