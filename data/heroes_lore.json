@@ -1,0 +1,2361 @@
+{
+    "HERO-01": {
+        "id": "HERO-01",
+        "name": "Sir Alistair Valerius",
+        "title": "O Cavaleiro da Vigília Quebrada",
+        "race": "Humano",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Antigo comandante da guarnição do Forte de Ferro, Alistair assistiu sua fortaleza ser engolida por cinzas e fogo no primeiro ataque do Dragão Supremo. Sobreviveu soterrado sob os corpos de seus próprios homens, perdendo o olho esquerdo e sua honra militar. Agora vaga pelas estradas ermas como um fantasma de armadura, empunhando sua montante ancestral para encontrar uma morte digna ou enterrar sua lâmina no coração da besta.",
+        "personality": "Solene, disciplinado e taciturno. Fala com a autoridade cansada de quem já enterrou um exército inteiro.",
+        "recruitment_hook": "Sentado sozinho no canto mais escuro da Taverna do Dragão Acordado, afiando sua grande espada com pedra de amolar enquanto observa a chuva pela janela.",
+        "personal_side_quest_id": "sq_castle_dungeon",
+        "attributes": {
+            "STR": 16,
+            "DEX": 14,
+            "CON": 15,
+            "INT": 10,
+            "WIS": 13,
+            "CHA": 11,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Besta Leve",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Sir Alistair Valerius",
+        "portrait_key": "Sir Alistair Valerius",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-02": {
+        "id": "HERO-02",
+        "name": "Padre Lucien",
+        "title": "O Confessor das Chamas Sagradas",
+        "race": "Humano",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "O vilarejo onde Lucien pastoreava foi consumido pelas labaredas dracônicas enquanto ele ministrava a missa da alvorada. Recusando-se a abandonar os feridos, suas mãos sofreram queimaduras graves antes de um milagre de fé conter o desabamento do teto da capela. Lucien tomou a maça de guerra e o turíbulo dos mártires, jurando que as cinzas do Tirano se tornarão o incenso da sua prece final de libertação.",
+        "personality": "Austero, compassivo e inabalável. Suas palavras trazem o peso solene de orações fúnebres e a determinação incansável de um mártir.",
+        "recruitment_hook": "Cuidando de refugiados febris e feridos na capela em ruínas anexa aos fundos da Taverna.",
+        "personal_side_quest_id": "pq_lucien_confession",
+        "attributes": {
+            "STR": 14,
+            "DEX": 11,
+            "CON": 15,
+            "INT": 9,
+            "WIS": 16,
+            "CHA": 13,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 16,
+        "ca": 16,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Padre Lucien",
+        "portrait_key": "Padre Lucien",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-03": {
+        "id": "HERO-03",
+        "name": "Lorde Barent de Oakhaven",
+        "title": "O Bastião da Alvorada",
+        "race": "Humano",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "Herdeiro de uma linhagem nobre que jurou proteger os vales do sul, Barent viu suas terras e seu castelo serem transformados em caldeiras ardentes pelo sopro do monstro. Ele recusou a fuga oferecida pela corte e fez um juramento irrevogável sob a luz do sol nascente: não descansará até que a cabeça do dragão seja cravada nos portões de Oakhaven. Sua espada Alvorada Radiante queima com o fogo sagrado que recusa ser apagado pelas cinzas.",
+        "personality": "Nobre, corajoso e inflexível. Não tolera covardia ou crueldade contra os desvalidos, liderando sempre na linha de frente.",
+        "recruitment_hook": "Diante do quadro de avisos da taverna, desafiando abertamente os mercenários bêbados a terem coragem de marchar contra a fornalha.",
+        "personal_side_quest_id": "pq_oakhaven_oath",
+        "attributes": {
+            "STR": 16,
+            "DEX": 11,
+            "CON": 14,
+            "INT": 9,
+            "WIS": 13,
+            "CHA": 15,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+2d8+3"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Lorde Barent de Oakhaven",
+        "portrait_key": "Lorde Barent de Oakhaven",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-04": {
+        "id": "HERO-04",
+        "name": "Arquimago Vane",
+        "title": "O Tecelão do Vazio Astral",
+        "race": "Humano",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Ex-reitor da Academia de Astromancia da Capital, Vane previu o cataclismo do despertar do dragão através do alinhamento das constelações, mas seus avisos foram ridicularizados pela corte. Quando a torre astronômica foi destruída, seus aprendizes morreram carbonizados em suas próprias celas de estudo. Agora, carregando seu grimório acorrentado e guiado pelas estrelas frias, ele busca no covil do monstro as anomalias temporais e cósmicas que mantêm o mundo preso nessa espiral de desgraça.",
+        "personality": "Intelectual, pragmático e distante. Analisa as ameaças como equações arcanas e carrega um profundo desprezo por tolos e burocratas.",
+        "recruitment_hook": "Estudando mapas astrais e pergaminhos queimados à luz de velas na mesa dos fundos da taverna.",
+        "personal_side_quest_id": "pq_astral_observatory",
+        "attributes": {
+            "STR": 9,
+            "DEX": 14,
+            "CON": 15,
+            "INT": 16,
+            "WIS": 13,
+            "CHA": 11,
+            "LUCK": 10
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 15,
+        "ca": 15,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 5,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Arquimago Vane",
+        "portrait_key": "Arquimago Vane",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-05": {
+        "id": "HERO-05",
+        "name": "Garrick Rastreador-de-Pegadas",
+        "title": "O Sentinela dos Ermos",
+        "race": "Humano",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Nascido e criado nas florestas boreais que cercam o vale, Garrick conhecia cada trilha e toca de caça antes das chamas tornarem a terra estéril. Sua matilha de cães de caça e sua família desapareceram sob uma chuva de brasas enquanto ele patrulhava a fronteira. Ele conhece a anatomia das feras do Tirano e sabe que até a criatura mais colossal deixa rastros e fraquezas nas juntas de suas escamas.",
+        "personality": "Vigilante, lacônico e pragmático. Fala pouco, escuta tudo e confia mais no vento e nos instintos do que em palavras nobres.",
+        "recruitment_hook": "Remendando flechas e couros rasgados no pátio dos fundos da taverna, perto dos estábulos úmidos.",
+        "personal_side_quest_id": "sq_goblin_clearing",
+        "attributes": {
+            "STR": 13,
+            "DEX": 16,
+            "CON": 14,
+            "INT": 11,
+            "WIS": 15,
+            "CHA": 9,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 7,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 5,
+                "damage_dice": "1d6+3"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Garrick Rastreador-de-Pegadas",
+        "portrait_key": "Garrick Rastreador-de-Pegadas",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-06": {
+        "id": "HERO-06",
+        "name": "Corbin Mãos-de-Sombra",
+        "title": "O Fantasma dos Becos",
+        "race": "Humano",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "O melhor gatuno dos subsolos da Capital, Corbin costumava roubar cofres nobres e contrabandear artefatos raros até que o avanço das chamas destruiu suas rotas e transformou seus esconderijos em tumbas. Ele percebeu que ouro não compra fôlego em um mundo sufocado por fuligem. Corbin decidiu que o maior roubo de sua vida será esgueirar-se até o covil do maior predador do mundo e arrancar o coração que alimenta seu fogo eterno.",
+        "personality": "Cínico, engenhoso e mordaz. Vê a morte como uma aposta de dados viciados e sempre mantém uma rota de fuga na manga.",
+        "recruitment_hook": "Jogando dados e ganhando moedas dos guardas da caravana em uma mesa perto da saída lateral da taverna.",
+        "personal_side_quest_id": "sq_bazaar_smugglers",
+        "attributes": {
+            "STR": 9,
+            "DEX": 16,
+            "CON": 15,
+            "INT": 13,
+            "WIS": 11,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 14,
+        "ca": 14,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+1d6+3"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 5,
+                "damage_dice": "1d4+3"
+            }
+        ],
+        "abilities": [
+            "Versatilidade Humana",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Corbin Mãos-de-Sombra",
+        "portrait_key": "Corbin Mãos-de-Sombra",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-07": {
+        "id": "HERO-07",
+        "name": "Brakus Barba-de-Ferro",
+        "title": "O Inabalável Muro de Pedra",
+        "race": "Anão da Colina",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Campeão do Clã Martelopedra, Brakus defendeu a muralha das forjas inferiores por três dias consecutivos enquanto seu povo evacuava as minas invadidas por gigantes de fogo. Sua barba foi chamuscada e seu elmo quebrado, mas seu corpo funcionou como uma represa contra a maré de ferro derretido. Ele carrega seu machado de duas mãos em nome de cada forja apagada, prometendo quebrar a espinha do Tirano ou virar cascalho tentando.",
+        "personality": "Teimoso, bravio e leal até a última gota de sangue. Bebe cerveja como quem consome combustível para o combate.",
+        "recruitment_hook": "Desafiando lenhadores e mercenários para braço de ferro na taverna, esmagando mesas de carvalho com facilidade.",
+        "personal_side_quest_id": "pq_stonehammer_honor",
+        "attributes": {
+            "STR": 15,
+            "DEX": 13,
+            "CON": 16,
+            "INT": 9,
+            "WIS": 13,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 14,
+        "hp_max": 14,
+        "pv_atual": 14,
+        "pv_max": 14,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Besta Leve",
+                "hit_bonus": 3,
+                "damage_dice": "1d8+1"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Brakus Barba-de-Ferro",
+        "portrait_key": "Brakus Barba-de-Ferro",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-08": {
+        "id": "HERO-08",
+        "name": "Kargan Forja-Divina",
+        "title": "O Patriarca do Templo Telúrico",
+        "race": "Anão da Colina",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "Patriarca das velhas catacumbas de Moradin, Kargan viu o fogo profano do dragão queimar os túmulos dos antigos reis anões e fundir os altares ancestrais em escória inútil. Em sua visão de transe, o Pai das Forjas ordenou que ele tomasse o martelo sagrado e caminhasse entre as cinzas até que a chama pura voltasse a queimar no coração do mundo. Ele caminha com o peso de mil anos de tradição em seus ombros.",
+        "personality": "Solene, paternal e inflexível na fé. Trata a batalha como uma forja onde almas fracas são purificadas ou destruídas.",
+        "recruitment_hook": "Entalhando runas de proteção nas vigas queimadas da taverna para afastar os pesadelos dos aldeões.",
+        "personal_side_quest_id": "pq_sacred_anvil",
+        "attributes": {
+            "STR": 13,
+            "DEX": 10,
+            "CON": 16,
+            "INT": 8,
+            "WIS": 16,
+            "CHA": 12,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d8",
+        "ac": 16,
+        "ca": 16,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Kargan Forja-Divina",
+        "portrait_key": "Kargan Forja-Divina",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-09": {
+        "id": "HERO-09",
+        "name": "Thalgrim Escudo-da-Montanha",
+        "title": "O Jurado das Profundezas",
+        "race": "Anão da Colina",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "Thalgrim fez o lendário Juramento da Rocha Inabalável nas profundezas das minas de adamante. Quando a grande caldeira do dragão explodiu, ele usou seu imenso escudo de granito para conter desabamentos e proteger uma caverna inteira de órfãos mineradores por horas a fio. Com armadura forjada nas fornalhas mais fundas, ele marcha não por glória, mas porque a rocha nunca cede diante do vento.",
+        "personality": "Silencioso, protetor e implacável. Interpõe-se imediatamente entre qualquer aliado ferido e o perigo iminente.",
+        "recruitment_hook": "Polindo seu colossal escudo de granito sob uma tocha externa, examinando as rachaduras da pedra.",
+        "personal_side_quest_id": "sq_undermountain_depths",
+        "attributes": {
+            "STR": 15,
+            "DEX": 10,
+            "CON": 15,
+            "INT": 8,
+            "WIS": 13,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 13,
+        "hp_max": 13,
+        "pv_atual": 13,
+        "pv_max": 13,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2d8+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Thalgrim Escudo-da-Montanha",
+        "portrait_key": "Thalgrim Escudo-da-Montanha",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-10": {
+        "id": "HERO-10",
+        "name": "Orin Forjador-de-Runas",
+        "title": "O Sábio das Linhas Ley",
+        "race": "Anão da Colina",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Orin passou séculos estudando as artérias mágicas que conectam as montanhas às linhas ley do planeta. Quando o vulcão despertou, ele sentiu a magia da terra sendo sugada e distorcida por uma força entrópica colossal ligada ao dragão. Carregando seus óculos de cobre e tabuletas de ardósia flutuantes, Orin quer desvendar o segredo da anomalia arcana que alimenta a besta e reescrever as runas da criação.",
+        "personality": "Curioso, ranzinza e metódico. Fica irritado quando interrompido durante seus cálculos geomânticos, mas defende aliados com feitiços devastadores.",
+        "recruitment_hook": "Medindo a temperatura do chão de pedra da taverna com varetas de cobre e anotando símbolos em placas de ardósia.",
+        "personal_side_quest_id": "pq_leyline_flux",
+        "attributes": {
+            "STR": 8,
+            "DEX": 13,
+            "CON": 16,
+            "INT": 15,
+            "WIS": 13,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d6",
+        "ac": 14,
+        "ca": 14,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 4,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Orin Forjador-de-Runas",
+        "portrait_key": "Orin Forjador-de-Runas",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-11": {
+        "id": "HERO-11",
+        "name": "Durnik Olho-de-Rapina",
+        "title": "O Batedor das Fendas",
+        "race": "Anão da Colina",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Especialista em sobrevivência em desfiladeiros gelados e fendas vulcânicas, Durnik guiou caravanas e patrulhas através das rotas mais letais das montanhas. Quando o sopro do dragão causou avalanches que soterraram seu posto avançado, ele sobreviveu caçando feras nas encostas congeladas com sua besta de repetição mecânica. Ele conhece os desfiladeiros que levam ao ninho do monstro melhor do que qualquer ser vivo.",
+        "personality": "Vigilante, prático e desconfiado. Avalia constantemente o terreno em busca de vantagens de altura e rotas de emboscada.",
+        "recruitment_hook": "Limpando a engrenagem de sua besta pesada no celeiro da taverna, de olho nas janelas superiores.",
+        "personal_side_quest_id": "pq_frozen_crevasse",
+        "attributes": {
+            "STR": 12,
+            "DEX": 15,
+            "CON": 15,
+            "INT": 10,
+            "WIS": 15,
+            "CHA": 8,
+            "LUCK": 10
+        },
+        "hp_current": 13,
+        "hp_max": 13,
+        "pv_atual": 13,
+        "pv_max": 13,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 6,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Durnik Olho-de-Rapina",
+        "portrait_key": "Durnik Olho-de-Rapina",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-12": {
+        "id": "HERO-12",
+        "name": "Morgran Dedos-de-Ouro",
+        "title": "O Ladrão de Cofres Ancestrais",
+        "race": "Anão da Colina",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "Famoso nos subterrâneos por arrombar cofres élficos e tumbas anãs consideradas impenetráveis, Morgran viu sua fortuna em gemas preciosas derreter em poças de vidro e escória quando as cinzas invadiram a cidadela comercial. Indignado por ter sido 'roubado' por um lagarto colossal, ele decidiu invadir o covil do Tirano para tomar o maior tesouro acumulado desde o início dos tempos e calar a arrogância da besta.",
+        "personality": "Sarcástico, calculista e obcecado por mecanismos e riquezas. Sobrevive graças à sua agilidade inesperada e adagas traiçoeiras.",
+        "recruitment_hook": "Tentando decifrar a fechadura mágica de um baú antigo deixado por mercadores no sótão da taverna.",
+        "personal_side_quest_id": "pq_vault_heist",
+        "attributes": {
+            "STR": 8,
+            "DEX": 15,
+            "CON": 16,
+            "INT": 12,
+            "WIS": 11,
+            "CHA": 13,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d8",
+        "ac": 13,
+        "ca": 13,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+1d6+2"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 4,
+                "damage_dice": "1d4+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resiliência Anã",
+            "Tenacidade Anã",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Morgran Dedos-de-Ouro",
+        "portrait_key": "Morgran Dedos-de-Ouro",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-13": {
+        "id": "HERO-13",
+        "name": "General Vrakhas",
+        "title": "O Flagelo de Escamas Vermelhas",
+        "race": "Draconato",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Vrakhas liderava a poderosa Legião Dracônica do Leste, acreditando que a força e a glória de sua raça eram absolutas. Quando o Tirano despertou, o dragão massacrou seu exército e exigiu sua submissão como um mero verme rastejante. Humilhado e consumido por um ódio que queima mais quente que as brasas em seu peito, Vrakhas empunha sua espada colossal não por salvação, mas para provar que nem mesmo o rei dos dragões é imortal.",
+        "personality": "Orgulhoso, intimidador e feroz. Impõe respeito pelo porte titânico e não recua um centímetro diante de nenhum inimigo.",
+        "recruitment_hook": "Em pé no pátio externo sob a tempestade, bufando fumaça pelas ventas enquanto crava sua grande espada no solo de pedra.",
+        "personal_side_quest_id": "pq_vrakhas_revenge",
+        "attributes": {
+            "STR": 17,
+            "DEX": 13,
+            "CON": 14,
+            "INT": 9,
+            "WIS": 12,
+            "CHA": 11,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 4,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "General Vrakhas",
+        "portrait_key": "General Vrakhas",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-14": {
+        "id": "HERO-14",
+        "name": "Sacerdote Baham-Raza",
+        "title": "A Voz da Chama Platina",
+        "race": "Draconato",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "Abençoado com raras escamas de platina que refletem a luz solar, Baham-Raza dedicou sua vida aos ensinamentos de piedade e justiça do Dragão de Platina. Ele vê no Tirano das Cinzas a personificação da corrupção cromática que ameaça manchar para sempre a honra de sua espécie. Portando seu cajado sagrado e o símbolo da chama pura, ele marcha para redimir o sangue dracônico através do sacrifício e da cura dos aflitos.",
+        "personality": "Sereno, majestoso e compassivo. Sua voz profunda acalma o pânico dos aliados e inspira coragem divina nas batalhas.",
+        "recruitment_hook": "Ajoelhado no templo local orando pelas almas dos que pereceram na fumaça e abençoando a água dos poços.",
+        "personal_side_quest_id": "pq_platinum_shrine",
+        "attributes": {
+            "STR": 15,
+            "DEX": 10,
+            "CON": 14,
+            "INT": 8,
+            "WIS": 15,
+            "CHA": 13,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 16,
+        "ca": 16,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 4,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Sacerdote Baham-Raza",
+        "portrait_key": "Sacerdote Baham-Raza",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-15": {
+        "id": "HERO-15",
+        "name": "Balthazar Escama-Dourada",
+        "title": "O Campeão do Sol Flamejante",
+        "race": "Draconato",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "Cavaleiro juramentado da Ordem da Alvorada Escamada, Balthazar carrega nas escamas douradas os reflexos do sol poente e nos chifres os votos gravados de sua cavalaria. Quando seu mestre foi incinerado no primeiro ataque, Balthazar recuperou a espada sagrada das cinzas e jurou que sua luz jamais se apagará. Ele encara o Dragão Supremo como o teste final de sua honra e de sua fé.",
+        "personality": "Honrado, intrépido e cavalheiresco. Fala com solenidade ritual e protege os inocentes mesmo que isso custe sua vida.",
+        "recruitment_hook": "Polindo sua armadura cerimonial no salão principal da taverna enquanto recita seus votos sagrados em dracônico.",
+        "personal_side_quest_id": "pq_balthazar_oath",
+        "attributes": {
+            "STR": 17,
+            "DEX": 10,
+            "CON": 13,
+            "INT": 8,
+            "WIS": 12,
+            "CHA": 15,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 3,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Balthazar Escama-Dourada",
+        "portrait_key": "Balthazar Escama-Dourada",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-16": {
+        "id": "HERO-16",
+        "name": "Ignisrax",
+        "title": "O Piromante do Fogo Dracônico",
+        "race": "Draconato",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Nascido com veios de magma brilhando sob suas escamas de carvão, Ignisrax foi banido de seu clã por praticar magias proibidas de combustão primordial. Ele compreende o fogo do Tirano melhor do que ninguém: para ele, o calor do vulcão não é uma maldição, mas uma sinfonia elemental que precisa ser dominada. Ele quer arrancar o núcleo ígneo do dragão para atingir a maestria piromântica absoluta.",
+        "personality": "Obcecado, temperamental e ardente. Ri diante de chamas e explosões, tratando a destruição como uma forma de arte refinada.",
+        "recruitment_hook": "Fazendo pequenas chamas dançarem na palma de suas garras na lareira da taverna, assustando os presentes.",
+        "personal_side_quest_id": "pq_primal_pyre",
+        "attributes": {
+            "STR": 10,
+            "DEX": 13,
+            "CON": 14,
+            "INT": 15,
+            "WIS": 12,
+            "CHA": 11,
+            "LUCK": 10
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 14,
+        "ca": 14,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 4,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 4,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Ignisrax, o Piromante do Fogo Dracônico",
+        "portrait_key": "Ignisrax, o Piromante do Fogo Dracônico",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-17": {
+        "id": "HERO-17",
+        "name": "Kresh Veneno-Silencioso",
+        "title": "O Rastreador da Selva Negra",
+        "race": "Draconato",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Criado nas selvas pantanosas e florestas escuras, Kresh desenvolveu escamas manchadas de musgo e o instinto predatório de um caçador de emboscada. Suas flechas são banhadas no veneno das serpentes mais mortíferas, desenhadas para penetrar as menores frestas de couro e escama. Ele rastreou os vôos do Tirano por meses, mapeando as cavernas de lava e os padrões de caça da besta colossal.",
+        "personality": "Silencioso, observador e letal. Move-se com o rastejar paciente de uma víbora antes do bote fulminante.",
+        "recruitment_hook": "Agachado nas sombras do telhado da estalagem, observando a direção da fumaça no horizonte vulcânico.",
+        "personal_side_quest_id": "pq_viper_fang",
+        "attributes": {
+            "STR": 14,
+            "DEX": 15,
+            "CON": 13,
+            "INT": 10,
+            "WIS": 14,
+            "CHA": 9,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 6,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 3,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Kresh Veneno-Silencioso",
+        "portrait_key": "Kresh Veneno-Silencioso",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-18": {
+        "id": "HERO-18",
+        "name": "Zyrak Escama-de-Sombra",
+        "title": "O Carrasco das Trevas",
+        "race": "Draconato",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "Raro draconato de escamas de obsidiana fosca que não refletem luz, Zyrak servia como assassino de elite para sindicatos obscuros. Quando o cataclismo começou, ele percebeu que até o dragão mais formidável tem pontos cegos quando dorme sobre suas montanhas de ouro. Usando lâminas de vidro vulcânico e passos amortecidos por tecidos mágicos, ele planeja infiltrar-se no coração do ninho e cortar a garganta da besta enquanto ela repousa.",
+        "personality": "Frio, calculista e paciente. Trata o assassinato de monstros gigantescos como um problema puramente anatômico.",
+        "recruitment_hook": "Oculto no vão sob as escadarias da taverna, inspecionando lâminas curvas de obsidiana.",
+        "personal_side_quest_id": "pq_obsidian_edge",
+        "attributes": {
+            "STR": 10,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 12,
+            "WIS": 10,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 13,
+        "ca": 13,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+1d6+2"
+            },
+            {
+                "name": "Sopro Dracônico",
+                "hit_bonus": 4,
+                "damage_dice": "2d6"
+            }
+        ],
+        "abilities": [
+            "Ancestral Dracônico",
+            "Arma de Sopro",
+            "Resistência a Dano",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Zyrak Escama-de-Sombra",
+        "portrait_key": "Zyrak Escama-de-Sombra",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-19": {
+        "id": "HERO-19",
+        "name": "Dama Aeloria Vento-Cortante",
+        "title": "A Mestra das Lâminas da Canópia",
+        "race": "Elfo da Floresta",
+        "class": "Guerreiro",
+        "gender": "female",
+        "lore": "Guardiã do Alto Bosque e campeã de duelos com lâminas curvas, Aeloria viu os carvalhos milenares de sua terra ancestral serem reduzidos a tocos carbonizados em uma única noite de tormenta de cinzas. A dor de ver a floresta morrer transformou sua elegância marcial em uma precisão fria e implacável. Ela empunha sua espada curva élfica em busca de vingança por cada folha queimada e por cada vida feérica perdida.",
+        "personality": "Graciosa, letal e taciturna. Seu olhar carrega a tristeza de séculos de perdas e a agilidade cortante de um vendaval.",
+        "recruitment_hook": "Meditando com sua lâmina desembainhada sobre um banco de pedra no pátio encharcado de chuva da taverna.",
+        "personal_side_quest_id": "pq_blademaster_tree",
+        "attributes": {
+            "STR": 12,
+            "DEX": 17,
+            "CON": 14,
+            "INT": 10,
+            "WIS": 14,
+            "CHA": 8,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Espada Curta Élfica",
+                "hit_bonus": 5,
+                "damage_dice": "1d6+3"
+            },
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Dama Aeloria Vento-Cortante",
+        "portrait_key": "Dama Aeloria Vento-Cortante",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-20": {
+        "id": "HERO-20",
+        "name": "Sacerdotisa Faen",
+        "title": "A Guardiã do Carvalho Primordial",
+        "race": "Elfo da Floresta",
+        "class": "Clérigo",
+        "gender": "female",
+        "lore": "Escolhida para proteger o coração vivo do Carvalho Primordial, Faen canaliza o poder curativo da terra e das águas profundas. Quando as raízes da floresta começaram a sangrar seiva negra e as nascentes secaram pelo calor do vulcão, ela partiu em peregrinação com seu cajado florescente para purificar a corrupção e reavivar o solo morto com orações sagradas.",
+        "personality": "Doce, profunda e protetora de toda a vida natural. Não hesita em canalizar a ira da terra contra aqueles que profanam o solo.",
+        "recruitment_hook": "Tentando curar uma coruja com asas queimadas em uma mesa isolada da taverna.",
+        "personal_side_quest_id": "sq_forest_shrine",
+        "attributes": {
+            "STR": 13,
+            "DEX": 12,
+            "CON": 14,
+            "INT": 8,
+            "WIS": 16,
+            "CHA": 12,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 17,
+        "ca": 17,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Sacerdotisa Faen",
+        "portrait_key": "Sacerdotisa Faen",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-21": {
+        "id": "HERO-21",
+        "name": "Sylphira Lâmina-do-Amanhecer",
+        "title": "A Vingadora dos Bosques Sagrados",
+        "race": "Elfo da Floresta",
+        "class": "Paladino",
+        "gender": "female",
+        "lore": "Consagrada aos antigos espíritos da luz solar filtrada pelas copas, Sylphira fez o juramento dos Anciãos de defender o equilíbrio da vida a qualquer custo. Sua armadura forjada em prata estelar e esmeraldas brilha como o amanhecer sobre a relva, e sua rapieira sagrada queima com um brilho dourado que repele as sombras vulcânicas. Ela vê a luta contra o dragão como a batalha final entre a luz da criação e o fogo da aniquilação.",
+        "personality": "Altiva, justa e inspiradora. Move-se com a nobreza de uma rainha guerreira que lidera pelo exemplo de sua lâmina.",
+        "recruitment_hook": "No centro da taverna, exigindo com voz firme que os líderes locais parem de disputar moedas e protejam os desabrigados.",
+        "personal_side_quest_id": "pq_dawn_grove",
+        "attributes": {
+            "STR": 15,
+            "DEX": 12,
+            "CON": 13,
+            "INT": 8,
+            "WIS": 13,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2d8+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Sylphira Lâmina-do-Amanhecer",
+        "portrait_key": "Sylphira Lâmina-do-Amanhecer",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-22": {
+        "id": "HERO-22",
+        "name": "Arquimaga Caelynn",
+        "title": "A Astróloga das Estrelas Cadentes",
+        "race": "Elfo da Floresta",
+        "class": "Mago",
+        "gender": "female",
+        "lore": "Vivendo séculos no topo dos observatórios arbóreos, Caelynn estuda a dança dos corpos celestes e a influência das estrelas na trama do tempo. A queda de cinzas escondeu o céu noturno e começou a romper o fluxo temporal da região, prendendo a terra em ciclos inexplicáveis de déjà vu. Ela desceu de seus santuários cósmicos com seu orbe estelar para dissipar o véu de fuligem e restaurar o curso dos astros.",
+        "personality": "Misteriosa, poética e contemplativa. Enxerga conexões invisíveis entre os eventos e frequentemente prevê perigos antes que aconteçam.",
+        "recruitment_hook": "Observando o céu encoberto por nuvens de tempestade através de uma pequena luneta de cristal na janela da estalagem.",
+        "personal_side_quest_id": "pq_starlight_rift",
+        "attributes": {
+            "STR": 8,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 15,
+            "WIS": 13,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 15,
+        "ca": 15,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 4,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Arquimaga Caelynn",
+        "portrait_key": "Arquimaga Caelynn",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-23": {
+        "id": "HERO-23",
+        "name": "Sylas Rastreadora-da-Lua",
+        "title": "A Caçadora Fantasma",
+        "race": "Elfo da Floresta",
+        "class": "Patrulheiro",
+        "gender": "female",
+        "lore": "Sylas é uma lenda entre os caçadores da floresta: dizem que seus passos não deixam marcas na relva e que suas flechas atingem alvos antes que o som da corda seja ouvido. Quando o dragão acordou, ele incinerou a reserva onde sua tribo vivia isolada. Agora, com cinzas de guerra pintadas no rosto e arco de teixo em punho, ela caça o monstro com a fria paciência de um predador que sabe que a fera tem que descer para se alimentar.",
+        "personality": "Selvagem, focada e implacável. Despreza a complacência das cidades e prefere o silêncio da mata à conversa dos homens.",
+        "recruitment_hook": "Empoleirada sobre uma viga de teto do estábulo, vigiando a estrada de terra com arco em repouso.",
+        "personal_side_quest_id": "pq_moon_hunt",
+        "attributes": {
+            "STR": 12,
+            "DEX": 17,
+            "CON": 13,
+            "INT": 10,
+            "WIS": 15,
+            "CHA": 8,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 7,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 5,
+                "damage_dice": "1d6+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Sylas Rastreadora-da-Lua",
+        "portrait_key": "Sylas Rastreadora-da-Lua",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-24": {
+        "id": "HERO-24",
+        "name": "Kaelen Passo-de-Névoa",
+        "title": "A Lâmina Silenciosa do Crepúsculo",
+        "race": "Elfo da Floresta",
+        "class": "Ladino",
+        "gender": "female",
+        "lore": "Dançarina das sombras e espiã das cortes feéricas, Kaelen move-se através da névoa como se fizesse parte dela. Quando o reino subterrâneo da floresta caiu sob o domínio de fanáticos do Tirano, ela infiltrou-se nas fortalezas dos cultistas e eliminou seus líderes um a um nas trevas. Ela sabe que até dragões monumentais morrem se o veneno certo encontrar a veia certa em seu pescoço.",
+        "personality": "Enigmática, sarcástica e evasiva. Desaparece da vista em um piscar de olhos e valoriza apenas resultados concretos.",
+        "recruitment_hook": "Sentada nas sombras de uma alcova da taverna, girando uma adaga prateada entre os dedos com destreza hipnótica.",
+        "personal_side_quest_id": "pq_twilight_veil",
+        "attributes": {
+            "STR": 8,
+            "DEX": 17,
+            "CON": 14,
+            "INT": 12,
+            "WIS": 11,
+            "CHA": 13,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 14,
+        "ca": 14,
+        "speed": "10.5m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+1d6+3"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 5,
+                "damage_dice": "1d4+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Sentidos Aguçados",
+            "Ancestralidade Feérica",
+            "Pés Ligeiros",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Kaelen Passo-de-Névoa",
+        "portrait_key": "Kaelen Passo-de-Névoa",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-25": {
+        "id": "HERO-25",
+        "name": "Tobias Bravo-Coração",
+        "title": "O Escudeiro dos Pequenos",
+        "race": "Halfling",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Embora tenha metade da altura de um humano, Tobias tem a coragem de dez cavaleiros. Quando o fogo do vulcão ameaçou os pacíficos condados agrícolas, ele vestiu a couraça de aço deixada por seu avô e liderou a defesa dos moinhos contra bandos de kobolds e saqueadores. Seu tamanho permite esquivar de golpes que partiriam carvalhos ao meio, enquanto sua espada curta atinge os tendões vulneráveis dos inimigos com fúria tenaz.",
+        "personality": "Destemido, bem-humorado e teimoso. Recusa-se a ser subestimado pelo tamanho e protege companheiros com bravura contagiante.",
+        "recruitment_hook": "Subido em um banquinho na taverna, contando com entusiasmo como desarmou um salteador que tinha o dobro do seu peso.",
+        "personal_side_quest_id": "pq_brave_shield",
+        "attributes": {
+            "STR": 15,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 9,
+            "WIS": 12,
+            "CHA": 11,
+            "LUCK": 12
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Besta Leve",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Tobias Bravo-Coração",
+        "portrait_key": "Tobias Bravo-Coração",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-26": {
+        "id": "HERO-26",
+        "name": "Milo Concha-de-Ouro",
+        "title": "O Abade da Lareira Aconchegante",
+        "race": "Halfling",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "Padre da divindade das refeições quentes e dos lares protegidos, Milo sempre acreditou que a verdadeira coragem nasce de uma barriga cheia e de um coração aquecido. Quando as cinzas congelaram as plantações e apagaram as lareiras dos vilarejos, Milo pegou seu amuleto dourado e seu martelo sagrado entalhado com trigo para levar consolo divino e refeições milagrosas aos desesperados, jurando expulsar o frio da morte das terras do povo livre.",
+        "personality": "Afável, generoso e incrivelmente corajoso quando os fracos são ameaçados. Sempre oferece comida e cura antes de empunhar a arma.",
+        "recruitment_hook": "Distribuindo sopa quente e pão abençoado aos refugiados que tremem de frio na varanda coberta da taverna.",
+        "personal_side_quest_id": "pq_hearth_blessing",
+        "attributes": {
+            "STR": 13,
+            "DEX": 12,
+            "CON": 14,
+            "INT": 8,
+            "WIS": 15,
+            "CHA": 13,
+            "LUCK": 12
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 17,
+        "ca": 17,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Milo Concha-de-Ouro",
+        "portrait_key": "Milo Concha-de-Ouro",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-27": {
+        "id": "HERO-27",
+        "name": "Sir Pip",
+        "title": "O Campeão Valente dos Indefesos",
+        "race": "Halfling",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "Armado com uma espada de duas mãos quase do seu próprio tamanho e vestindo uma armadura de prata reluzente, Sir Pip foi sagrado cavaleiro em segredo por um lorde moribundo que reconheceu nele a mais pura chama de altruísmo. Quando o dragão rugiu, todos os nobres fugiram, mas Sir Pip permaneceu firme para proteger a retaguarda dos fugitivos. Sua fé é uma fortaleza inexpugnável que brilha como um farol contra a opressão.",
+        "personality": "Solene, cortês e inabalavelmente leal ao código de honra cavalheiresco. Fala com o rigor de um grande lorde e age como um herói de lendas.",
+        "recruitment_hook": "Rezando de joelhos diante de uma vela acesa no altar improvisado da taverna, sua enorme espada fincada ao lado.",
+        "personal_side_quest_id": "pq_pip_chivalry",
+        "attributes": {
+            "STR": 15,
+            "DEX": 12,
+            "CON": 13,
+            "INT": 8,
+            "WIS": 12,
+            "CHA": 15,
+            "LUCK": 12
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2d8+2"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Sir Pip, o Campeão Valente dos Indefesos",
+        "portrait_key": "Sir Pip, o Campeão Valente dos Indefesos",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-28": {
+        "id": "HERO-28",
+        "name": "Wilkin Faísca-Rápida",
+        "title": "O Mestre dos Truques Arcanos",
+        "race": "Halfling",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Estudante traquino de ilusionismo e prestidigitação, Wilkin costumava animar feiras com fogos de artifício e truques de cartas. Quando o dragão incinerou sua companhia teatral, Wilkin percebeu que a melhor arma contra um monstro gigantesco que confia na força bruta é a mentira mágica e a ilusão perfeita. Com varinha de faíscas e espelhos encantados, ele confunde os sentidos das bestas antes que elas possam desferir o golpe fatal.",
+        "personality": "Curioso, tagarela e travesso. Desarma tensões com piadas oportunas e truques visuais que deixam os inimigos furiosos e desorientados.",
+        "recruitment_hook": "Fazendo moedas voarem e mudarem de cor sobre a mesa de mercadores assustados para levantar o moral da taverna.",
+        "personal_side_quest_id": "pq_spark_prank",
+        "attributes": {
+            "STR": 8,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 15,
+            "WIS": 12,
+            "CHA": 11,
+            "LUCK": 12
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 15,
+        "ca": 15,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 4,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Wilkin Faísca-Rápida",
+        "portrait_key": "Wilkin Faísca-Rápida",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-29": {
+        "id": "HERO-29",
+        "name": "Caelen Olho-de-Lebre",
+        "title": "O Batedor das Tocas Ocultas",
+        "race": "Halfling",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Capaz de se esconder sob um arbusto ou em fendas de pedra onde nem um cão farejador o encontraria, Caelen é o batedor perfeito para terrenos hostis. Ele sobreviveu ao avanço das bestas vulcânicas movendo-se pelas tocas e desfiladeiros escondidos, abatendo batedores inimigos com seu arco curto leve e dardos certeiros. Ele conhece todos os atalhos e esconderijos seguros entre a taverna e a fornalha da montanha.",
+        "personality": "Cauteloso, perspicaz e atento a cada estalo de galho. Move-se sem fazer nenhum ruído e prefere nunca ser notado até que o perigo passe.",
+        "recruitment_hook": "Escondido sob uma pilha de sacos de grãos no armazém da taverna, descascando uma maçã com sua faca de caça.",
+        "personal_side_quest_id": "pq_hidden_burrow",
+        "attributes": {
+            "STR": 12,
+            "DEX": 17,
+            "CON": 13,
+            "INT": 10,
+            "WIS": 14,
+            "CHA": 9,
+            "LUCK": 12
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 7,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 5,
+                "damage_dice": "1d6+3"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Caelen Olho-de-Lebre",
+        "portrait_key": "Caelen Olho-de-Lebre",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-30": {
+        "id": "HERO-30",
+        "name": "Finn Pés-Leves",
+        "title": "O Mestre dos Gazetes e Sombras",
+        "race": "Halfling",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "Ninguém abre uma fechadura ou escapa de uma armadilha mais rápido do que Finn. Tendo sobrevivido a masmorras mortais e roubado o relicário de bandidos temidos, ele se viu encurralado quando o avanço do dragão fechou as rotas de fuga das cidades. Finn viu companheiros perecerem na primeira tentativa contra a montanha e agora, impulsionado por uma mistura de culpa, ganância e audácia inconsequente, junta-se à marcha para provar que nem mesmo o Tirano consegue segurar o que ele decide tomar.",
+        "personality": "Carismático, descarado e sagaz. Encara o perigo extremo com um sorriso atrevido e dedos sempre prontos para abrir qualquer tranca.",
+        "recruitment_hook": "Fazendo apostas impossíveis com mercenários sobre conseguir destrancar três cadeados em menos de dez segundos.",
+        "personal_side_quest_id": "pq_lightfoot_escape",
+        "attributes": {
+            "STR": 8,
+            "DEX": 17,
+            "CON": 14,
+            "INT": 12,
+            "WIS": 10,
+            "CHA": 14,
+            "LUCK": 12
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 14,
+        "ca": 14,
+        "speed": "7.5m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+1d6+3"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 5,
+                "damage_dice": "1d4+3"
+            }
+        ],
+        "abilities": [
+            "Sorte de Halfling",
+            "Bravura",
+            "Agilidade Halfling",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Finn Pés-Leves",
+        "portrait_key": "Finn Pés-Leves",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-31": {
+        "id": "HERO-31",
+        "name": "Thorgar Quebrador-de-Ossos",
+        "title": "O Flagelo dos Campos de Sangue",
+        "race": "Meio-Orc",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Nascido nas tribos brutais das estepes e forjado em rinhas mercenárias, Thorgar sobreviveu a dezenas de ferimentos fatais graças à tenacidade sobrenatural de seu sangue orc. Quando o Tirano desceu sobre seu acampamento mercenário, Thorgar foi o único guerreiro que não correu: ele cravou seu machado no tornozelo do monstro antes de ser arremessado a cem metros contra as pedras. Com cicatrizes cobrindo o peito e presas rangendo de fúria, ele quer uma revanche com o rei das cinzas.",
+        "personality": "Feroz, intimidador e disciplinado pelo combate real. Respeita apenas aqueles que demonstram coragem de encarar a dor sem pestanejar.",
+        "recruitment_hook": "Bebendo cerveja amarga direto do barril na taverna, olhando fixamente para quem cruzar seu caminho com olhos chamejantes.",
+        "personal_side_quest_id": "pq_bonebreaker_fury",
+        "attributes": {
+            "STR": 17,
+            "DEX": 13,
+            "CON": 15,
+            "INT": 9,
+            "WIS": 12,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Besta Leve",
+                "hit_bonus": 3,
+                "damage_dice": "1d8+1"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Thorgar Quebrador-de-Ossos",
+        "portrait_key": "Thorgar Quebrador-de-Ossos",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-32": {
+        "id": "HERO-32",
+        "name": "Gromph Clamor-do-Trovão",
+        "title": "O Xamã das Tempestades de Batalha",
+        "race": "Meio-Orc",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "Pintado com a caveira de giz dos xamãs da guerra, Gromph canaliza o rugido das tempestades celestes através de seu mangual de ferro farpado. Para ele, o despertar do vulcão é um chamado dos deuses do trovão para uma prova cósmica de força: apenas aqueles com corações tempestuosos merecem sobreviver à tempestade de fogo. Seus cânticos rituais enchem os aliados de uma fúria divina que ignora a dor física.",
+        "personality": "Fanático, gutural e impetuoso. Canta hinos de guerra orcs em pleno combate enquanto raios azuis crepitam em suas armas.",
+        "recruitment_hook": "Entoando cânticos graves e tamborilando em um crânio de javali na área externa da taverna sob os trovões da tempestade.",
+        "personal_side_quest_id": "pq_thunder_rites",
+        "attributes": {
+            "STR": 15,
+            "DEX": 10,
+            "CON": 15,
+            "INT": 8,
+            "WIS": 15,
+            "CHA": 12,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 16,
+        "ca": 16,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Gromph Clamor-do-Trovão",
+        "portrait_key": "Gromph Clamor-do-Trovão",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-33": {
+        "id": "HERO-33",
+        "name": "Varek o Redentor",
+        "title": "O Algoz dos Juramentos Quebrados",
+        "race": "Meio-Orc",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "No passado, Varek cometeu atrocidades como carrasco a serviço de tiranos humanos cruéis. Quando o fogo do dragão incinerou os nobres que ele servia, ele encontrou um pergaminho sagrado entre os escombros e sentiu o peso esmagador de seus pecados. Varek ajoelhou-se nas cinzas e jurou dedicar cada respiração restante à justiça divina, usando sua gigantesca espada de carrasco para extinguir o mal supremo que queima o mundo.",
+        "personality": "Solene, torturado pela culpa e ferozmente justo. Fala em tom baixo e busca a redenção através do sacrifício e da proteção implacável dos fracos.",
+        "recruitment_hook": "Ajoelhado em silêncio no canto escuro do estábulo, recitando orações de penitência com as mãos calejadas sobre o punho da espada.",
+        "personal_side_quest_id": "sq_tomb_of_forbidden",
+        "attributes": {
+            "STR": 17,
+            "DEX": 10,
+            "CON": 14,
+            "INT": 8,
+            "WIS": 12,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+2d8+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Varek o Redentor",
+        "portrait_key": "Varek o Redentor",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-34": {
+        "id": "HERO-34",
+        "name": "Morgok Sangue-Feiticeiro",
+        "title": "O Evocador das Chamas Negras",
+        "race": "Meio-Orc",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Rejeitado tanto pelos orcs que temiam sua afinidade arcana quanto pelos acadêmicos humanos preconceituosos, Morgok gravou runas mágicas diretamente em seu próprio crânio raspado para canalizar energia do caos. Ele descobriu que a fumaça do Tirano contém partículas de plasma destrutivo que podem ser dobradas à sua vontade. Empunhando seu cajado encimado por um crânio demoníaco, ele busca no covil o segredo para transformar sua dor em feitiços avassaladores.",
+        "personality": "Obscuro, desafiador e ferozmente inteligente. Gosta de chocar os outros com sua aparência demoníaca, mas guarda uma lealdade feroz a quem o respeita.",
+        "recruitment_hook": "Queimando pequenos pedaços de enxofre na ponta dos dedos na lareira da taverna, observando a fumaça roxa que sobe.",
+        "personal_side_quest_id": "pq_black_sorcery",
+        "attributes": {
+            "STR": 10,
+            "DEX": 13,
+            "CON": 15,
+            "INT": 15,
+            "WIS": 12,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 14,
+        "ca": 14,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 4,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Morgok Sangue-Feiticeiro",
+        "portrait_key": "Morgok Sangue-Feiticeiro",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-35": {
+        "id": "HERO-35",
+        "name": "Kallor Dente-de-Lobo",
+        "title": "O Rastreador de Feras Sangrentas",
+        "race": "Meio-Orc",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Vestindo o couro e o crânio do maior urso que já habitou as montanhas, Kallor viveu como caçador solitário nos ermos árticos. Quando as feras da montanha começaram a descer em frenesi cego fugindo do dragão, Kallor aprendeu a abater monstros do dobro de seu tamanho com seu arco pesado de guerra. Ele enxerga o Tirano como o ápice de sua carreira: a maior fera que a terra já pariu precisa ser caçada e derrubada.",
+        "personality": "Primitivo, instintivo e destemido. Confia em seus sentidos mais do que em planos complexos e fareja emboscadas antes que aconteçam.",
+        "recruitment_hook": "Tratando peles de lobo esticadas na parede externa da estalagem com faca de osso e sal grosso.",
+        "personal_side_quest_id": "pq_beast_blood",
+        "attributes": {
+            "STR": 14,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 10,
+            "WIS": 14,
+            "CHA": 8,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 6,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Kallor Dente-de-Lobo",
+        "portrait_key": "Kallor Dente-de-Lobo",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-36": {
+        "id": "HERO-36",
+        "name": "Zulgor Mão-de-Ferro",
+        "title": "O Degolador dos Calos",
+        "race": "Meio-Orc",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "Nascido nos cortiços imundos da baixa cidade, Zulgor usou sua força brutal e passos silenciosos para se tornar o executor temido de sindicatos criminosos. Ao contrário dos ladinos franzinos, Zulgor não precisa de rapieiras leves: suas adagas pesadas de açougueiro partem costelas e atravessam armaduras na surdina. Com a cidade em chamas e sem patrões para pagar tributo, ele marcha para cravar suas lâminas no pescoço do dragão enquanto ele dorme.",
+        "personality": "Brutal, direto e pragmático. Não perde tempo com palavras bonitas: se alguém ameaça a equipe, ele corta a garganta e segue em frente.",
+        "recruitment_hook": "Sentado em um banco de madeira nas sombras da entrada lateral, limpando graxa de suas lâminas triangulares.",
+        "personal_side_quest_id": "pq_iron_hand_kill",
+        "attributes": {
+            "STR": 10,
+            "DEX": 15,
+            "CON": 15,
+            "INT": 12,
+            "WIS": 10,
+            "CHA": 13,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 13,
+        "ca": 13,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+1d6+2"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 4,
+                "damage_dice": "1d4+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Ameaçador",
+            "Tolerância Infindável",
+            "Ataques Selvagens",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Zulgor Mão-de-Ferro",
+        "portrait_key": "Zulgor Mão-de-Ferro",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-37": {
+        "id": "HERO-37",
+        "name": "Malakor Chifre-Partido",
+        "title": "O Espadachim do Fogo Infernal",
+        "race": "Tiefling",
+        "class": "Guerreiro",
+        "gender": "male",
+        "lore": "Marcado pela herança dos planos inferiores e com o chifre esquerdo quebrado em duelo contra um demônio maior, Malakor viajou por reinos como espadachim errante. Ele aprendeu a mesclar a precisão do aço forjado com as fagulhas do fogo que corre em seu sangue infernal. Ele vê o Tirano das Cinzas não como uma força divina, mas como um lagarto hipertrofiado que precisa ser fatiado e devolvido à terra fria.",
+        "personality": "Orgulhoso, desafiador e provocador. Usa o sarcasmo e sua habilidade de lâmina para desestabilizar qualquer um que o encare com desprezo.",
+        "recruitment_hook": "Encostado no balcão da taverna, girando uma moeda de ouro com a ponta da cauda enquanto desafia guardas locais com o olhar.",
+        "personal_side_quest_id": "pq_broken_horn_duel",
+        "attributes": {
+            "STR": 15,
+            "DEX": 13,
+            "CON": 14,
+            "INT": 10,
+            "WIS": 12,
+            "CHA": 12,
+            "LUCK": 10
+        },
+        "hp_current": 12,
+        "hp_max": 12,
+        "pv_atual": 12,
+        "pv_max": 12,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Besta Leve",
+                "hit_bonus": 3,
+                "damage_dice": "1d8+1"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Retomar o Fôlego",
+            "Estilo de Luta"
+        ],
+        "faction": "ally",
+        "sprite_key": "Malakor Chifre-Partido",
+        "portrait_key": "Malakor Chifre-Partido",
+        "tipo_bestiario": "guerreiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-38": {
+        "id": "HERO-38",
+        "name": "Irmão Damian",
+        "title": "O Inquisidor do Crepúsculo Abissal",
+        "race": "Tiefling",
+        "class": "Clérigo",
+        "gender": "male",
+        "lore": "Rejeitado por sacerdócios ortodoxos devido aos seus chifres negros e pele carmesim, Damian encontrou refúgio na divindade do Crepúsculo, que abraça as almas perdidas nas fronteiras entre a luz e a escuridão. Com vestes talares escuras e sua maça pontiaguda de ferro, ele oferece conforto aos que temem a morte e usa o fogo fátuo azul de seu relicário para expurgar as almas corrompidas que servem ao dragão.",
+        "personality": "Enigmático, compassivo e resoluto. Entende a rejeição e o medo melhor do que ninguém, agindo como um escudo acolhedor para os desesperados.",
+        "recruitment_hook": "Oferecendo preces em voz suave e acendendo velas de chama azul para viajantes aterrorizados no sótão da taverna.",
+        "personal_side_quest_id": "pq_twilight_relic",
+        "attributes": {
+            "STR": 13,
+            "DEX": 10,
+            "CON": 14,
+            "INT": 9,
+            "WIS": 15,
+            "CHA": 14,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 16,
+        "ca": 16,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Maça Sagrada",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            },
+            {
+                "name": "Chama Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Conjuração Divina",
+            "Domínio Divino"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Irmão Damian, o Inquisidor do Crepúsculo Abissal",
+        "portrait_key": "Irmão Damian, o Inquisidor do Crepúsculo Abissal",
+        "tipo_bestiario": "clerigo",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-39": {
+        "id": "HERO-39",
+        "name": "Valravn o Purificado",
+        "title": "O Paladino das Asas de Cinza",
+        "race": "Tiefling",
+        "class": "Paladino",
+        "gender": "male",
+        "lore": "Nascido sob uma profecia de destruição, Valravn rejeitou seu legado infernal e submeteu-se a rituais de purificação divina que gravaram runas sagradas douradas em seus chifres e pele. Vestindo armadura de prata e marfim, ele luta para provar que a linhagem não determina o destino de uma alma. Sua lâmina sagrada emana uma luz branca tão brilhante que até as cinzas vulcânicas recuam à sua passagem.",
+        "personality": "Solene, nobre e trágico. Carrega a eterna penitência de sua origem, disposto a morrer em um ato de sacrifício absoluto para salvar a terra.",
+        "recruitment_hook": "Em pé diante da porta da taverna, encarando a tempestade com sua capa branca ondulando ao vento e sua espada brilhando.",
+        "personal_side_quest_id": "pq_purified_vow",
+        "attributes": {
+            "STR": 15,
+            "DEX": 10,
+            "CON": 13,
+            "INT": 9,
+            "WIS": 12,
+            "CHA": 16,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 18,
+        "ca": 18,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Espada Longa Sagrada",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Punição Divina",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+2d8+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Sentido Divino",
+            "Cura pelas Mãos"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Valravn o Purificado",
+        "portrait_key": "Valravn o Purificado",
+        "tipo_bestiario": "paladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-40": {
+        "id": "HERO-40",
+        "name": "Azaroth o Necro-Arcanista",
+        "title": "O Senhor dos Pactos Astrais",
+        "race": "Tiefling",
+        "class": "Mago",
+        "gender": "male",
+        "lore": "Descendente de arcanistas que desvendaram os segredos do vácuo cósmico e dos pactos proibidos, Azaroth busca compreender as forças primordiais que controlam a vida e a morte. Ele descobriu que o vulcão do Tirano funciona como uma âncora para uma fenda dimensional que prende os espíritos da terra em um ciclo de destruição. Com seu grimório que cospe runas violetas, ele marcha para quebrar o selo da montanha e reivindicar o poder dos antigos pactos.",
+        "personality": "Altivo, erudito e temido. Fala com eloquência aristocrática e maneja magias sombrias com o controle cirúrgico de um mestre.",
+        "recruitment_hook": "Lendo um tomo antigo cujas páginas sussurram sozinhas, cercado por uma sutil névoa púrpura que mantém os curiosos afastados.",
+        "personal_side_quest_id": "pq_astral_pact",
+        "attributes": {
+            "STR": 8,
+            "DEX": 13,
+            "CON": 14,
+            "INT": 16,
+            "WIS": 12,
+            "CHA": 12,
+            "LUCK": 10
+        },
+        "hp_current": 8,
+        "hp_max": 8,
+        "pv_atual": 8,
+        "pv_max": 8,
+        "hit_dice": "1d6",
+        "ac": 14,
+        "ca": 14,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Raio de Fogo",
+                "hit_bonus": 5,
+                "damage_dice": "1d10"
+            },
+            {
+                "name": "Mísseis Mágicos",
+                "hit_bonus": 99,
+                "damage_dice": "3d4+3"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Conjuração Arcana",
+            "Recuperação Arcana"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Azaroth o Necro-Arcanista",
+        "portrait_key": "Azaroth o Necro-Arcanista",
+        "tipo_bestiario": "mago",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-41": {
+        "id": "HERO-41",
+        "name": "Kallisto Sombra-da-Penumbra",
+        "title": "O Caçador de Demônios Renegado",
+        "race": "Tiefling",
+        "class": "Patrulheiro",
+        "gender": "male",
+        "lore": "Caçador experiente nos planos fronteiriços e ermos sombrios, Kallisto dedicou sua vida a eliminar criaturas infernais e aberrações que escapam para o mundo mortal. Quando o Tirano acordou, o calor e as fendas abriram portais menores que libertaram matilhas de bestas demoníacas nas planícies. Kallisto empunha seu arco de ébano com flechas de fogo gélido para abater essas abominações antes que elas devorem o que resta da civilização.",
+        "personality": "Solitário, pragmático e implacável. Analisa o perigo sem emoção e nunca erra um disparo quando a presa entra em sua alça de mira.",
+        "recruitment_hook": "Limpando a corda de seu arco sob a amurada dos fundos da estalagem, observando a escuridão da mata com olhos felinos âmbar.",
+        "personal_side_quest_id": "pq_fiend_bounty",
+        "attributes": {
+            "STR": 12,
+            "DEX": 15,
+            "CON": 13,
+            "INT": 11,
+            "WIS": 14,
+            "CHA": 10,
+            "LUCK": 10
+        },
+        "hp_current": 11,
+        "hp_max": 11,
+        "pv_atual": 11,
+        "pv_max": 11,
+        "hit_dice": "1d10",
+        "ac": 15,
+        "ca": 15,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Arco Longo",
+                "hit_bonus": 6,
+                "damage_dice": "1d8+2"
+            },
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Inimigo Favorito",
+            "Explorador Natural"
+        ],
+        "spell_slots": {
+            "1": 2
+        },
+        "faction": "ally",
+        "sprite_key": "Kallisto Sombra-da-Penumbra",
+        "portrait_key": "Kallisto Sombra-da-Penumbra",
+        "tipo_bestiario": "patrulheiro",
+        "level": 1,
+        "proficiency_bonus": 2
+    },
+    "HERO-42": {
+        "id": "HERO-42",
+        "name": "Balthazar Pé-de-Cabra",
+        "title": "O Dançarino das Sombras Enxofradas",
+        "race": "Tiefling",
+        "class": "Ladino",
+        "gender": "male",
+        "lore": "Conhecido nos submundos como o ladrão que consegue passar por fechaduras como fumaça de enxofre, Balthazar fez sua fama furtando guildas de nobres e arrombando relicários impossíveis. Quando a destruição causada pelo dragão tornou os tesouros do mundo sem valor, ele decidiu que a única façanha que restava para imortalizar seu nome era roubar a joia incrustada no crânio do próprio Dragão Supremo antes de cortar seus tendões e desaparecer nas brumas.",
+        "personality": "Extrovertido, perigoso e diabolicamente charmoso. Encara o fim do mundo como o palco perfeito para o seu espetáculo mais audacioso.",
+        "recruitment_hook": "Bebendo vinho carmesim no bar e fazendo pequenos nós mágicos na cauda enquanto sorri desafiadoramente para os guardas.",
+        "personal_side_quest_id": "pq_brimstone_gamble",
+        "attributes": {
+            "STR": 8,
+            "DEX": 15,
+            "CON": 14,
+            "INT": 13,
+            "WIS": 10,
+            "CHA": 15,
+            "LUCK": 10
+        },
+        "hp_current": 10,
+        "hp_max": 10,
+        "pv_atual": 10,
+        "pv_max": 10,
+        "hit_dice": "1d8",
+        "ac": 13,
+        "ca": 13,
+        "speed": "9m",
+        "actions": [
+            {
+                "name": "Ataque Furtivo com Rapieira",
+                "hit_bonus": 4,
+                "damage_dice": "1d8+1d6+2"
+            },
+            {
+                "name": "Adaga",
+                "hit_bonus": 4,
+                "damage_dice": "1d4+2"
+            }
+        ],
+        "abilities": [
+            "Visão no Escuro",
+            "Resistência Infernal",
+            "Legado Infernal",
+            "Ataque Furtivo",
+            "Especialização",
+            "Gíria de Ladrão"
+        ],
+        "faction": "ally",
+        "sprite_key": "Balthazar Pé-de-Cabra",
+        "portrait_key": "Balthazar Pé-de-Cabra",
+        "tipo_bestiario": "ladino",
+        "level": 1,
+        "proficiency_bonus": 2
+    }
+}

@@ -1,0 +1,170 @@
+{
+    "1": {
+        "id": "beat_1_taverna",
+        "name": "Taverna do Dragão Acordado",
+        "type": "hub",
+        "environment_prompt": "Um local quente, vibrante e barulhento. A lareira estrala, bardos tocam músicas animadas e mercenários riem batendo canecos de cerveja. O taverneiro é amigável. Entre as risadas, ouvem-se rumores sobre monstros perigosos na Trilha dos Enforcados. O jogador é livre para conversar, beber e explorar.",
+        "enemies": [],
+        "bg_image": "tavern_bg.jpg",
+        "recruitable_allies": true
+    },
+    "2": {
+        "id": "beat_2_planicie",
+        "name": "Planície dos Uivos",
+        "type": "combat",
+        "environment_prompt": "Uma planície vasta e varrida pelo vento, com grama alta escondendo perigos.",
+        "enemies": [
+            "m_dire_wolf",
+            "m_bandit"
+        ],
+        "bg_image": "dirt_road_plains_bg.jpg"
+    },
+    "3": {
+        "id": "beat_3_floresta_dia",
+        "name": "Floresta Corrompida (Dia)",
+        "type": "combat",
+        "environment_prompt": "Uma floresta densa e sombria. A luz do sol mal penetra pelas folhas doentias.",
+        "enemies": [
+            "m_goblin",
+            "m_goblin",
+            "m_orc"
+        ],
+        "bg_image": "green_forest_day_bg.jpg"
+    },
+    "4": {
+        "id": "beat_4_acampamento",
+        "name": "Acampamento Devastado",
+        "type": "combat",
+        "environment_prompt": "Restos de um acampamento mercenário. Sangue espalhado e tendas rasgadas.",
+        "enemies": [
+            "m_kobold",
+            "m_kobold",
+            "m_veteran"
+        ],
+        "bg_image": "bandit_camp_canyon_bg.jpg",
+        "recruitable_allies": true
+    },
+    "5": {
+        "id": "beat_5_pantano",
+        "name": "Pântano das Águas Mortas",
+        "type": "combat",
+        "environment_prompt": "Águas turvas, cheiro de decomposição e névoa venenosa. O chão cede sob as botas.",
+        "enemies": [
+            "m_ochre_jelly",
+            "m_giant_spider"
+        ],
+        "bg_image": "toxic_swamp_bg.jpg"
+    },
+    "6": {
+        "id": "beat_6_floresta_noite",
+        "name": "Floresta Corrompida (Noite)",
+        "type": "combat",
+        "environment_prompt": "A escuridão é quase palpável. Sons rastejantes ecoam entre as árvores retorcidas.",
+        "enemies": [
+            "m_zombie",
+            "m_zombie_fast"
+        ],
+        "bg_image": "dark_forest_night_bg.jpg"
+    },
+    "7": {
+        "id": "beat_7_cemiterio",
+        "name": "Cemitério Esquecido",
+        "type": "combat",
+        "environment_prompt": "Túmulos antigos profanados, terra revirada e o frio antinatural da morte.",
+        "enemies": [
+            "m_skeleton",
+            "m_skeleton",
+            "m_vampire_spawn"
+        ],
+        "bg_image": "ancient_cemetery_bg.jpg"
+    },
+    "8": {
+        "id": "beat_8_ruinas",
+        "name": "Ruínas do Rei Cego",
+        "type": "combat",
+        "environment_prompt": "Pilares caídos de mármore negro. Sombras parecem se mover por vontade própria.",
+        "enemies": [
+            "m_shadow",
+            "m_wraith"
+        ],
+        "bg_image": "forgotten_fort_ruins_bg.jpg",
+        "recruitable_allies": true
+    },
+    "9": {
+        "id": "beat_9_montanha",
+        "name": "Passagem da Montanha Fendida",
+        "type": "combat",
+        "environment_prompt": "Ventos congelantes e penhascos íngremes. Uma queda daqui é a morte certa.",
+        "enemies": [
+            "m_manticore",
+            "m_chimera"
+        ],
+        "bg_image": "snowy_mountain_pass_bg.jpg"
+    },
+    "10": {
+        "id": "beat_10_caverna",
+        "name": "Boca da Besta",
+        "type": "combat",
+        "environment_prompt": "Uma entrada de caverna colossal que cheira a carne podre e ossos mastigados.",
+        "enemies": [
+            "m_ogre",
+            "m_ogre_brute"
+        ],
+        "bg_image": "dark_damp_cave_bg.jpg",
+        "recruitable_allies": true
+    },
+    "11": {
+        "id": "beat_11_minas",
+        "name": "Minas Esquecidas de Khaz",
+        "type": "combat",
+        "environment_prompt": "Trilhos oxidados e silêncio absoluto. Moedas de ouro falsas brilham no chão.",
+        "enemies": [
+            "m_animated_armor",
+            "m_mimic"
+        ],
+        "bg_image": "black_iron_mines_bg.jpg"
+    },
+    "12": {
+        "id": "beat_12_templo",
+        "name": "Templo Profanado",
+        "type": "combat",
+        "environment_prompt": "Estátuas decapitadas e símbolos arcanos sangrando magia nas paredes.",
+        "enemies": [
+            "m_gargoyle",
+            "m_rakshasa"
+        ],
+        "bg_image": "forgotten_temple_bg.jpg",
+        "recruitable_allies": true
+    },
+    "13": {
+        "id": "beat_13_caverna_lava",
+        "name": "Caverna de Magma",
+        "type": "combat",
+        "environment_prompt": "Rios de lava iluminam a rocha preta. O calor derrete armaduras.",
+        "enemies": [
+            "m_fire_giant"
+        ],
+        "bg_image": "lava_cave_bg.jpg"
+    },
+    "14": {
+        "id": "beat_14_observatorio",
+        "name": "Observatório Astral Quebrado",
+        "type": "combat",
+        "environment_prompt": "O teto desmoronou revelando um céu sem estrelas. Máquinas arcanas zumbem com poder necromântico.",
+        "enemies": [
+            "m_lich"
+        ],
+        "bg_image": "arcane_observatory_bg.jpg"
+    },
+    "15": {
+        "id": "beat_15_climax",
+        "name": "O Covil do Tirano",
+        "type": "combat",
+        "environment_prompt": "Uma colossal caldeira vulcânica subterrânea. O chão é forrado de ouro derretido, armas quebradas e ossos carbonizados de exércitos que tentaram e falharam. O ar queima os pulmões. O calor é insuportável.",
+        "enemies": [
+            "m_supreme_dragon"
+        ],
+        "bg_image": "O_Covil_do_Tirano_bg.jpg",
+        "is_climax": true
+    }
+}

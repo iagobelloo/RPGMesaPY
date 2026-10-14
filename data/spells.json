@@ -1,0 +1,38 @@
+{
+  "evocation": {
+    "magic_missile": {
+      "id": "s_magic_missile",
+      "name": "Mísseis Mágicos",
+      "level": 1,
+      "casting_time": "1 action",
+      "range": 120,
+      "mechanical_action": "damage",
+      "target_type": "direct",
+      "auto_hit": true,
+      "damage_dice": "3d4+3",
+      "description": "Cria dardos mágicos brilhantes causando dano de força infalível."
+    },
+    "fireball": {
+      "id": "s_fireball",
+      "name": "Bola de Fogo",
+      "level": 3,
+      "casting_time": "1 action",
+      "range": 150,
+      "mechanical_action": "damage",
+      "target_type": "aoe",
+      "saving_throw": "DES",
+      "damage_dice": "8d6",
+      "description": "Uma explosão de chamas em um raio de 20 pés."
+    }
+  },
+  "abjuration": {
+    "shield": {
+      "id": "s_shield",
+      "name": "Escudo Arcano",
+      "level": 1,
+      "casting_time": "1 reaction",
+      "range": 0,
+      "description": "Você ganha +5 na sua CA até o início do seu próximo turno, o que pode fazer um ataque errar."
+    }
+  }
+}

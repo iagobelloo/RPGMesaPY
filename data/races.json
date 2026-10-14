@@ -1,0 +1,76 @@
+{
+  "race_human": {
+    "name_pt": "Humano",
+    "description_pt": "Adaptáveis e ambiciosos, os humanos sobrevivem onde outros perecem, forjando impérios sobre as cinzas do passado.",
+    "stat_bonuses": {
+      "Força": 1,
+      "Destreza": 1,
+      "Constituição": 1,
+      "Inteligência": 1,
+      "Sabedoria": 1,
+      "Carisma": 1
+    },
+    "speed": 9,
+    "size": "Médio"
+  },
+  "race_halfling": {
+    "name_pt": "Halfling",
+    "description_pt": "Pequenos e furtivos, abençoados com uma sorte sobrenatural que os permite escapar de perigos quase certos.",
+    "stat_bonuses": {
+      "Destreza": 2,
+      "Carisma": 1
+    },
+    "speed": 7.5,
+    "size": "Pequeno"
+  },
+  "race_dragonborn": {
+    "name_pt": "Draconato",
+    "description_pt": "Descendentes de dragões ancestrais, carregam o orgulho de escamas e o fôlego elemental de seus progenitores.",
+    "stat_bonuses": {
+      "Força": 2,
+      "Carisma": 1
+    },
+    "speed": 9,
+    "size": "Médio"
+  },
+  "race_half_orc": {
+    "name_pt": "Meio-Orc",
+    "description_pt": "Marcados pela fúria de sua linhagem selvagem, são guerreiros implacáveis que recusam a morte no campo de batalha.",
+    "stat_bonuses": {
+      "Força": 2,
+      "Constituição": 1
+    },
+    "speed": 9,
+    "size": "Médio"
+  },
+  "race_tiefling": {
+    "name_pt": "Tiefling",
+    "description_pt": "Amaldiçoados com chifres e sangue infernal, são temidos pela sociedade, mas dominam as sombras e a feitiçaria.",
+    "stat_bonuses": {
+      "Carisma": 2,
+      "Inteligência": 1
+    },
+    "speed": 9,
+    "size": "Médio"
+  },
+  "race_hill_dwarf": {
+    "name_pt": "Anão da Colina",
+    "description_pt": "Forjados na rocha, são robustos e teimosos, ostentando resistência natural contra os venenos do submundo.",
+    "stat_bonuses": {
+      "Constituição": 2,
+      "Sabedoria": 1
+    },
+    "speed": 7.5,
+    "size": "Médio"
+  },
+  "race_wood_elf": {
+    "name_pt": "Elfo da Floresta",
+    "description_pt": "Patrulheiros ágeis das matas antigas, possuem visão aguda e passos leves, caçando nas sombras das árvores.",
+    "stat_bonuses": {
+      "Destreza": 2,
+      "Sabedoria": 1
+    },
+    "speed": 10.5,
+    "size": "Médio"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "bg_hero": {
+    "name_pt": "Herói",
+    "description_pt": "Aclamado pelas massas por um feito do passado, você carrega o peso da expectativa em um mundo que implora por salvação."
+  },
+  "bg_criminal": {
+    "name_pt": "Criminoso",
+    "description_pt": "Você sobreviveu nas vielas sujas de sangue. Roubo, extorsão e lâminas nas sombras são o seu idioma materno."
+  },
+  "bg_soldier": {
+    "name_pt": "Soldado",
+    "description_pt": "Você marchou em batalhas esquecidas e viu amigos morrerem na lama. O trauma da guerra está marcado nas suas cicatrizes."
+  },
+  "bg_acolyte": {
+    "name_pt": "Acólito",
+    "description_pt": "Criado entre rituais e incensos em um templo recluso, você busca respostas divinas em um mundo consumido pelo pecado."
+  },
+  "bg_sage": {
+    "name_pt": "Sábio",
+    "description_pt": "Anos enterrado em tomos antigos lhe deram conhecimentos arcanos que muitos consideram perigosos ou hereges."
+  },
+  "bg_noble": {
+    "name_pt": "Nobre",
+    "description_pt": "Nascido em lençóis de seda, você possui riqueza, mas o seu nome de família atrai tantos bajuladores quanto assassinos."
+  }
+}
+

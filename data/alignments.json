@@ -1,0 +1,39 @@
+{
+  "al_lawful_good": {
+    "name_pt": "Leal e Bom",
+    "description_pt": "Age com honra e compaixão, protegendo os fracos e respeitando as leis justas, mesmo com sacrifício pessoal."
+  },
+  "al_neutral_good": {
+    "name_pt": "Neutro e Bom",
+    "description_pt": "Faz o melhor possível para ajudar os outros, sem se prender cegamente a regras ou leis de lordes corruptos."
+  },
+  "al_chaotic_good": {
+    "name_pt": "Caótico e Bom",
+    "description_pt": "Age de acordo com a própria consciência, com pouca consideração pelas expectativas da sociedade, focando no bem maior."
+  },
+  "al_lawful_neutral": {
+    "name_pt": "Leal e Neutro",
+    "description_pt": "A lei e o código de honra são absolutos. Segue as regras do sistema sem se importar se são benevolentes."
+  },
+  "al_true_neutral": {
+    "name_pt": "Neutro",
+    "description_pt": "Age de forma pragmática. Faz o que parece ser a melhor opção no momento, focado em sobrevivência e equilíbrio."
+  },
+  "al_chaotic_neutral": {
+    "name_pt": "Caótico e Neutro",
+    "description_pt": "Um espírito livre. Segue seus caprichos e valoriza a sua própria liberdade acima de dogmas."
+  },
+  "al_lawful_evil": {
+    "name_pt": "Leal e Mau",
+    "description_pt": "Um tirano metódico. Usa as leis, hierarquias e tradições para explorar e garantir seu próprio poder de forma cruel."
+  },
+  "al_neutral_evil": {
+    "name_pt": "Neutro e Mau",
+    "description_pt": "O egoísmo puro. Faz qualquer coisa para conseguir o que quer, traindo ou matando sem qualquer remorso."
+  },
+  "al_chaotic_evil": {
+    "name_pt": "Caótico e Mau",
+    "description_pt": "A personificação da ruína. Causa dor e destruição puramente por sadismo, ódio ou loucura descontrolada."
+  }
+}
+

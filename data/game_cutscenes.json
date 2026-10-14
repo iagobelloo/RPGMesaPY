@@ -1,0 +1,35 @@
+{
+    "beat_1_prologue": [
+        "A chuva fria escorre pelo capuz de {nome} quando a pesada porta de madeira da taverna range sob seu empurrão. Como um {raca} {classe} moldado pela dureza de {antecedente}, seus sentidos captam o calor sufocante com cheiro de cerveja choca, suor velho e lenha úmida.",
+        "Mercenários embriagados disputam dados viciados enquanto um bardo desafinado dedilha cordas gastas. Os olhares correm pela sua silhueta de postura {tendencia} e desviam rápido. Aqui, estranhos morrem antes do amanhecer.",
+        "No balcão de carvalho entalhado, o taverneiro de um olho só interrompe a limpeza de uma caneca com um trapo ensebado. Seus olhos fitam você em silêncio antes de deslizar sobre a mesa um pergaminho lacrado com cera negra.",
+        "A mensagem é direta e implacável: o Tirano das Cinzas despertou no coração do Vulcão. Aldeias inteiras foram reduzidas a pó, e o vento que sopra do norte carrega a cinza densa de carne queimada.",
+        "A recompensa prometida seria suficiente para comprar um feudo inteiro, ou para bancar seu próprio enterro nas profundezas da montanha. Quem redigiu o pacto não espera sobreviventes. Ninguém jamais retornou.",
+        "- Os últimos que aceitaram esse selo beberam exatamente nesse banco - murmura o taverneiro em voz rouca. - Deixaram dívidas, sangue e nomes esquecidos. Mais nada.",
+        "Agora os olhares na penumbra pesam sobre você. Alguns com piedade velada, outros medindo seu aço com cálculo frio. Há espadas mercenárias e almas desesperadas na taverna dispostas a marchar até a fornalha.",
+        "Escolha com sabedoria quem dividirá o caminho com você, {nome}. No fim da estrada do Tirano, restam apenas cinzas."
+    ],
+    "beat_15_loop_0_death": [
+        "O calor do covil bate como uma parede. O ar queima seus pulmões a cada respiração, e o suor evapora antes de escorrer. Sobre um trono de rocha derretida, algo enorme se move.",
+        "O Tirano das Cinzas abre os olhos, duas fornalhas acesas na escuridão. Uma aura alaranjada envolve as escamas dele e distorce o ar como vidro derretido.",
+        "Seus companheiros atacam primeiro: aço contra escama, flechas, feitiços, gritos de guerra. Nada adianta. Cada golpe vira faísca antes de tocar a pele da besta.",
+        "O dragão ergue a cabeça e inspira. O covil inteiro fica em silêncio. Até o borbulhar da lava parece prender a respiração.",
+        "Então vem o fogo.",
+        "[SISTEMA] 999 de dano absoluto. Nenhuma armadura, escudo ou prece resiste.",
+        "Não é uma chama. É o fim do mundo, uma torrente branca que engole tudo. Você ouve o primeiro grito, curto. O segundo nem chega a terminar.",
+        "Diante dos seus olhos, seus aliados viram silhuetas negras, depois estátuas de carvão, depois cinzas que o vento quente espalha como neve suja.",
+        "Você cai de joelhos. A dor vai além do limite do corpo. O mundo derrete em uma luz branca ofuscante.",
+        "E então, escuridão absoluta."
+    ],
+    "beat_15_loop_1_awaken": [
+        "Você abre os olhos.",
+        "A chuva fria escorre pelo seu capuz. O cheiro de cerveja choca, suor velho e lenha úmida invade suas narinas.",
+        "Você está de volta à taverna.",
+        "O taverneiro de um olho só está limpando a mesma caneca, com o mesmo trapo imundo.",
+        "O pergaminho com o lacre negro está na mesa, exatamente como da primeira vez.",
+        "Você puxa o ar, e a lembrança do fogo ainda queima a sua garganta. Mas você está vivo. A sua equipe original, no entanto... sumiu. Ninguém na taverna se lembra deles.",
+        "Você sente o peso do seu equipamento. A sua experiência de combate ainda está com você. E você sabe, com certeza absoluta, o que os espera no Vulcão.",
+        "- Você parece que viu um fantasma - murmura o taverneiro. - Vai aceitar o contrato ou não?",
+        "A Morte rejeitou você. O tempo voltou. E desta vez, você não vai cometer os mesmos erros."
+    ]
+}

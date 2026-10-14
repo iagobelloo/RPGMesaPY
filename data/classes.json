@@ -1,0 +1,38 @@
+{
+  "class_fighter": {
+    "name_pt": "Guerreiro",
+    "description_pt": "Mestres absolutos do combate marcial, treinados para sobreviver à carnificina da linha de frente com armaduras pesadas.",
+    "hit_dice": "d10",
+    "sprite_path": "humano_cavaleiro_male.png"
+  },
+  "class_cleric": {
+    "name_pt": "Clérigo",
+    "description_pt": "Sacerdotes devotos que empunham o poder dos deuses, combinando magias milagrosas com formidável proteção divina.",
+    "hit_dice": "d8",
+    "sprite_path": "humano_clerigo_male.png"
+  },
+  "class_paladin": {
+    "name_pt": "Paladino",
+    "description_pt": "Cavaleiros juramentados que canalizam fúria sagrada em seus ataques, servindo como faróis de luz na escuridão.",
+    "hit_dice": "d10",
+    "sprite_path": "humano_paladino_male.png"
+  },
+  "class_wizard": {
+    "name_pt": "Mago",
+    "description_pt": "Manipuladores das energias arcanas, capazes de conjurar destruição em massa, mas frágeis em combate físico.",
+    "hit_dice": "d6",
+    "sprite_path": "humano_mago_male.png"
+  },
+  "class_ranger": {
+    "name_pt": "Patrulheiro",
+    "description_pt": "Sobreviventes implacáveis dos ermos, combinam rastreamento, arquearia letal e magias da natureza.",
+    "hit_dice": "d10",
+    "sprite_path": "humano_patrulheiro_male.png"
+  },
+  "class_rogue": {
+    "name_pt": "Ladino",
+    "description_pt": "Especialistas em furtividade, truques sujos e ataques cirúrgicos, atingindo com precisão mortal onde o inimigo é vulnerável.",
+    "hit_dice": "d8",
+    "sprite_path": "humano_ladino_male.png"
+  }
+}

@@ -1,0 +1,696 @@
+{
+    "weapons": {
+        "shortsword": {
+            "id": "i_shortsword",
+            "name": "Espada Curta",
+            "family": "swords",
+            "type": "weapon_melee",
+            "damage_dice": "1d6",
+            "properties": [
+                "finesse",
+                "light"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 10,
+            "description": "Lâmina leve e perfurante para ataques ágeis de acuidade."
+        },
+        "longsword": {
+            "id": "i_longsword",
+            "name": "Espada Longa",
+            "family": "swords",
+            "type": "weapon_melee",
+            "damage_dice": "1d8",
+            "damage_dice_two_handed": "1d10",
+            "properties": [
+                "versatile"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 15,
+            "description": "Uma lâmina de aço versátil para cortes precisos (1d8) ou pesados com duas mãos (1d10)."
+        },
+        "forged_longsword": {
+            "id": "i_forged_longsword",
+            "name": "Espada Longa de Aço Forjado +1",
+            "family": "swords",
+            "type": "weapon_melee",
+            "damage_dice": "1d8+1",
+            "damage_dice_two_handed": "1d10+1",
+            "properties": [
+                "versatile",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 65,
+            "description": "Espada longa temperada pelos mestres ferreiros (+1 acerto e +1 dano)."
+        },
+        "runic_longsword": {
+            "id": "i_runic_longsword",
+            "name": "Espada Longa Rúnica",
+            "family": "swords",
+            "type": "weapon_melee",
+            "damage_dice": "1d8+1",
+            "properties": [
+                "versatile",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 65,
+            "description": "Lâmina gravada com runas antigas, concedendo precisão e corte reforçados (+1 acerto/dano)."
+        },
+        "greatsword": {
+            "id": "i_greatsword",
+            "name": "Montante",
+            "family": "heavy_weapons",
+            "type": "weapon_melee",
+            "damage_dice": "2d6",
+            "properties": [
+                "heavy",
+                "two-handed"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 50,
+            "description": "Uma lâmina colossal de duas mãos forjada para esmagar armaduras inimigas."
+        },
+        "greataxe": {
+            "id": "i_greataxe",
+            "name": "Machado de Guerra",
+            "family": "heavy_weapons",
+            "type": "weapon_melee",
+            "damage_dice": "1d12",
+            "properties": [
+                "heavy",
+                "two-handed"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 30,
+            "description": "Machado brutal de duas mãos capaz de partir escudos ao meio."
+        },
+        "adamantine_greatsword": {
+            "id": "i_adamantine_greatsword",
+            "name": "Montante de Adamante das Cinzas +1",
+            "family": "heavy_weapons",
+            "type": "weapon_melee",
+            "damage_dice": "2d6+1",
+            "properties": [
+                "heavy",
+                "two-handed",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 120,
+            "description": "Montante forjado em liga de adamante vulcânico (+1 acerto e +1 dano)."
+        },
+        "runic_greatsword": {
+            "id": "i_runic_greatsword",
+            "name": "Espada Grande Flamejante",
+            "family": "heavy_weapons",
+            "type": "weapon_melee",
+            "damage_dice": "2d6+1",
+            "properties": [
+                "heavy",
+                "two-handed",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 120,
+            "description": "Espada gigantesca banhada pelo fogo eterno, desferindo golpes avassaladores (+1 acerto/dano)."
+        },
+        "dagger": {
+            "id": "i_dagger",
+            "name": "Adaga de Caça",
+            "family": "agile_blades",
+            "type": "weapon_melee",
+            "damage_dice": "1d4",
+            "properties": [
+                "finesse",
+                "light",
+                "thrown"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 2,
+            "description": "Pequena lâmina afiada para golpes rápidos de oportunidade e arremesso."
+        },
+        "rapier": {
+            "id": "i_rapier",
+            "name": "Rapieira de Duelo",
+            "family": "agile_blades",
+            "type": "weapon_melee",
+            "damage_dice": "1d8",
+            "properties": [
+                "finesse"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 25,
+            "description": "Lâmina esguia e pontiaguda de precisão mortal para mestres da acuidade."
+        },
+        "serrated_dagger": {
+            "id": "i_serrated_dagger",
+            "name": "Adaga de Mithral Serrilhada +1",
+            "family": "agile_blades",
+            "type": "weapon_melee",
+            "damage_dice": "1d4+1",
+            "properties": [
+                "finesse",
+                "light",
+                "thrown",
+                "magic",
+                "crit_19_20"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "crit_threshold": 19,
+            "price_gold": 55,
+            "description": "Lâmina serrilhada em mithral estelar (+1 acerto/dano, crítico expandido 19-20)."
+        },
+        "mithral_dagger": {
+            "id": "i_mithral_dagger",
+            "name": "Adaga de Mithral",
+            "family": "agile_blades",
+            "type": "weapon_melee",
+            "damage_dice": "1d4+1",
+            "properties": [
+                "finesse",
+                "light",
+                "thrown",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 50,
+            "description": "Lâmina forjada em metal estelar ultraleve, com fio incomparável (+1 acerto/dano)."
+        },
+        "mace": {
+            "id": "i_mace",
+            "name": "Maça Flangeada",
+            "family": "blunt_sacred",
+            "type": "weapon_melee",
+            "damage_dice": "1d6",
+            "properties": [
+                "simple"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 5,
+            "description": "Arma contundente de ferro maciço preferida por clérigos e guardas."
+        },
+        "warhammer": {
+            "id": "i_warhammer",
+            "name": "Martelo de Guerra",
+            "family": "blunt_sacred",
+            "type": "weapon_melee",
+            "damage_dice": "1d8",
+            "damage_dice_two_handed": "1d10",
+            "properties": [
+                "versatile"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 15,
+            "description": "Martelo militar pesado capaz de afundar couraças (1d8 uma mão, 1d10 duas mãos)."
+        },
+        "blessed_hammer": {
+            "id": "i_blessed_hammer",
+            "name": "Martelo Abençoado do Alvorecer +1",
+            "family": "blunt_sacred",
+            "type": "weapon_melee",
+            "damage_dice": "1d8+1",
+            "damage_dice_two_handed": "1d10+1",
+            "properties": [
+                "versatile",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 70,
+            "description": "Martelo consagrado nos altares solares contra as forças das trevas (+1 acerto/dano)."
+        },
+        "blessed_mace": {
+            "id": "i_blessed_mace",
+            "name": "Maça Abençoada",
+            "family": "blunt_sacred",
+            "type": "weapon_melee",
+            "damage_dice": "1d6+1",
+            "properties": [
+                "simple",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 60,
+            "description": "Consagrada em santuários de luz divina contra as forças da escuridão (+1 acerto/dano)."
+        },
+        "shortbow": {
+            "id": "i_shortbow",
+            "name": "Arco Curto",
+            "family": "bows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d6",
+            "properties": [
+                "ammunition",
+                "two-handed"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 25,
+            "description": "Arco leve de madeira, ágil e equilibrado para combates a distância."
+        },
+        "longbow": {
+            "id": "i_longbow",
+            "name": "Arco Longo de Teixo",
+            "family": "bows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d8",
+            "properties": [
+                "ammunition",
+                "heavy",
+                "two-handed"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 50,
+            "description": "Arco alto de madeira de teixo com grande tensão e alcance letal."
+        },
+        "elven_longbow": {
+            "id": "i_elven_longbow",
+            "name": "Arco Élfico de Madeira-Cinza +1",
+            "family": "bows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d8+1",
+            "properties": [
+                "ammunition",
+                "heavy",
+                "two-handed",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 90,
+            "description": "Arco longo esculpido pelos mestres arqueiros élficos (+1 acerto/dano)."
+        },
+        "elven_shortbow": {
+            "id": "i_elven_shortbow",
+            "name": "Arco Curto Élfico",
+            "family": "bows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d6+1",
+            "properties": [
+                "ammunition",
+                "two-handed",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 75,
+            "description": "Forjado pelos artesãos das florestas sagradas, garante flechas velozes e letais (+1 acerto/dano)."
+        },
+        "light_crossbow": {
+            "id": "i_light_crossbow",
+            "name": "Besta Leve",
+            "family": "crossbows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d8",
+            "properties": [
+                "ammunition",
+                "loading",
+                "two-handed"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 25,
+            "description": "Besta mecânica de madeira e ferro que dispara virotes de alto impacto."
+        },
+        "hand_crossbow": {
+            "id": "i_hand_crossbow",
+            "name": "Besta de Mão",
+            "family": "crossbows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d6",
+            "properties": [
+                "ammunition",
+                "light",
+                "loading"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 75,
+            "description": "Besta compacta de uma mão, ideal para disparos rápidos nas sombras."
+        },
+        "reinforced_crossbow": {
+            "id": "i_reinforced_crossbow",
+            "name": "Besta Mecânica Reforçada +1",
+            "family": "crossbows",
+            "type": "weapon_ranged",
+            "damage_dice": "1d8+1",
+            "properties": [
+                "ammunition",
+                "loading",
+                "two-handed",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "price_gold": 85,
+            "description": "Besta aprimorada com roldanas de aço anão e mira calibrada (+1 acerto/dano)."
+        },
+        "wand": {
+            "id": "i_wand",
+            "name": "Varinha de Freixo",
+            "family": "foci_staves",
+            "type": "weapon_focus",
+            "damage_dice": "1d4",
+            "properties": [
+                "focus",
+                "light"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 10,
+            "description": "Foco arcano entalhado em madeira de freixo para canalizar feitiços."
+        },
+        "quarterstaff": {
+            "id": "i_quarterstaff",
+            "name": "Bordão de Carvalho",
+            "family": "foci_staves",
+            "type": "weapon_melee",
+            "damage_dice": "1d6",
+            "damage_dice_two_handed": "1d8",
+            "properties": [
+                "versatile",
+                "focus"
+            ],
+            "bonus_hit": 0,
+            "bonus_damage": 0,
+            "price_gold": 5,
+            "description": "Bastão resistente de carvalho antigo que serve como arma versátil e foco arcano."
+        },
+        "arcane_staff": {
+            "id": "i_arcane_staff",
+            "name": "Cajado Arcano do Vácuo +1",
+            "family": "foci_staves",
+            "type": "weapon_melee",
+            "damage_dice": "1d6+1",
+            "damage_dice_two_handed": "1d8+1",
+            "properties": [
+                "versatile",
+                "focus",
+                "magic"
+            ],
+            "bonus_hit": 1,
+            "bonus_damage": 1,
+            "bonus_spell_dc": 1,
+            "bonus_spell_hit": 1,
+            "price_gold": 110,
+            "description": "Cajado coroado com cristal astral (+1 acerto/dano, +1 CD de magia e +1 acerto mágico)."
+        }
+    },
+    "armor": {
+        "leather_armor": {
+            "id": "i_leather_armor",
+            "name": "Armadura de Couro",
+            "type": "armor_light",
+            "ac_bonus": 11,
+            "price_gold": 10,
+            "effect": "Armadura leve padrão (11 + mod DES)."
+        },
+        "shadow_leather": {
+            "id": "i_shadow_leather",
+            "name": "Couro Batido das Sombras",
+            "type": "armor_light",
+            "ac_bonus": 12,
+            "price_gold": 45,
+            "effect": "Armadura leve reforçada (12 + mod DES). Concede vantagem em Furtividade."
+        },
+        "breastplate": {
+            "id": "i_breastplate",
+            "name": "Peitoral de Aço",
+            "type": "armor_medium",
+            "ac_bonus": 14,
+            "price_gold": 50,
+            "effect": "Armadura média padrão (14 + mod DES máx 2)."
+        },
+        "adamantine_breastplate": {
+            "id": "i_adamantine_breastplate",
+            "name": "Peitoral de Adamante",
+            "type": "armor_medium",
+            "ac_bonus": 15,
+            "price_gold": 120,
+            "effect": "Armadura média em liga de adamante (15 + mod DES máx 2). Imunidade a acertos críticos."
+        },
+        "chain_mail": {
+            "id": "i_chain_mail",
+            "name": "Cota de Malha",
+            "type": "armor_heavy",
+            "ac_bonus": 16,
+            "price_gold": 75,
+            "effect": "Armadura pesada (CA 16). Desvantagem em testes de Furtividade."
+        },
+        "dwarven_chain_mail": {
+            "id": "i_dwarven_chain_mail",
+            "name": "Cota de Malha Anã",
+            "type": "armor_heavy",
+            "ac_bonus": 17,
+            "price_gold": 150,
+            "effect": "Armadura pesada forjada no coração da montanha (CA 17)."
+        },
+        "shield": {
+            "id": "i_shield",
+            "name": "Escudo de Carvalho",
+            "type": "shield",
+            "ac_bonus": 2,
+            "price_gold": 10,
+            "effect": "+2 na Classe de Armadura enquanto empunhado."
+        },
+        "heraldic_shield": {
+            "id": "i_heraldic_shield",
+            "name": "Escudo Heráldico Rúnico",
+            "type": "shield",
+            "ac_bonus": 3,
+            "price_gold": 80,
+            "effect": "+3 na Classe de Armadura enquanto empunhado."
+        },
+        "arcane_tunic": {
+            "id": "i_arcane_tunic",
+            "name": "Túnica Arcana",
+            "type": "armor_light",
+            "ac_bonus": 11,
+            "price_gold": 15,
+            "effect": "Veste leve tecida com fios arcanos (11 + mod DES)."
+        }
+    },
+    "accessories": {
+        "ring_protection": {
+            "id": "i_ring_protection",
+            "name": "Anel de Proteção",
+            "type": "accessory",
+            "slot": "ring",
+            "ac_bonus": 1,
+            "price_gold": 60,
+            "effect": "Um anel de prata que concede +1 na Classe de Armadura."
+        },
+        "ring_warding": {
+            "id": "i_ring_warding",
+            "name": "Anel Guardião Arcano",
+            "type": "accessory",
+            "slot": "ring",
+            "ac_bonus": 1,
+            "save_bonus": 1,
+            "price_gold": 90,
+            "effect": "Concede +1 na Classe de Armadura e +1 em todos os Testes de Resistência."
+        },
+        "amulet_health": {
+            "id": "i_amulet_health",
+            "name": "Amuleto de Vitalidade",
+            "type": "accessory",
+            "slot": "amulet",
+            "hp_max_bonus": 5,
+            "price_gold": 65,
+            "effect": "Pingente com gema rubi que concede +5 Pontos de Vida Máximos."
+        },
+        "amulet_radiance": {
+            "id": "i_amulet_radiance",
+            "name": "Amuleto de Radiância Sagrada",
+            "type": "accessory",
+            "slot": "amulet",
+            "hp_max_bonus": 10,
+            "price_gold": 110,
+            "effect": "Artefato radiante que concede +10 Pontos de Vida Máximos e emite aura sagrada."
+        },
+        "cloak_elvenkind": {
+            "id": "i_cloak_elvenkind",
+            "name": "Manto Élfico",
+            "type": "accessory",
+            "slot": "cloak",
+            "stealth_bonus": 2,
+            "price_gold": 50,
+            "effect": "Tecido camaleônico que concede +2 em testes de Furtividade."
+        },
+        "cloak_displacement": {
+            "id": "i_cloak_displacement",
+            "name": "Manto de Deslocamento",
+            "type": "accessory",
+            "slot": "cloak",
+            "ac_bonus": 1,
+            "price_gold": 85,
+            "effect": "Distorce a silhueta do herói, dificultando ataques inimigos (+1 CA)."
+        },
+        "boots_speed": {
+            "id": "i_boots_speed",
+            "name": "Botas de Agilidade",
+            "type": "accessory",
+            "slot": "boots",
+            "speed_bonus": 3,
+            "price_gold": 55,
+            "effect": "Botas leves que aumentam a velocidade de deslocamento em +3 metros."
+        },
+        "boots_striding": {
+            "id": "i_boots_striding",
+            "name": "Botas de Marcha Implacável",
+            "type": "accessory",
+            "slot": "boots",
+            "speed_bonus": 4.5,
+            "price_gold": 80,
+            "effect": "Aumentam o deslocamento em +4.5 metros e permitem ignorar terreno difícil."
+        },
+        "racial_human_signet": {
+            "id": "i_racial_human_signet",
+            "name": "Sinete da Coroa Partida",
+            "type": "accessory",
+            "slot": "accessory",
+            "save_bonus": 1,
+            "gold_bonus": 10,
+            "price_gold": 50,
+            "effect": "+1 em Testes de Resistência e +10 PO iniciais."
+        },
+        "racial_elf_cloak": {
+            "id": "i_racial_elf_cloak",
+            "name": "Manto de Folhas Cinzentas",
+            "type": "accessory",
+            "slot": "accessory",
+            "initiative_bonus": 1,
+            "stealth_bonus": 2,
+            "price_gold": 50,
+            "effect": "+1 na Iniciativa e +2 em Furtividade."
+        },
+        "racial_dwarf_rune": {
+            "id": "i_racial_dwarf_rune",
+            "name": "Runa da Pedra-Forja",
+            "type": "accessory",
+            "slot": "accessory",
+            "hp_max_bonus": 3,
+            "price_gold": 50,
+            "effect": "+3 Pontos de Vida Máximos adicionais."
+        },
+        "racial_halfling_coin": {
+            "id": "i_racial_halfling_coin",
+            "name": "Moeda da Sorte Antiga",
+            "type": "accessory",
+            "slot": "accessory",
+            "ac_bonus": 1,
+            "luck_bonus": 2,
+            "price_gold": 50,
+            "effect": "+1 na Classe de Armadura (CA) e +2 em Sorte."
+        },
+        "racial_dragon_scale": {
+            "id": "i_racial_dragon_scale",
+            "name": "Escama Ancestral Incandescente",
+            "type": "accessory",
+            "slot": "accessory",
+            "damage_bonus": 1,
+            "price_gold": 50,
+            "effect": "+1 no Dano de ataques e Arma de Sopro."
+        },
+        "racial_orc_tusk": {
+            "id": "i_racial_orc_tusk",
+            "name": "Presa de Ferro Sangrento",
+            "type": "accessory",
+            "slot": "accessory",
+            "melee_damage_bonus": 1,
+            "intimidation_bonus": 2,
+            "price_gold": 50,
+            "effect": "+1 no Dano corpo a corpo e +2 em Intimidação."
+        },
+        "racial_tiefling_seal": {
+            "id": "i_racial_tiefling_seal",
+            "name": "Selo de Brasas Abissais",
+            "type": "accessory",
+            "slot": "accessory",
+            "spell_bonus": 1,
+            "price_gold": 50,
+            "effect": "+1 no Acerto e CD de Magias."
+        }
+    },
+    "consumables": {
+        "healing_potion": {
+            "id": "i_potion_healing",
+            "name": "Poção de Cura",
+            "type": "consumable",
+            "mechanical_action": "heal",
+            "dice_value": "2d4+2",
+            "price_gold": 15,
+            "description": "Frasco de elixir avermelhado. Recupera 2d4+2 pontos de vida instantaneamente."
+        },
+        "greater_healing_potion": {
+            "id": "i_potion_greater_healing",
+            "name": "Poção de Cura Maior",
+            "type": "consumable",
+            "mechanical_action": "heal",
+            "dice_value": "4d4+4",
+            "price_gold": 45,
+            "description": "Frasco de elixir carmesim brilhante. Recupera 4d4+4 pontos de vida."
+        },
+        "scroll_of_revivify": {
+            "id": "i_scroll_revive",
+            "name": "Pergaminho de Ressurreição",
+            "type": "consumable",
+            "rarity": "legendary",
+            "price_gold": 200,
+            "mechanical_action": "revive",
+            "description": "Pergaminho sagrado lendário de revivificar. Traz de volta um herói ou aliado caído com metade do PV máximo."
+        },
+        "antidote": {
+            "id": "i_antidote",
+            "name": "Antídoto Menor",
+            "type": "consumable",
+            "mechanical_action": "cure_condition",
+            "condition_target": "poisoned",
+            "price_gold": 10,
+            "description": "Mistura botânica que neutraliza toxinas e remove a condição envenenado."
+        },
+        "elixir_purity": {
+            "id": "i_elixir_purity",
+            "name": "Elixir de Purificação Maior",
+            "type": "consumable",
+            "mechanical_action": "cure_all_conditions",
+            "price_gold": 35,
+            "description": "Essência alquímica purificadora que anula qualquer condição debilitante."
+        },
+        "rations": {
+            "id": "i_rations",
+            "name": "Rações de Viagem",
+            "type": "consumable",
+            "mechanical_action": "supply",
+            "supply_amount": 1,
+            "price_gold": 2,
+            "description": "Provisões secas nutritivas. Restaura 1 suprimento de acampamento."
+        },
+        "hearty_rations": {
+            "id": "i_hearty_rations",
+            "name": "Banquete de Suprimentos",
+            "type": "consumable",
+            "mechanical_action": "supply",
+            "supply_amount": 2,
+            "price_gold": 12,
+            "description": "Provisões fartas de luxo. Restaura 2 suprimentos de acampamento."
+        }
+    }
+}

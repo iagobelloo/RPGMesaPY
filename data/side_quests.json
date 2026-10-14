@@ -1,0 +1,188 @@
+{
+    "sq_goblin_clearing": {
+        "id": "sq_goblin_clearing",
+        "title": "O Covil dos Saqueadores",
+        "act": 1,
+        "recommended_level": 1,
+        "bg_image": "goblin_camp_bg.jpg",
+        "source": "Rumor obtido com um lenhador ensanguentado na Taverna do Dragão Acordado (Beat 1).",
+        "description": "Um bando oportunista de goblins saqueadores estabeleceu um acampamento fortificado nas ravinas ao sul. Aproveitando o pânico causado pelo avanço das cinzas do dragão, eles emboscam carroças de suprimentos de refugiados, acumulando provisões vitais e ouro.",
+        "dialogue_intro": "- Se você quer provar o fio da sua lâmina e encher a algibeira antes de marchar para a montanha, ouça com atenção - sussurra o taverneiro, apontando para o canto escuro. - Pequenos demônios de pele verde estão degolando batedores na ravina. Eles têm mais flechas e ouro roubado do que bom senso.",
+        "objectives": [
+            "Infiltrar-se na ravina e localizar o acampamento fortificado dos goblins",
+            "Neutralizar as sentinelas de arco e eliminar o chefe saqueador",
+            "Recuperar a carga de mantimentos e o baú de moedas roubadas"
+        ],
+        "enemies": [
+            "m_goblin",
+            "m_goblin",
+            "m_goblin",
+            "m_goblin"
+        ],
+        "rewards": {
+            "xp": 250,
+            "gold": 60,
+            "items": [
+                "i_shortbow",
+                "i_potion_healing"
+            ],
+            "supplies": 5
+        },
+        "associated_hero_id": "HERO-05"
+    },
+    "sq_forest_shrine": {
+        "id": "sq_forest_shrine",
+        "title": "O Altar Esquecido da Floresta",
+        "act": 1,
+        "recommended_level": 2,
+        "bg_image": "ancient_forest_ruins_bg.jpg",
+        "source": "Visão mística ou prece recebida nas ruínas da Floresta Sussurrante (Beat 3/4).",
+        "description": "Sob as raízes colossais da Floresta Sombria repousa um santuário élfico dedicado à Mãe das Folhas. A corrupção vulcânica atraiu bestas ferozes e aberrações rastejantes que profanam a pedra sagrada, estancando as águas restauradoras que mantêm a terra viva.",
+        "dialogue_intro": "A névoa úmida da floresta traz um lamento ancestral que reverbera nas copas das árvores. Uma voz tênue sussurra nos ventos: 'O coração de pedra do bosque foi quebrado. Onde corria a seiva da vida, agora brota o veneno. Purifique o altar, e a terra recompensará sua coragem com aço e vida.'",
+        "objectives": [
+            "Rastrear as oferendas profanadas até o círculo de megálitos élficos",
+            "Derrotar a aranha gigante das criptas e a matilha de lobos atrozes que guardam o altar",
+            "Restaurar o fluxo de água pura na bacia sagrada entalhada"
+        ],
+        "enemies": [
+            "m_giant_spider",
+            "m_dire_wolf",
+            "m_dire_wolf"
+        ],
+        "rewards": {
+            "xp": 450,
+            "gold": 90,
+            "items": [
+                "i_elven_shortbow",
+                "i_amulet_health"
+            ],
+            "supplies": 8
+        },
+        "associated_hero_id": "HERO-20"
+    },
+    "sq_bazaar_smugglers": {
+        "id": "sq_bazaar_smugglers",
+        "title": "A Rota das Sombras no Bazar",
+        "act": 2,
+        "recommended_level": 3,
+        "bg_image": "grand_bazaar_bg.jpg",
+        "source": "Contato do submundo ou informante de mercado negro encontrado nos arredores da Capital (Beat 6/7).",
+        "description": "Sob os toldos decadentes do Grande Bazar da Capital, uma rede clandestina de contrabandistas e assassinos estoca armas roubadas e poções ilícitas, extorquindo refugiados e vendendo segredos aos espiões do Tirano.",
+        "dialogue_intro": "- Nem tudo que brilha no bazar é ouro limpo - murmura uma figura sob uma capa de veludo gasta. - Os mercadores de ferro estão negociando com quem não deveriam. Derrube o bando que opera no armazém dos fundos e você colocará as mãos em aço que nenhum ferreiro comum ousa forjar.",
+        "objectives": [
+            "Localizar o entreposto clandestino oculto atrás das barracas de especiarias",
+            "Subjugar os guardas mercenários e o veterano desertor que comanda o tráfico",
+            "Confiscar o carregamento de adagas de mithral e couro escurecido"
+        ],
+        "enemies": [
+            "m_bandit",
+            "m_bandit",
+            "m_veteran"
+        ],
+        "rewards": {
+            "xp": 700,
+            "gold": 180,
+            "items": [
+                "i_mithral_dagger",
+                "i_shadow_leather",
+                "i_potion_greater_healing"
+            ],
+            "supplies": 10
+        },
+        "associated_hero_id": "HERO-06"
+    },
+    "sq_castle_dungeon": {
+        "id": "sq_castle_dungeon",
+        "title": "Os Ecos da Masmorra Real",
+        "act": 2,
+        "recommended_level": 4,
+        "bg_image": "capital_castle_bg.jpg",
+        "source": "Súplica de um cavaleiro da guarda nos corredores abandonados do Castelo da Capital (Beat 8).",
+        "description": "As masmorras abaixo da fortaleza real foram seladas às pressas quando a loucura tomou a corte. Prisioneiros e carrascos pereceram no escuro, mas agora armaduras de guarda animadas por magia residual e carcaças famintas vagam pelas celas, guardando relíquias de cavaleiros do reino caído.",
+        "dialogue_intro": "O som de ferro arrastando na pedra úmida ecoa das escadarias que descem à escuridão abaixo do castelo. 'Há coisas lá embaixo que o rei preferiu trancar em vez de enfrentar', avisa o guarda sobrevivente com os dentes trincados. 'Armaduras que marcham sem carne dentro e mortos que não descansam. Se descer, prepare seu escudo.'",
+        "objectives": [
+            "Descer aos níveis inferiores do calabouço abandonado da capital",
+            "Destruir a armadura animada de elite e os mortos-vivos carcerários",
+            "Destrancar a cela do tesouro real e resgatar o escudo heráldico lendário"
+        ],
+        "enemies": [
+            "m_animated_armor",
+            "m_skeleton",
+            "m_zombie_fast",
+            "m_zombie"
+        ],
+        "rewards": {
+            "xp": 950,
+            "gold": 240,
+            "items": [
+                "i_heraldic_shield",
+                "i_ring_protection"
+            ],
+            "supplies": 12
+        },
+        "associated_hero_id": "HERO-01"
+    },
+    "sq_undermountain_depths": {
+        "id": "sq_undermountain_depths",
+        "title": "O Horror Sob as Montanhas",
+        "act": 3,
+        "recommended_level": 4,
+        "bg_image": "undermountain_bg.jpg",
+        "source": "Inscrição rúnica anã de alerta ou alarme ressonante nas profundezas das minas (Beat 11/12).",
+        "description": "Nos salões mais profundos do complexo minerador sob as montanhas, brechas ancestrais se abriram para cavernas de magma e trevas abissais. Uma criatura quimérica e sombras devoradoras de força vital se aninharam nas grandes forjas, bloqueando a rota secreta que flanqueia o covil do Tirano.",
+        "dialogue_intro": "O calor subterrâneo vibra através da rocha sólida sob suas botas, mas o ar carrega um fedor acre de enxofre e carniça. 'As velhas forjas não estão silenciosas', avisa um entalhe rúnico ensanguentado na parede de basalto. 'O rugido de três feras ecoa nas chaminés. Não é fogo de ferreiro... é a quimera do abismo que despertou.'",
+        "objectives": [
+            "Descer pelas galerias de ventilação colapsadas até as forjas de adamante",
+            "Confrontar e aniquilar a quimera monstruosa que domina a câmara central",
+            "Dissipar as sombras incorpóreas que guardam o peitoral de adamante anão"
+        ],
+        "enemies": [
+            "m_chimera",
+            "m_shadow",
+            "m_shadow"
+        ],
+        "rewards": {
+            "xp": 1300,
+            "gold": 350,
+            "items": [
+                "i_adamantine_breastplate",
+                "i_runic_longsword",
+                "i_scroll_revive"
+            ],
+            "supplies": 15
+        },
+        "associated_hero_id": "HERO-09"
+    },
+    "sq_tomb_of_forbidden": {
+        "id": "sq_tomb_of_forbidden",
+        "title": "A Cripta dos Reis Condenados",
+        "act": 3,
+        "recommended_level": 5,
+        "bg_image": "tomb_of_horrors_bg.jpg",
+        "source": "Monólito profanado e tabuleta de ossos na borda do desfiladeiro vulcânico (Beat 13).",
+        "description": "A entrada da lendária Cripta Proibida só se revela quando a fumaça do vulcão cobre as estrelas. Ali jazem reis que tentaram barganhar com necromancia para deter o dragão no passado, aprisionados eternamente sob o comando de um senhor espectral que drena a sanidade de quem ousa desafiar a tumba.",
+        "dialogue_intro": "Runas de advertência esculpidas em crânios humanos cercam o portal de pedra obsidiana. O ar é tão gélido que sua respiração congela em partículas antes de tocar o solo aquecido pelo magma. 'Vocês que marcham contra o dragão já pertencem à morte', sussurra uma voz etérea dentro da sua própria mente. 'Paguem seu pedágio de sangue aos reis condenados ou juntem-se à nossa sepultura eterna.'",
+        "objectives": [
+            "Superar o corredor dos sarcófagos selados por necromancia antiga",
+            "Destruir a aparição espectral (Wraith) e as crias vorazes de vampiro que a protegem",
+            "Reivindicar a lendária grande espada rúnica e o amuleto de radiância solar"
+        ],
+        "enemies": [
+            "m_wraith",
+            "m_vampire_spawn",
+            "m_zombie_fast",
+            "m_zombie_fast"
+        ],
+        "rewards": {
+            "xp": 1800,
+            "gold": 500,
+            "items": [
+                "i_runic_greatsword",
+                "i_amulet_radiance",
+                "i_potion_greater_healing"
+            ],
+            "supplies": 20
+        },
+        "associated_hero_id": "HERO-33"
+    }
+}

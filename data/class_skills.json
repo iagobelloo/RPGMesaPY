@@ -1,0 +1,298 @@
+{
+    "Guerreiro": [
+        {
+            "id": "second_wind",
+            "name": "Retomar o Fôlego",
+            "tier": 1,
+            "level_req": 1,
+            "type": "ativa",
+            "description": "Usa sua ação bônus para recuperar 1d10 + Nível de Guerreiro em Pontos de Vida.",
+            "effect": {
+                "action_type": "heal_self",
+                "dice": "1d10",
+                "add_level": true
+            }
+        },
+        {
+            "id": "action_surge",
+            "name": "Surto de Ação",
+            "tier": 2,
+            "level_req": 2,
+            "type": "ativa",
+            "description": "Ultrapassa seus limites físicos para realizar uma ação adicional neste turno.",
+            "effect": {
+                "action_type": "extra_action",
+                "bonus_attacks": 1
+            }
+        },
+        {
+            "id": "champion_focus",
+            "name": "Foco do Campeão",
+            "tier": 3,
+            "level_req": 3,
+            "type": "passiva",
+            "description": "Seus ataques com armas marciais causam um Acerto Crítico com uma rolagem de 19 ou 20 no d20.",
+            "effect": {
+                "crit_threshold": 19
+            }
+        },
+        {
+            "id": "extra_attack_fighter",
+            "name": "Ataque Extra",
+            "tier": 5,
+            "level_req": 5,
+            "type": "passiva",
+            "description": "Você pode atacar duas vezes, em vez de uma, sempre que realizar a ação de Ataque no seu turno.",
+            "effect": {
+                "attacks_per_turn": 2,
+                "bonus_damage_dice": "1d8"
+            }
+        }
+    ],
+    "Clérigo": [
+        {
+            "id": "disciple_of_life",
+            "name": "Discípulo da Vida",
+            "tier": 1,
+            "level_req": 1,
+            "type": "passiva",
+            "description": "Suas magias de cura são mais eficazes, restaurando +2 + Nível da Magia em PV adicionais.",
+            "effect": {
+                "heal_bonus": 3
+            }
+        },
+        {
+            "id": "channel_divinity_preserve_life",
+            "name": "Canalizar Divindade: Preservar a Vida",
+            "tier": 2,
+            "level_req": 2,
+            "type": "ativa",
+            "description": "Evoca energia sagrada para restaurar até 5x o seu nível em PV divididos entre os aliados.",
+            "effect": {
+                "action_type": "aoe_heal",
+                "multiplier_level": 5
+            }
+        },
+        {
+            "id": "spiritual_weapon",
+            "name": "Arma Espiritual",
+            "tier": 3,
+            "level_req": 3,
+            "type": "ativa",
+            "description": "Cria uma arma espectral flutuante que realiza ataques de energia radiante (1d8 + mod SAB).",
+            "effect": {
+                "action_type": "bonus_attack",
+                "damage_dice": "1d8",
+                "damage_type": "radiant"
+            }
+        },
+        {
+            "id": "destroy_undead",
+            "name": "Destruir Mortos-Vivos",
+            "tier": 5,
+            "level_req": 5,
+            "type": "ativa",
+            "description": "Fulmina criaturas profanas e mortos-vivos com um pulso de luz solar devastador (4d6 radiante).",
+            "effect": {
+                "action_type": "aoe_damage",
+                "damage_dice": "4d6",
+                "damage_type": "radiant"
+            }
+        }
+    ],
+    "Mago": [
+        {
+            "id": "arcane_recovery",
+            "name": "Recuperação Arcana",
+            "tier": 1,
+            "level_req": 1,
+            "type": "ativa",
+            "description": "Estuda seu grimório durante um descanso para recuperar espaços de magia gastos.",
+            "effect": {
+                "action_type": "restore_slots",
+                "slots_restored": 1
+            }
+        },
+        {
+            "id": "sculpt_spells",
+            "name": "Esculpir Magias",
+            "tier": 2,
+            "level_req": 2,
+            "type": "passiva",
+            "description": "Cria bolsões de segurança em suas magias de área, protegendo aliados do dano elemental.",
+            "effect": {
+                "protect_allies_aoe": true,
+                "spell_dc_bonus": 1
+            }
+        },
+        {
+            "id": "potent_cantrip",
+            "name": "Truque Potente",
+            "tier": 3,
+            "level_req": 3,
+            "type": "passiva",
+            "description": "Seus truques de dano afetam até mesmo criaturas que desviam, aumentando o dano mágico em +2.",
+            "effect": {
+                "spell_damage_bonus": 2
+            }
+        },
+        {
+            "id": "arcane_overload",
+            "name": "Sobrecarga Arcana",
+            "tier": 5,
+            "level_req": 5,
+            "type": "passiva",
+            "description": "Domina o fluxo da Trama, adicionando +1d6 de dano extra a todas as magias ofensivas.",
+            "effect": {
+                "bonus_spell_damage_dice": "1d6"
+            }
+        }
+    ],
+    "Paladino": [
+        {
+            "id": "lay_on_hands",
+            "name": "Cura pelas Mãos",
+            "tier": 1,
+            "level_req": 1,
+            "type": "ativa",
+            "description": "Seu toque abençoado cura feridas críticas, restaurando 5x seu nível em PV.",
+            "effect": {
+                "action_type": "heal_touch",
+                "multiplier_level": 5
+            }
+        },
+        {
+            "id": "divine_smite",
+            "name": "Destruição Divina",
+            "tier": 2,
+            "level_req": 2,
+            "type": "passiva",
+            "description": "Canaliza fúria sagrada na lâmina ao acertar um ataque corpo a corpo, causando +2d8 de dano radiante.",
+            "effect": {
+                "bonus_damage_dice": "2d8",
+                "damage_type": "radiant"
+            }
+        },
+        {
+            "id": "sacred_oath_devotion",
+            "name": "Juramento de Devoção: Arma Sagrada",
+            "tier": 3,
+            "level_req": 3,
+            "type": "passiva",
+            "description": "Imbui sua arma com luz divina, concedendo +2 nas jogadas de ataque e dano sagrado.",
+            "effect": {
+                "attack_bonus": 2,
+                "damage_bonus": 2
+            }
+        },
+        {
+            "id": "extra_attack_paladin",
+            "name": "Ataque Extra",
+            "tier": 5,
+            "level_req": 5,
+            "type": "passiva",
+            "description": "Desfere dois golpes consagrados consecutivos sempre que realizar a ação de Ataque.",
+            "effect": {
+                "attacks_per_turn": 2,
+                "bonus_damage_dice": "1d8"
+            }
+        }
+    ],
+    "Patrulheiro": [
+        {
+            "id": "favored_enemy",
+            "name": "Inimigo Favorito",
+            "tier": 1,
+            "level_req": 1,
+            "type": "passiva",
+            "description": "Estudo letal da anatomia de monstros e dragões, concedendo +2 de dano em todos os ataques.",
+            "effect": {
+                "damage_bonus": 2
+            }
+        },
+        {
+            "id": "archery_style",
+            "name": "Estilo de Luta: Arquearia",
+            "tier": 2,
+            "level_req": 2,
+            "type": "passiva",
+            "description": "Você ganha +2 de bônus nas jogadas de ataque realizadas com armas de ataque à distância.",
+            "effect": {
+                "ranged_attack_bonus": 2,
+                "attack_bonus": 2
+            }
+        },
+        {
+            "id": "colossus_slayer",
+            "name": "Assassino de Colossos",
+            "tier": 3,
+            "level_req": 3,
+            "type": "passiva",
+            "description": "Sua tenacidade desgasta os inimigos feridos, causando +1d8 de dano extra uma vez por turno.",
+            "effect": {
+                "bonus_damage_dice": "1d8"
+            }
+        },
+        {
+            "id": "extra_attack_ranger",
+            "name": "Ataque Extra",
+            "tier": 5,
+            "level_req": 5,
+            "type": "passiva",
+            "description": "Dispara ou golpeia duas vezes seguidas com velocidade sobrenatural.",
+            "effect": {
+                "attacks_per_turn": 2,
+                "bonus_damage_dice": "1d8"
+            }
+        }
+    ],
+    "Ladino": [
+        {
+            "id": "sneak_attack",
+            "name": "Ataque Furtivo",
+            "tier": 1,
+            "level_req": 1,
+            "type": "passiva",
+            "description": "Sabe explorar a distração de um inimigo para causar +1d6 de dano extra em pontos vitais.",
+            "effect": {
+                "bonus_damage_dice": "1d6"
+            }
+        },
+        {
+            "id": "cunning_action",
+            "name": "Ação Astuta",
+            "tier": 2,
+            "level_req": 2,
+            "type": "ativa",
+            "description": "Sua agilidade permite Esquivar, Desengajar ou Esconder-se rapidamente no combate.",
+            "effect": {
+                "action_type": "evasion_stance",
+                "ac_temp_bonus": 2
+            }
+        },
+        {
+            "id": "assassinate",
+            "name": "Assassinar",
+            "tier": 3,
+            "level_req": 3,
+            "type": "passiva",
+            "description": "Letal nas sombras: margem de crítico expandida (19-20) e +1d6 adicional no Ataque Furtivo.",
+            "effect": {
+                "crit_threshold": 19,
+                "bonus_damage_dice": "1d6"
+            }
+        },
+        {
+            "id": "uncanny_dodge",
+            "name": "Esquiva Sobrenatural",
+            "tier": 5,
+            "level_req": 5,
+            "type": "passiva",
+            "description": "Quando um atacante que você possa ver o acerta, você usa seus reflexos para reduzir o dano e ganhar +2 CA.",
+            "effect": {
+                "ac_bonus": 2,
+                "damage_reduction_half": true
+            }
+        }
+    ]
+}

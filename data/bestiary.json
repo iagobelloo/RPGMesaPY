@@ -1,0 +1,302 @@
+{
+    "m_dire_wolf": {
+        "name": "Lobo Atroz",
+        "hp": 37,
+        "ac": 14,
+        "actions": [
+            {
+                "name": "Mordida",
+                "hit_bonus": 5,
+                "damage_dice": "2d6+3"
+            }
+        ]
+    },
+    "m_bandit": {
+        "name": "Bandido",
+        "hp": 11,
+        "ac": 12,
+        "actions": [
+            {
+                "name": "Cimitarra",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            }
+        ]
+    },
+    "m_goblin": {
+        "name": "Goblin",
+        "hp": 7,
+        "ac": 15,
+        "actions": [
+            {
+                "name": "Cimitarra",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ]
+    },
+    "m_orc": {
+        "name": "Orc",
+        "hp": 15,
+        "ac": 13,
+        "actions": [
+            {
+                "name": "Machado Grande",
+                "hit_bonus": 5,
+                "damage_dice": "1d12+3"
+            }
+        ]
+    },
+    "m_kobold": {
+        "name": "Kobold",
+        "hp": 5,
+        "ac": 12,
+        "actions": [
+            {
+                "name": "Adaga",
+                "hit_bonus": 4,
+                "damage_dice": "1d4+2"
+            }
+        ]
+    },
+    "m_veteran": {
+        "name": "Veterano",
+        "hp": 58,
+        "ac": 17,
+        "actions": [
+            {
+                "name": "Espada Longa",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            }
+        ]
+    },
+    "m_ochre_jelly": {
+        "name": "Geleia Ocre",
+        "hp": 45,
+        "ac": 8,
+        "actions": [
+            {
+                "name": "Pseudópode",
+                "hit_bonus": 4,
+                "damage_dice": "2d6+2"
+            }
+        ]
+    },
+    "m_giant_spider": {
+        "name": "Aranha Gigante",
+        "hp": 26,
+        "ac": 14,
+        "actions": [
+            {
+                "name": "Mordida",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            }
+        ]
+    },
+    "m_zombie": {
+        "name": "Zumbi",
+        "hp": 22,
+        "ac": 8,
+        "actions": [
+            {
+                "name": "Pancada",
+                "hit_bonus": 3,
+                "damage_dice": "1d6+1"
+            }
+        ]
+    },
+    "m_zombie_fast": {
+        "name": "Zumbi Veloz",
+        "hp": 22,
+        "ac": 10,
+        "actions": [
+            {
+                "name": "Pancada",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ]
+    },
+    "m_skeleton": {
+        "name": "Esqueleto",
+        "hp": 13,
+        "ac": 13,
+        "actions": [
+            {
+                "name": "Espada Curta",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ]
+    },
+    "m_vampire_spawn": {
+        "name": "Cria de Vampiro",
+        "hp": 82,
+        "ac": 15,
+        "actions": [
+            {
+                "name": "Garras",
+                "hit_bonus": 6,
+                "damage_dice": "2d4+4"
+            }
+        ]
+    },
+    "m_shadow": {
+        "name": "Sombra",
+        "hp": 16,
+        "ac": 12,
+        "actions": [
+            {
+                "name": "Dreno de Força",
+                "hit_bonus": 4,
+                "damage_dice": "2d6+2"
+            }
+        ]
+    },
+    "m_wraith": {
+        "name": "Aparição",
+        "hp": 67,
+        "ac": 13,
+        "actions": [
+            {
+                "name": "Dreno de Vida",
+                "hit_bonus": 6,
+                "damage_dice": "4d8+3"
+            }
+        ]
+    },
+    "m_manticore": {
+        "name": "Manticora",
+        "hp": 68,
+        "ac": 14,
+        "actions": [
+            {
+                "name": "Mordida",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            }
+        ]
+    },
+    "m_chimera": {
+        "name": "Quimera",
+        "hp": 114,
+        "ac": 14,
+        "actions": [
+            {
+                "name": "Mordida",
+                "hit_bonus": 7,
+                "damage_dice": "2d6+4"
+            }
+        ]
+    },
+    "m_ogre": {
+        "name": "Ogro",
+        "hp": 59,
+        "ac": 11,
+        "actions": [
+            {
+                "name": "Clava Grande",
+                "hit_bonus": 6,
+                "damage_dice": "2d8+4"
+            }
+        ]
+    },
+    "m_ogre_brute": {
+        "name": "Ogro Brutal",
+        "hp": 80,
+        "ac": 12,
+        "actions": [
+            {
+                "name": "Machado Gigante",
+                "hit_bonus": 7,
+                "damage_dice": "3d8+5"
+            }
+        ]
+    },
+    "m_animated_armor": {
+        "name": "Armadura Animada",
+        "hp": 33,
+        "ac": 18,
+        "actions": [
+            {
+                "name": "Pancada",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ]
+    },
+    "m_mimic": {
+        "name": "Mímico",
+        "hp": 58,
+        "ac": 12,
+        "actions": [
+            {
+                "name": "Pseudópode",
+                "hit_bonus": 5,
+                "damage_dice": "1d8+3"
+            }
+        ]
+    },
+    "m_gargoyle": {
+        "name": "Gárgula",
+        "hp": 52,
+        "ac": 15,
+        "actions": [
+            {
+                "name": "Garras",
+                "hit_bonus": 4,
+                "damage_dice": "1d6+2"
+            }
+        ]
+    },
+    "m_rakshasa": {
+        "name": "Rakshasa",
+        "hp": 110,
+        "ac": 16,
+        "actions": [
+            {
+                "name": "Garras",
+                "hit_bonus": 7,
+                "damage_dice": "2d6+2"
+            }
+        ]
+    },
+    "m_fire_giant": {
+        "name": "Gigante do Fogo",
+        "hp": 162,
+        "ac": 18,
+        "actions": [
+            {
+                "name": "Espada Grande",
+                "hit_bonus": 11,
+                "damage_dice": "6d6+7"
+            }
+        ]
+    },
+    "m_lich": {
+        "name": "Lich",
+        "hp": 135,
+        "ac": 17,
+        "actions": [
+            {
+                "name": "Toque Paralisante",
+                "hit_bonus": 12,
+                "damage_dice": "3d6"
+            }
+        ]
+    },
+    "m_supreme_dragon": {
+        "name": "Dragão Supremo",
+        "hp": 300,
+        "ac": 22,
+        "actions": [
+            {
+                "name": "Mordida",
+                "hit_bonus": 14,
+                "damage_dice": "2d10+8"
+            }
+        ]
+    }
+}
