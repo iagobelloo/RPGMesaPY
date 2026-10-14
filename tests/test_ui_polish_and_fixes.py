@@ -7,7 +7,10 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 
 from ui.asset_manager import AssetManager
-from ui.hud_components import GrimoireModal, BackpackModal, LoadingDiceAnimation, QuickActionBar, BESTIARY_LORE
+from ui.hud_components import (
+    GrimoireModal, BackpackModal, LoadingDiceAnimation, QuickActionBar,
+    BESTIARY_LORE, PlayerManualModal, clean_tofu_glyphs
+)
 from ui.scene_renderer import SceneRenderer
 
 
@@ -200,14 +203,14 @@ class TestUIPolishAndFixes(unittest.TestCase):
     # Tarefa 6: Escala do Token do Jogador (104px) e Hitboxes de Inimigos
     # -------------------------------------------------------------------------
     def test_player_token_scale_and_enemy_hitboxes(self):
-        """Verifica se token do jogador tem tamanho >= 100px (104px) e se inimigos registram hitboxes."""
+        """Verifica se token do jogador tem tamanho de 128px com aura e se inimigos registram hitboxes."""
         renderer = SceneRenderer(800, 600)
         players = [self.mock_game_state["player_character"]]
         hitboxes = renderer.draw_players(self.screen, players)
 
         self.assertIn("player", hitboxes, "Deve registrar hitbox do 'player'.")
-        self.assertEqual(hitboxes["player"].width, 104, "Token do jogador deve ter 104px de largura.")
-        self.assertEqual(hitboxes["player"].height, 104, "Token do jogador deve ter 104px de altura.")
+        self.assertEqual(hitboxes["player"].width, 128, "Token do jogador deve ter 128px de largura.")
+        self.assertEqual(hitboxes["player"].height, 128, "Token do jogador deve ter 128px de altura.")
 
         # Teste de cena com inimigo em combate
         class MockStory:
@@ -287,6 +290,91 @@ class TestUIPolishAndFixes(unittest.TestCase):
 
         # Renderização em combate sem erros
         bar.draw(self.screen)
+
+    # -------------------------------------------------------------------------
+    # Tarefa 9: PlayerManualModal (6 Capítulos e Navegação Zero Garbage)
+    # -------------------------------------------------------------------------
+    def test_player_manual_modal_chapters_and_navigation(self):
+        """Valida a interface visual do Manual do Jogador, 6 capítulos e navegação."""
+        modal = PlayerManualModal(50, 50, 840, 560)
+        self.assertEqual(len(modal.CHAPTERS), 6, "Manual deve conter exatamente 6 capítulos.")
+        self.assertEqual(len(modal.tab_rects), 6)
+        self.assertEqual(modal.current_chapter, 0)
+
+        # Desenho inicial com o capítulo 0
+        modal.is_visible = True
+        modal.draw(self.screen)
+
+        # Navegação via botão Próximo
+        click_next = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"button": 1, "pos": modal.btn_next.center})
+        modal.handle_event(click_next)
+        self.assertEqual(modal.current_chapter, 1)
+
+        # Navegação via aba lateral (Capítulo 4 - Índice 3)
+        tab_3_rect = modal.tab_rects[3]
+        click_tab_3 = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"button": 1, "pos": tab_3_rect.center})
+        modal.handle_event(click_tab_3)
+        self.assertEqual(modal.current_chapter, 3)
+
+        # Navegação via tecla Seta Esquerda
+        key_left = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_LEFT})
+        modal.handle_event(key_left)
+        self.assertEqual(modal.current_chapter, 2)
+
+        # Fechamento via ESC
+        key_esc = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_ESCAPE})
+        act = modal.handle_event(key_esc)
+        self.assertEqual(act, "close")
+        self.assertFalse(modal.is_visible)
+
+    # -------------------------------------------------------------------------
+    # Tarefa 10: Downscaling Progressivo com Suavização e Caching
+    # -------------------------------------------------------------------------
+    def test_asset_manager_progressive_downscale(self):
+        """Valida se o downscaling progressivo reduz em múltiplos passos e armazena em cache."""
+        large_surf = pygame.Surface((512, 512))
+        large_surf.fill((200, 150, 50))
+        target_size = (64, 64)
+
+        scaled = AssetManager.progressive_downscale(large_surf, target_size)
+        self.assertEqual(scaled.get_size(), target_size)
+
+        cache_key = (id(large_surf), target_size, "progressive")
+        self.assertIn(cache_key, AssetManager._scaled_cache)
+        cached_scaled = AssetManager.progressive_downscale(large_surf, target_size)
+        self.assertIs(scaled, cached_scaled, "Deve reutilizar a superfície em cache sem re-renderizar.")
+
+    # -------------------------------------------------------------------------
+    # Tarefa 11: Higienização de Caracteres Tofu / Quadrados Brancos
+    # -------------------------------------------------------------------------
+    def test_clean_tofu_glyphs(self):
+        """Garante que caracteres exóticos são limpos ou mapeados para símbolos seguros."""
+        self.assertEqual(clean_tofu_glyphs("⚔ Atacar ★"), "Atacar")
+        self.assertEqual(clean_tofu_glyphs("🛡 Armadura"), "Armadura")
+        self.assertEqual(clean_tofu_glyphs("♂ Guerreiro"), "Guerreiro")
+        self.assertEqual(clean_tofu_glyphs("♀ Clériga"), "Clériga")
+        self.assertEqual(clean_tofu_glyphs("Missão ➔ Alvo"), "Missão -> Alvo")
+        self.assertEqual(clean_tofu_glyphs("Inimigo 🔒"), "Inimigo")
+
+    # -------------------------------------------------------------------------
+    # Tarefa 12: Retrato do Jogador no Chat e Identificador [Você]
+    # -------------------------------------------------------------------------
+    def test_scene_renderer_chat_dialog_player_portrait(self):
+        """Valida formatação e renderização do retrato do jogador nas mensagens do chat."""
+        renderer = SceneRenderer(800, 600)
+        renderer.current_player = self.mock_game_state["player_character"]
+
+        player_msg = {
+            "text": "Empunho minha espada e me posiciono à frente do grupo!",
+            "type": "player",
+            "npc_falando": "Eldrin Valerius"
+        }
+        formatted = renderer._format_chat_message(player_msg, 320)
+        self.assertTrue(formatted["has_portrait"], "Mensagem do jogador deve possuir retrato.")
+        self.assertEqual(formatted["msg_type"], "player")
+
+        # Teste de desenho do chat com mensagem do jogador sem crash
+        renderer.draw_side_dialog_panel(self.screen, player_msg)
 
 
 if __name__ == "__main__":

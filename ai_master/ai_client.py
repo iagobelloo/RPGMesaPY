@@ -46,6 +46,7 @@ class AIGameMaster:
         self.system_instruction = (
             f"{guidelines}\n\n"
             "INSTRUÇÕES TÉCNICAS E DE COMBATE DE MAELOR:\n"
+            "- CONCORDÂNCIA DE GÊNERO: Sempre identifique o gênero do personagem (masculino/feminino) e flexione gramaticalmente todas as descrições, títulos, pronomes e falas de NPCs com precisão absoluta.\n"
             "- MATEMÁTICA DE COMBATE E TESTES: Para ataques, compare o 'dice_roll_result' do jogador com a CA (Armor Class) do monstro/inimigo. Se o resultado >= CA, o jogador acerta (aplique dano ao inimigo via 'damage_applied'). Se o resultado < CA, a ação falha e você deve engatilhar um contra-ataque ou consequência (Fail Forward). Para testes de perícia, defina uma CD silenciosa na sua mente (ex: CD 15) e julgue o sucesso/falha.\n"
             "- REGRA DE OURO DOS ALIADOS: Nos Beats 1 a 14, o protagonista viaja e luta sozinho. Aliados encontrados selam juramentos e partem para se preparar; eles só lutam juntos no Beat 15 (Covil do Tirano).\n"
             "- MEMÓRIA: Introduza NPCs com 'register_npc' na primeira aparição.\n"
@@ -130,17 +131,29 @@ class AIGameMaster:
         abilities = ", ".join(char_data.get('abilities', []))
         proficiencies = ", ".join(char_data.get('proficiencies', []))
         
+        raca_val = char_data.get('race') or char_data.get('raca') or 'Humano'
+        classe_val = char_data.get('class') or char_data.get('classe') or 'Guerreiro'
+        bg_val = char_data.get('background') or char_data.get('antecedente') or 'Forasteiro'
+        tendencia_val = char_data.get('alignment') or char_data.get('tendencia') or 'Neutro'
+
         prompt = (f"Baseado nesta exata combinação de:\n"
-                  f"- Raça: {char_data['race']}\n"
-                  f"- Classe: {char_data['class']} (Habilidades: {abilities}, Proficiências: {proficiencies})\n"
-                  f"- Antecedente: {char_data.get('background')} (Inventário: {equipments})\n"
-                  f"- Tendência: {char_data.get('alignment')}\n\n"
+                  f"- Raça: {raca_val}\n"
+                  f"- Classe: {classe_val} (Habilidades: {abilities}, Proficiências: {proficiencies})\n"
+                  f"- Antecedente: {bg_val} (Inventário: {equipments})\n"
+                  f"- Tendência: {tendencia_val}\n\n"
                   f"Elabore as 3 perguntas em formato JSON estrito.")
                   
+        genero_raw = str(char_data.get('gender') or char_data.get('genero') or 'male').lower().strip()
+        is_female = genero_raw in ['female', 'feminino', 'f', 'mulher']
+        artigo = "uma" if is_female else "um"
+        classe_str = self._format_gender_class(classe_val, is_female)
+        bg_str = self._format_gender_background(bg_val, is_female)
+        pronome_obj = "a" if is_female else "o"
+        
         fallback = [
-            f"Como sua vivência como {char_data.get('background')} te preparou para a crueldade do mundo lá fora?",
-            f"O que foi mais difícil no seu treinamento para se tornar um {char_data['class']} em um reino implacável?",
-            "O vento corta lá fora. O que exatamente o trouxe a esta taverna imunda nesta noite?"
+            f"Como sua vivência como {bg_str} te preparou para a crueldade do mundo lá fora?",
+            f"O que foi mais difícil no seu treinamento para se tornar {artigo} {classe_str} em um reino implacável?",
+            f"O vento corta lá fora. O que exatamente {pronome_obj} trouxe a esta taverna imunda nesta noite?"
         ]
         
         try:
@@ -169,6 +182,7 @@ class AIGameMaster:
             "1. FILTRO DE IMERSÃO: Proibido inventar lore ou histórias novas não citadas. Foque nos fatos crus fornecidos.\n"
             "2. FORMATO: Exatamente 1 parágrafo denso (máximo 5 linhas).\n"
             "3. CENA FINAL OBRIGATÓRIA: O texto TEM QUE terminar no PRESENTE. O herói está sentado na Taverna manuseando algum equipamento específico de sua ficha, quando a pesada porta de carvalho é estilhaçada revelando uma ameaça iminente.\n"
+            "4. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero do personagem (masculino/feminino). Se for feminino ('gender': 'female'), flexione todos os artigos, substantivos, pronomes e adjetivos no feminino (ex: 'Como uma guerreira experiente forjada...', 'sozinha', 'pronta', 'atenta'). Se for masculino, flexione no masculino.\n"
             "GOLDEN RULE: NEVER end your response with questions to the player (e.g., 'What do you do?'). Always end with a descriptive statement and passively wait for the user's action."
         )
         
@@ -194,7 +208,12 @@ class AIGameMaster:
             nome = char_data.get('name', 'Viajante')
             raca = char_data.get('race', 'Humano')
             classe = char_data.get('class', 'Guerreiro')
-            return f"O cheiro de suor e cinzas domina o ar. Como um {raca} {classe}, você, {nome}, aperta o cabo da arma enquanto a porta de carvalho é arrancada, revelando o perigo imediato."
+            genero_raw = str(char_data.get('gender') or char_data.get('genero') or 'male').lower().strip()
+            is_female = genero_raw in ['female', 'feminino', 'f', 'mulher']
+            artigo = "uma" if is_female else "um"
+            raca_str = self._format_gender_race(raca, is_female)
+            classe_str = self._format_gender_class(classe, is_female)
+            return f"O cheiro de suor e cinzas domina o ar. Como {artigo} {raca_str} {classe_str}, você, {nome}, aperta o cabo da arma enquanto a porta de carvalho é arrancada, revelando o perigo imediato."
 
     def parse_player_action(self, player_input: str, available_backgrounds: list, lista_bestiario: list = None, context: dict = None, **kwargs) -> dict:
         """
@@ -303,61 +322,112 @@ class AIGameMaster:
         local_alvo = []
         local_intencao = f"O jogador decide {player_input}."
         
-        # 1. Procura de Missões / Contratos / Trabalho na Taverna
+        # 1. Perigos lá fora / Trilha dos Enforcados / O que o espera na estrada
         if any(w in p_low for w in [
+            "o que me espera", "o que tem la fora", "o que tem lá fora", "o que ha la fora", "o que há lá fora",
+            "perigos da estrada", "perigos la fora", "perigos lá fora", "trilha dos enforcados", "enforcados",
+            "o que esperar la fora", "o que esperar lá fora", "como e la fora", "como é lá fora",
+            "o que me aguarda", "perigos do lado de fora", "monstros la fora", "monstros lá fora"
+        ]):
+            local_tipo = "DIALOGAR"
+            local_alvo = ["Taverneiro"]
+            local_intencao = "O herói indaga sobre os perigos da estrada, a Trilha dos Enforcados e o que o espera lá fora."
+
+        # 2. Rumores / Trabalhos disponíveis / Como aceitar missões / Mural de contratos
+        elif any(w in p_low for w in [
+            "como aceitar missao", "como aceitar missão", "como aceitar contrato", "como aceitar contratos",
+            "como pegar missao", "como pegar missão", "como pegar contrato", "como funciona o quadro",
+            "como funciona o mural", "onde pego missao", "onde pego missão", "onde pego trabalho",
+            "onde pegar missao", "onde pegar missão", "onde pegar trabalho", "como aceitar",
             "procura de uma missao", "procura de uma missão", "procurando missao", "procurando missão",
             "procuro missao", "procuro missão", "quero missao", "quero missão", "buscar missao", "buscar missão",
             "procura de missao", "procura de missão", "procura de trabalho", "procurando trabalho",
             "procuro trabalho", "quero trabalho", "procura de contrato", "procurando contrato",
             "procuro contrato", "quero um contrato", "quero contrato", "quadro de avisos", "mural de contratos",
             "trabalho na taverna", "missao na taverna", "missão na taverna", "tem alguma missao", "tem alguma missão",
-            "algum trabalho", "algum contrato", "missões disponíveis", "missoes disponiveis"
-        ]) or (any(w in p_low for w in ["missao", "missão", "trabalho", "contrato"]) and any(w in p_low for w in ["procura", "procuro", "busco", "buscar", "quero", "queria", "disponivel", "disponível", "tem", "ha", "há"])):
+            "algum trabalho", "algum contrato", "missões disponíveis", "missoes disponiveis", "trabalhos disponíveis",
+            "trabalhos disponiveis", "contratos disponíveis", "contratos disponiveis"
+        ]) or (any(w in p_low for w in ["missao", "missão", "trabalho", "contrato"]) and any(w in p_low for w in ["procura", "procuro", "busco", "buscar", "quero", "queria", "disponivel", "disponível", "tem", "ha", "há", "aceitar", "pegar"])):
             local_tipo = "DIALOGAR"
-            local_intencao = "O herói procura informações sobre trabalhos e missões disponíveis na taverna."
+            local_alvo = ["Taverneiro"]
+            local_intencao = "O herói procura saber sobre rumores, trabalhos disponíveis e como aceitar missões na taverna."
 
-        # 2. Conversas / Diálogos com NPCs / Pedidos de Bebida / Rumores na Taverna
+        # 3. Diálogos com o Menestrel Maelor (Canção, Tirano das Cinzas, Orbe Quebra-Chamas)
+        elif any(w in p_low for w in [
+            "pedir uma cancao", "pedir uma canção", "pedir cancao", "pedir canção", "tocar uma musica",
+            "tocar uma música", "tocar uma cancao", "tocar uma canção", "toque seu alaude", "toque seu alaúde",
+            "tocar alaude", "tocar alaúde", "cantar uma balada", "pedir musica", "pedir música",
+            "tirano das cinzas", "o tirano", "sobre o tirano", "dragao supremo", "dragão supremo",
+            "falar sobre o dragao", "falar sobre o dragão", "perguntar sobre o tirano", "quem e o tirano",
+            "quem é o tirano", "como derrotar o tirano", "lenda do dragao", "lenda do dragão",
+            "orbe quebra-chamas", "orbe quebra chamas", "orbe sagrado", "perguntar sobre o orbe",
+            "o que e o orbe", "o que é o orbe", "onde esta o orbe", "onde está o orbe", "invulnerabilidade do dragao",
+            "invulnerabilidade do dragão", "anular o sopro", "falar com maelor", "conversar com maelor",
+            "ouvir maelor", "perguntar ao bardo", "falar com o bardo", "conversar com o menestrel", "ouvir bardo",
+            "falar com bardo"
+        ]) or (any(w in p_low for w in ["maelor", "menestrel", "bardo"]) and any(w in p_low for w in ["falar", "conversar", "perguntar", "chamar", "ouvir", "pedir", "musica", "música", "cancao", "canção"])):
+            local_tipo = "DIALOGAR"
+            local_alvo = ["Maelor"]
+            if any(w in p_low for w in ["orbe", "relicario", "relicário"]):
+                local_intencao = "O herói indaga o menestrel Maelor sobre o místico Orbe Quebra-Chamas e seu poder ancestral."
+            elif any(w in p_low for w in ["tirano", "dragao", "dragão"]):
+                local_intencao = "O herói pergunta ao menestrel Maelor sobre a lenda do Tirano das Cinzas e os perigos da montanha."
+            elif any(w in p_low for w in ["cancao", "canção", "musica", "música", "tocar", "balada", "alaude", "alaúde"]):
+                local_intencao = "O herói pede ao menestrel Maelor uma canção sobre as tragédias e lendas da terra das cinzas."
+            else:
+                local_intencao = "O herói se aproxima do menestrel Maelor para conversar sobre canções e histórias da terra."
+
+        # 4. Conversas Cotidianas com o Taverneiro (Bebida, Pagar Conta, Clima, Reino)
         elif any(w in p_low for w in [
             "conversar com", "falar com", "perguntar ao", "perguntar para", "chamar o", "dialogar",
-            "taverneiro", "bardo", "maelor", "garcom", "garçom", "balconista",
-            "pedir uma cerveja", "pedir cerveja", "pedir bebida", "pedir vinho", "pedir guisado", "pedir comida",
-            "comprar cerveja", "pagar uma caneca", "uma caneca de", "caneca de cerveja",
+            "taverneiro", "garcom", "garçom", "balconista",
+            "pedir uma cerveja", "pedir cerveja", "pedir bebida", "pedir vinho", "pedir hidromel", "pedir guisado", "pedir comida",
+            "comprar cerveja", "pagar uma caneca", "uma caneca de", "caneca de cerveja", "despeje um trago",
+            "pagar a conta", "pagar conta", "quanto devo", "fechar a conta", "pagar o taverneiro", "aqui esta o ouro", "aqui está o ouro",
+            "quanto custa", "pagar a caneca", "pagar caneca",
+            "falar sobre o clima", "falar do clima", "como esta o tempo", "como está o tempo", "clima la fora", "clima lá fora",
+            "tempo la fora", "tempo lá fora", "chuva de cinzas", "falar sobre o tempo",
+            "falar sobre o reino", "falar do reino", "como esta o reino", "como está o reino", "o que aconteceu com o reino",
+            "situacao do reino", "situação do reino", "noticias do reino", "notícias do reino", "falar sobre o rei", "falar do rei",
             "ouvir rumores", "escutar rumores", "ouvir boatos", "escutar boatos", "ouvir conversas",
             "conversar na taverna", "puxar conversa"
         ]):
             local_tipo = "DIALOGAR"
-            if any(w in p_low for w in ["cerveja", "bebida", "vinho", "caneca", "guisado", "comida"]):
+            local_alvo = ["Taverneiro"]
+            if any(w in p_low for w in ["pagar", "conta", "quanto devo", "fechar a conta", "ouro", "cobre", "moedas", "quanto custa"]):
+                local_intencao = "O herói acerta as contas e paga o taverneiro pelas despesas de sua mesa."
+            elif any(w in p_low for w in ["clima", "tempo", "chuva", "vento"]):
+                local_intencao = "O herói puxa conversa com o taverneiro sobre o clima opressivo e a tempestade de cinzas."
+            elif any(w in p_low for w in ["reino", "rei", "corte", "situacao", "situação", "noticia", "notícia"]):
+                local_intencao = "O herói indaga o taverneiro sobre a decadência do reino e o destino da corte diante do Tirano."
+            elif any(w in p_low for w in ["cerveja", "bebida", "vinho", "hidromel", "caneca", "guisado", "comida", "trago"]):
                 local_intencao = "O herói pede uma bebida e comida no balcão da taverna enquanto observa o ambiente."
             elif any(w in p_low for w in ["rumor", "rumores", "boato", "boatos"]):
                 local_intencao = "O herói apura os ouvidos para ouvir rumores e conversas na taverna."
-            elif any(w in p_low for w in ["maelor", "bardo", "menestrel"]):
-                local_intencao = "O herói se aproxima do menestrel Maelor para conversar sobre canções e histórias da terra."
-            elif any(w in p_low for w in ["taverneiro", "balconista"]):
-                local_intencao = "O herói se aproxima do taverneiro de um olho só para conversar."
             else:
-                local_intencao = f"O herói inicia um diálogo: {player_input}."
+                local_intencao = f"O herói inicia um diálogo com o taverneiro: {player_input}."
 
-        # 3. Observação do Cenário
+        # 5. Observação do Cenário
         elif any(w in p_low for w in ["olhar ao redor", "observar taverna", "olhar taverna", "examinar taverna", "observar o local", "examinar o local", "vasculhar taverna"]):
             local_tipo = "INTERAGIR_CENARIO"
             local_intencao = "O herói observa atentamente o movimento e as figuras presentes na taverna."
 
-        # 4. Descanso
+        # 6. Descanso
         elif any(w in p_low for w in ["descansar", "dormir", "repousar", "descanso"]):
             local_tipo = "DESCANSAR"
             local_intencao = "O jogador procura um lugar para descansar e recuperar forças."
 
-        # 5. Subir Nível
+        # 7. Subir Nível
         elif any(w in p_low for w in ["subir nivel", "subir de nivel", "level up", "upar", "evoluir"]):
             local_tipo = "SUBIR_NIVEL"
             local_intencao = "O herói canaliza sua experiência acumulada para subir de nível."
 
-        # 6. Avançar História (com proteção contra falsos positivos)
+        # 8. Avançar História (com proteção contra falsos positivos)
         elif (
             any(w in p_low for w in ["proximo beat", "próximo beat", "avancar na estrada", "avançar na estrada", "seguir viagem", "pegar a estrada", "partir para a estrada", "viajar para a estrada", "avancar historia", "avançar história", "avancar campanha", "avançar campanha", "ir para o vulcao", "ir para o vulcão", "partir da taverna", "sair da taverna"])
             or (
                 any(w in p_low for w in ["sair", "viajar", "partir", "avancar", "avançar"])
-                and not any(w in p_low for w in ["mesa", "canto", "balcao", "balcão", "missao", "missão", "trabalho", "contrato", "falar", "conversar", "taverneiro", "cerveja", "pedir"])
+                and not any(w in p_low for w in ["mesa", "canto", "balcao", "balcão", "missao", "missão", "trabalho", "contrato", "falar", "conversar", "taverneiro", "cerveja", "pedir", "espera", "fora", "perigo", "trilha", "como", "o que", "quanto"])
             )
         ):
             local_tipo = "AVANCAR_HISTORIA"
@@ -499,6 +569,7 @@ class AIGameMaster:
             "8. ENQUADRAMENTO ESPACIAL E GANCHOS DE AÇÃO: Ao final da narração, sempre situe onde o herói se encontra e apresente de 2 a 3 possibilidades naturais de ação ou investigação para devolver a agência ao jogador.\n"
             "9. VOCÊ DEVE RETORNAR ESTRITAMENTE UM JSON NO SEGUINTE FORMATO:\n"
             "{\"texto\": \"Sua narrativa imersiva aqui\", \"npc_falando\": \"Nome do NPC ou null\"}\n"
+            "10. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável na prosa e nos diálogos de NPCs (ex: se o herói for feminino, use 'uma guerreira', 'ela avança', 'curada', 'ferida', 'atenta', 'sozinha').\n"
         )
         
         # Tratamento da injeção do Lore caso venha vazio nas primeiras rodadas
@@ -539,18 +610,19 @@ class AIGameMaster:
             parsed_json = self._extract_and_parse_json(raw_text, is_narrative=True)
             texto_narrativa = parsed_json.get("texto", "")
             
-            # Adiciona ao histórico (Sliding Window)
-            self.chat_history.append({"user": player_action, "dm": texto_narrativa})
-            # Mantém apenas as últimas 5 interações
-            if len(self.chat_history) > 5:
-                self.chat_history.pop(0)
+            # Adiciona ao histórico (Sliding Window) evitando duplicação de mensagens idênticas
+            if not self.chat_history or self.chat_history[-1].get("user") != player_action or self.chat_history[-1].get("dm") != texto_narrativa:
+                self.chat_history.append({"user": player_action, "dm": texto_narrativa})
+                # Mantém apenas as últimas 5 interações
+                if len(self.chat_history) > 5:
+                    self.chat_history.pop(0)
                 
             return parsed_json
         except Exception as e:
             print(f"[ERRO] Falha ao gerar narrativa na Fase 2: {e}")
             return self._extract_and_parse_json("ERRO", is_narrative=True)
 
-    def generate_narrative_from_math(self, combat_log: str, intencao_cena: str) -> str:
+    def generate_narrative_from_math(self, combat_log: str, intencao_cena: str, ui_queue: Optional[Any] = None) -> str:
         """
         Fase 2 - The Visceral Narrator (Bloco 30).
         Traduz o log matemático em narrativa visceral Dark Fantasy na voz de Maelor das Cordas de Cinza.
@@ -567,6 +639,7 @@ class AIGameMaster:
             "5. ALTERNÂNCIA E REFLEXO DE EQUIPAMENTO: Reflita com exatidão a arma ou equipamento atualmente em punho nos ataques e ações (o equilíbrio da espada longa, a empunhadura gasta da adaga, a vibração do arco), dando textura física a cada golpe ou troca de postura.\n"
             "6. RESSONÂNCIA SENSORIAL DAS HABILIDADES DE CLASSE: Quando o log do sistema ou a intenção indicar ativação ou aprendizado de habilidades de classe icônicas (o clarão ofuscante de um Smite divino, o fôlego recuperado com dentes cerrados no Retomar o Fôlego/Second Wind, a flecha marcada sibilando nas sombras com a Marca do Caçador, o golpe furtivo abrindo a jugular no Ataque Furtivo, ou o escudo arcano desviando o aço), traduza em impacto sensorial potente e épico.\n"
             "7. ENQUADRAMENTO ESPACIAL E GANCHOS SITUACIONAIS: Conclua a narração situando o herói na cena e apresentando sutilmente de 2 a 3 possibilidades naturais de ação ou ganchos para onde ele pode olhar, interagir ou se mover (ex: 'Diante de você, o taverneiro limpa o balcão desconfiado, enquanto risadas ecoam ao fundo. Você pode puxar conversa, observar as redondezas ou pedir uma caneca.'). Dê agência ao jogador!\n"
+            "8. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável na prosa e nos diálogos de NPCs (ex: 'ela desfere o golpe', 'atenta às sombras', 'uma clériga destemida', 'sozinha na estrada').\n"
             "\nREGRAS DE CONTEXTO ESPECÍFICO:\n"
             "- Interação/Exploração/Hub: Aja como Maelor observando a cena. Incorpore falas de NPCs, rumores da taverna ou perigos do ambiente.\n"
             "- Itens e Cura: Narre o frasco se partindo, o líquido amargo queimando na garganta e o fechamento doloroso da carne ferida.\n"
@@ -591,10 +664,17 @@ class AIGameMaster:
                     temperature=0.6,
                 )
             )
-            return response.text.strip() if response.text else self._create_visceral_fallback(combat_log, intencao_cena)
+            narrative = response.text.strip() if response.text else self._create_visceral_fallback(combat_log, intencao_cena)
         except Exception as e:
             print(f"[ERRO] Falha ao gerar narrativa visceral (ativando fallback seguro): {e}")
-            return self._create_visceral_fallback(combat_log, intencao_cena)
+            narrative = self._create_visceral_fallback(combat_log, intencao_cena)
+
+        if ui_queue is not None:
+            try:
+                ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
+            except Exception:
+                pass
+        return narrative
 
     def _create_visceral_fallback(self, combat_log: str, intencao_cena: str) -> str:
         """Fallback narrativo imersivo na voz de Maelor das Cordas de Cinza."""
@@ -650,38 +730,102 @@ class AIGameMaster:
                     break
             return f"O aço ressoa ao ser desembainhado na névoa; seus dedos ajustam o aperto firme no cabo {recurso_citado}, sentindo o peso e o equilíbrio mortal do equipamento sob as cinzas."
 
-        # 5. Juramento de Herói Aliado
+        # 6. Juramento de Herói Aliado
         if any(w in intencao_lower or w in log_lower for w in ["juramento", "aliado", "recrut", "pacto", "honra", "jurou"]):
             return "O aço toca o peito em solene promessa. O aliado sela o juramento de honra e sangue: ele recolhe seus pertences e parte para aguardar o chamado da marcha para a batalha final contra o Tirano."
 
-        # 6. Viagem para Side Quest / Covil / Altar
+        # 7. Viagem para Side Quest / Covil / Altar
         if any(w in intencao_lower or w in log_lower for w in ["covil", "altar"]) or (any(w in intencao_lower or w in log_lower for w in ["viagem", "partindo", "trilha"]) and any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "missao", "missão"])):
             return "A trilha cinzenta se estende sob um céu sufocado por fuligem. Seus passos solitários quebram o silêncio da terra desolada enquanto a aproximação cautelosa revela os perigos e provisões do covil."
 
-        # 7. Conclusão de Side Quest / Contrato
+        # 8. Conclusão de Side Quest / Contrato
         if any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "contrato", "resgate"]):
             return "O contrato sangrento chega ao fim. As cinzas assentam e a justa recompensa é tomada, enquanto os ecos da missão se dissipam na bruma da terra desolada."
 
-        # 7. Reatividade de Aliados e Rumores no Hub da Taverna (Item 4.1)
+        # 9. Reatividade de Aliados e Rumores no Hub da Taverna (Item 4.1)
         if "[rumores da taverna]" in log_lower or "[rumor" in log_lower or (any(w in intencao_lower or w in log_lower for w in ["taverna", "rumor", "conversa", "balcão"]) and any(w in log_lower for w in ["juramento", "aliado", "guerreiro", "leal"])):
             return "Maelor das Cordas de Cinza dedilha uma melodia solene no alaúde carcomido ao canto da lareira. Entre goles de cerveja amarga, sussurros confirmam a vigília leal dos guerreiros juramentados nos contrafortes da montanha e passos escuros, aguardando em silêncio o seu chamado para a batalha final do Clímax contra o Tirano."
 
-        # 8. Procura de Missões / Contratos / Trabalho na Taverna
+        # 10. Diálogos com o Menestrel Maelor (Canções, Tirano das Cinzas, Orbe Quebra-Chamas)
+        if any(w in intencao_lower or w in log_lower for w in [
+            "pedir uma cancao", "pedir uma canção", "pedir cancao", "pedir canção",
+            "tocar uma musica", "tocar uma música", "tocar uma cancao", "tocar uma canção",
+            "toque seu alaude", "toque seu alaúde", "cantar uma balada", "pedir musica", "pedir música"
+        ]) or (any(w in intencao_lower or w in log_lower for w in ["maelor", "menestrel", "bardo"]) and any(w in intencao_lower or w in log_lower for w in ["cancao", "canção", "musica", "música", "tocar", "cantar", "balada", "alaude", "alaúde"])):
+            return "Maelor ergue os olhos cansados sob o capuz cinzento e dedilha seu alaúde de cordas de cinzas e tendões. Um acorde lúgubre preenche a taverna: 'Você pede uma canção em tempos de cinzas? Pois escute a Balada dos Caídos de Cinzas... Aqueles que marcharam cantando vitória e retornaram como espectros calcinados sob o sopro do dragão.' A melodia arrepiante silencia os murmúrios ao redor e faz as brasas da lareira tremerem."
+
+        if any(w in intencao_lower or w in log_lower for w in [
+            "tirano das cinzas", "o tirano", "sobre o tirano", "quem e o tirano", "quem é o tirano",
+            "como derrotar o tirano", "lenda do dragao", "lenda do dragão", "historia do dragao",
+            "história do dragão", "dragao supremo", "dragão supremo"
+        ]):
+            return "Maelor interrompe o dedilhar do alaúde; o silêncio que se instala é pesado como chumbo. 'O Tirano das Cinzas não é uma simples fera alada, mas a própria fornalha primordial do mundo. Suas escamas de obsidiana repelem o aço comum e seu sopro transforma exércitos em carvão. Ninguém sobrevive ao Beat 15 lutando sozinho — você precisará de juramentos inquebráveis e do artefato sagrado para quebrar sua invulnerabilidade.'"
+
+        if any(w in intencao_lower or w in log_lower for w in [
+            "orbe quebra-chamas", "orbe quebra chamas", "perguntar sobre o orbe", "o que e o orbe",
+            "o que é o orbe", "onde esta o orbe", "onde está o orbe", "orbe sagrado", "anular o sopro",
+            "invulnerabilidade do dragao", "invulnerabilidade do dragão"
+        ]) or (any(w in intencao_lower or w in log_lower for w in ["orbe", "relicario", "relicário"]) and any(w in intencao_lower or w in log_lower for w in ["maelor", "taverna", "bardo", "perguntar", "saber", "falar"])):
+            return "Os olhos de Maelor cintilam sob as sobrancelhas espessas: 'O Orbe Quebra-Chamas... Então os rumores chegaram aos seus ouvidos. Uma relíquia ancestral esquecida em um altar corrompido. Dizem que somente o poder contido no Orbe é capaz de anular a muralha de fogo do Tirano e tornar sua carne mortal. Mantenha seus olhos abertos nas trilhas secretas do vale.'"
+
+        if any(w in intencao_lower or w in log_lower for w in ["falar com maelor", "conversar com maelor", "ouvir maelor", "perguntar ao bardo", "falar com o bardo", "conversar com o menestrel", "ouvir bardo", "falar com bardo"]):
+            return "Maelor dedilha um acorde sombrio no alaúde de cordas de cinzas e ergue o olhar cansado: 'Cada canção que entoo é o epitáfio de quem ousou desafiar o Tirano sem aliados. Se quer sobreviver ao clímax, procure os guerreiros perdidos nas terras baixas.'"
+
+        # 11. O que o espera lá fora / Perigos da estrada / Trilha dos Enforcados
+        if any(w in intencao_lower or w in log_lower for w in ["trilha dos enforcados", "enforcados"]):
+            return "O taverneiro apoia os punhos pesados sobre a madeira ensebada e baixa a voz: 'A Trilha dos Enforcados não tem esse nome à toa, forasteiro. Goblins saqueadores montam emboscadas nas ravinas e mercenários desertores degolam quem viaja desprevenido. Os galhos retorcidos não sustentam apenas corvos. Se vai pegar aquela estrada, mantenha a mão firme no cabo da arma.'"
+
+        if any(w in intencao_lower or w in log_lower for w in [
+            "o que me espera", "o que tem la fora", "o que tem lá fora", "o que ha la fora", "o que há lá fora",
+            "perigos da estrada", "perigos la fora", "perigos lá fora", "o que esperar la fora",
+            "o que esperar lá fora", "como e la fora", "como é lá fora", "o que me aguarda",
+            "perigos do lado de fora", "monstros la fora", "monstros lá fora"
+        ]):
+            return "O taverneiro aponta uma faca encardida em direção à pesada porta trancada: 'Lá fora? Cinzas, frio cortante e morte à espreita. Criaturas ferozes rondam a neblina e patrulhas caídas atacam qualquer viajante desavisado. Ninguém cruza as planícies sem provisões e aço afiado. Se quer um conselho, converse com os mercenários ou confira os avisos antes de colocar os pés na lama.'"
+
+        # 12. Como aceitar missões / Trabalhos disponíveis / Quadro de avisos / Contratos
+        if any(w in intencao_lower or w in log_lower for w in [
+            "como aceitar missao", "como aceitar missão", "como aceitar contrato", "como aceitar contratos",
+            "como pegar missao", "como pegar missão", "como pegar contrato", "como funciona o quadro",
+            "como funciona o mural", "onde pego missao", "onde pego missão", "onde pego trabalho",
+            "onde pegar missao", "onde pegar missão", "onde pegar trabalho", "como aceitar"
+        ]):
+            return "O taverneiro aponta o polegar para a tábua de carvalho cravada de adagas: 'Basta inspecionar as missões no mural ou consultar suas anotações de viagem no Grimório. Escolha o contrato, aceite a incumbência e traga os despojos como prova. Quem cumpre a missão recebe a recompensa combinada em ouro sonante e suprimentos.'"
+
         if any(w in intencao_lower or w in log_lower for w in [
             "procura de missao", "procura de missão", "procurando missao", "procurando missão",
             "procuro missao", "procuro missão", "quero missao", "quero missão", "buscar missao", "buscar missão",
             "procura de trabalho", "procurando trabalho", "procuro trabalho", "quero trabalho",
             "procura de contrato", "procurando contrato", "procuro contrato", "quero um contrato", "quero contrato",
             "quadro de avisos", "mural de contratos", "pedir missao", "pedir missão", "trabalhos e missões",
-            "trabalhos e missoes"
+            "trabalhos e missoes", "trabalhos disponíveis", "trabalhos disponiveis",
+            "missões disponíveis", "missoes disponiveis", "contratos disponíveis", "contratos disponiveis"
         ]) or (any(w in intencao_lower or w in log_lower for w in ["missao", "missão", "trabalho", "contrato"]) and any(w in intencao_lower or w in log_lower for w in ["taverna", "balcao", "balcão", "taverneiro", "procura", "procurando", "busco", "quero", "disponivel", "disponível"]) and not any(w in intencao_lower or w in log_lower for w in ["conclu", "cumprid", "fim", "recompensa"])):
             return "O taverneiro aponta uma caneca úmida em direção ao canto do balcão onde pergaminhos amarelados estão afixados: 'Se procura trabalho com recompensa em ouro, a Trilha dos Enforcados está infestada de feras e mercenários saqueadores. Você pode inspecionar os contratos no seu Diário ou perguntar aos mercenários ao redor.'"
 
-        # 9. Conversas com o Menestrel Maelor
-        if any(w in intencao_lower or w in log_lower for w in ["falar com maelor", "conversar com maelor", "ouvir maelor", "perguntar ao bardo", "falar com o bardo", "conversar com o menestrel", "ouvir bardo", "falar com bardo"]):
-            return "Maelor dedilha um acorde sombrio no alaúde de cordas de cinzas e ergue o olhar cansado: 'Cada canção que entoo é o epitáfio de quem ousou desafiar o Tirano sem aliados. Se quer sobreviver ao clímax, procure os guerreiros perdidos nas terras baixas.'"
+        # 13. Conversas cotidianas com o Taverneiro (Pagar conta, Clima, Reino, Bebida/Comida)
+        if any(w in intencao_lower or w in log_lower for w in [
+            "pagar a conta", "pagar conta", "quanto devo", "fechar a conta", "pagar o taverneiro",
+            "aqui esta o ouro", "aqui está o ouro", "quanto custa a cerveja", "quanto custa",
+            "pagar a caneca", "pagar caneca", "acertar as contas", "acertar a conta"
+        ]):
+            return "O taverneiro bate a palma aberta no balcão e dá um meio sorriso cínico: 'São algumas peças de cobre pela cerveja e pelo fogo da lareira, amigo. Aqui a moeda de ferro vale tanto quanto a honra, mas se mantiver sua lâmina limpa de problemas dentro do meu teto, estamos quites.' Ele recolhe o trocado e tranca o gaveteiro de mogno."
 
-        # 8. Descanso / Repouso (Precedência sobre diálogos casuais de comida/bebida)
+        if any(w in intencao_lower or w in log_lower for w in [
+            "falar sobre o clima", "falar do clima", "como esta o tempo", "como está o tempo",
+            "clima la fora", "clima lá fora", "tempo la fora", "tempo lá fora", "chuva de cinzas", "falar sobre o tempo",
+            "o clima", "o tempo"
+        ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
+            return "O taverneiro cospe no piso de terra batida e olha para as frestas vedadas: 'O clima? Fuligem e vento podre, como sempre. Desde que a montanha cuspiu chamas, o sol é só uma mancha amarelada no céu morto. O ar arde na garganta e a geada ácida corrói ferro exposto. Se for viajar, aperte o capuz ou engolirá carvão até sufocar.'"
+
+        if any(w in intencao_lower or w in log_lower for w in [
+            "falar sobre o reino", "falar do reino", "como esta o reino", "como está o reino",
+            "o que aconteceu com o reino", "situacao do reino", "situação do reino", "noticias do reino",
+            "notícias do reino", "falar sobre o rei", "falar do rei", "o reino", "a corte", "corte real", "sobre o reino"
+        ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
+            return "O taverneiro enxuga a bancada com força, franzindo a testa: 'O reino? Não sobrou rei nem corte que mande em um palmo de terra. Quando o Tirano desceu do vulcão e incendiou a vanguarda real, os nobres se trancaram nas masmorras e abandonaram o povo à própria sorte. Hoje manda quem tem lâmina afiada e estômago para mastigar cinzas.'"
+
+        # 14. Descanso / Repouso (Precedência sobre diálogos casuais de comida/bebida)
         if any(w in intencao_lower or w in log_lower for w in ["descanso", "repouso", "descansar", "dormir"]):
             if any(w in log_lower for w in ["[rumores da taverna]", "aliado jurado", "juramento", "vigília leal", "vigilia leal"]):
                 return "Maelor das Cordas de Cinza dedilha uma melodia suave ao canto do fogo. O calor crepitante da lareira restaura suas forças enquanto ecos na taverna lembram da vigília leal de seus aliados juramentados nos contrafortes, aguardando o chamado para o Clímax."
@@ -690,15 +834,15 @@ class AIGameMaster:
         if any(w in intencao_lower or w in log_lower for w in ["acampamento", "vigilia", "vigília"]):
             return "O vento sopra gélido entre as pedras calcinadas. Em vigília tensa e solitária, o repouso sob a capa puída é o suficiente para estancar as feridas da jornada."
 
-        # 9. Conversas gerais com o Taverneiro / Pedido de Bebida / Comida
-        if any(w in intencao_lower or w in log_lower for w in ["cerveja", "bebida", "vinho", "caneca", "taverneiro", "pedir bebida", "pedir cerveja", "comprar cerveja", "balconista", "garcom", "garçom", "guisado"]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
+        # 15. Conversas gerais com o Taverneiro / Pedido de Bebida / Comida
+        if any(w in intencao_lower or w in log_lower for w in ["cerveja", "bebida", "vinho", "caneca", "taverneiro", "pedir bebida", "pedir cerveja", "comprar cerveja", "balconista", "garcom", "garçom", "guisado", "hidromel", "despeje um trago"]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
             return "O taverneiro enxuga a madeira carcomida com um trapo velho e serve uma caneca de cerveja escura e amarga: 'Beba enquanto há teto sobre sua cabeça, forasteiro. Lá fora, as cinzas não perdoam os descuidados.'"
 
-        # 10. Observação do Cenário / Rumores e Boatos
+        # 16. Observação do Cenário / Rumores e Boatos
         if any(w in intencao_lower or w in log_lower for w in ["rumores", "rumor", "boatos", "boato", "olhar ao redor", "observar taverna", "olhar taverna", "examinar taverna", "vasculhar taverna", "ouvir conversas"]):
             return "Seus olhos vasculham a taverna sombria. Mercenários cochicham sobre criaturas emboscando carroças na estrada norte e sussurros de um lobo atroz rondando as colinas."
 
-        # 9. Recuo Tático e Fuga
+        # 17. Recuo Tático e Fuga
         if any(w in intencao_lower or w in log_lower for w in ["recuo", "retorno ao hub", "retorno", "fuga", "fugir", "recuar"]):
             return "Com fôlego curto e passos firmes nas sombras, você recua em fuga pelas cinzas da estrada. O calor crepitante da lareira da Taverna do Dragão Acordado surge na bruma, oferecendo abrigo seguro para recompor o aço e o ânimo."
 
@@ -719,6 +863,58 @@ class AIGameMaster:
 
         return "O dedilhar melancólico das cordas de cinza ecoa no ar. A tensão permanece suspensa na penumbra enquanto seus olhos buscam a próxima ameaça."
 
+    def _format_gender_race(self, race: str, is_female: bool) -> str:
+        if not is_female:
+            return str(race)
+        r_str = str(race)
+        replacements = [
+            ("Humano", "Humana"), ("humano", "humana"),
+            ("Elfo da Floresta", "Elfa da Floresta"), ("elfo da floresta", "elfa da floresta"),
+            ("Elfo", "Elfa"), ("elfo", "elfa"),
+            ("Anão da Colina", "Anã da Colina"), ("anão da colina", "anã da colina"),
+            ("Anão", "Anã"), ("anão", "anã"), ("Anao", "Anã"), ("anao", "anã"),
+            ("Draconato", "Draconata"), ("draconato", "draconata"),
+            ("Meio-Orc", "Meia-Orc"), ("meio-orc", "meia-orc"),
+        ]
+        for src, dst in replacements:
+            if src in r_str:
+                r_str = r_str.replace(src, dst)
+        return r_str
+
+    def _format_gender_class(self, char_class: str, is_female: bool) -> str:
+        if not is_female:
+            return str(char_class)
+        c_str = str(char_class)
+        replacements = [
+            ("Guerreiro", "Guerreira"), ("guerreiro", "guerreira"),
+            ("Mago", "Maga"), ("mago", "maga"),
+            ("Ladino", "Ladina"), ("ladino", "ladina"),
+            ("Clérigo", "Clériga"), ("clérigo", "clériga"), ("Clerigo", "Clériga"), ("clerigo", "clériga"),
+            ("Patrulheiro", "Patrulheira"), ("patrulheiro", "patrulheira"),
+            ("Paladino", "Paladina"), ("paladino", "paladina"),
+        ]
+        for src, dst in replacements:
+            if src in c_str:
+                c_str = c_str.replace(src, dst)
+        return c_str
+
+    def _format_gender_background(self, background: str, is_female: bool) -> str:
+        if not is_female:
+            return str(background)
+        b_str = str(background)
+        replacements = [
+            ("Forasteiro", "Forasteira"), ("forasteiro", "forasteira"),
+            ("Criminoso", "Criminosa"), ("criminoso", "criminosa"),
+            ("Acólito", "Acólita"), ("acólito", "acólita"), ("Acolito", "Acólita"), ("acolito", "acólita"),
+            ("Herói do Povo", "Heroína do Povo"), ("herói do povo", "heroína do povo"),
+            ("Heroi do Povo", "Heroína do Povo"), ("heroi do povo", "heroína do povo"),
+            ("Soldado", "Soldada"), ("soldado", "soldada"),
+        ]
+        for src, dst in replacements:
+            if src in b_str:
+                b_str = b_str.replace(src, dst)
+        return b_str
+
     def get_personalized_prologue(self, char_data: Dict[str, Any], cutscenes_path: str = "data/game_cutscenes.json") -> str:
         """
         Carrega o prólogo de cutscenes e injeta os dados reais da ficha
@@ -726,15 +922,19 @@ class AIGameMaster:
         também o gênero ("female" / "male") e a herança racial única do protagonista.
         """
         nome = char_data.get("name") or char_data.get("nome") or "Viajante"
-        raca = char_data.get("race") or char_data.get("raca") or "Humano"
-        classe = char_data.get("class") or char_data.get("classe") or "Guerreiro"
-        antecedente = char_data.get("background") or char_data.get("antecedente") or "Forasteiro"
+        raca_raw = char_data.get("race") or char_data.get("raca") or "Humano"
+        classe_raw = char_data.get("class") or char_data.get("classe") or "Guerreiro"
+        antecedente_raw = char_data.get("background") or char_data.get("antecedente") or "Forasteiro"
         tendencia = char_data.get("alignment") or char_data.get("tendencia") or "Neutro"
         genero_raw = str(char_data.get("gender") or char_data.get("genero") or "male").lower().strip()
         is_female = genero_raw in ["female", "feminino", "f", "mulher"]
 
+        raca = self._format_gender_race(raca_raw, is_female)
+        classe = self._format_gender_class(classe_raw, is_female)
+        antecedente = self._format_gender_background(antecedente_raw, is_female)
+
         # Mapeamento canônico das 7 relíquias raciais
-        raca_low = str(raca).lower()
+        raca_low = str(raca_raw).lower()
         if "elf" in raca_low:
             reliquia_racial = "Manto de Folhas Cinzentas"
             detalhe_heranca = "envolvida pelo seu Manto de Folhas Cinzentas" if is_female else "envolvido pelo seu Manto de Folhas Cinzentas"
@@ -797,7 +997,15 @@ class AIGameMaster:
             formatted = (
                 formatted
                 .replace(f"Como um {raca} {classe} moldado", f"Como uma {raca} {classe} moldada")
+                .replace(f"Como um {raca_raw} {classe_raw} moldado", f"Como uma {raca} {classe} moldada")
+                .replace("Como um ", "Como uma ")
                 .replace("moldado pela dureza", "moldada pela dureza")
+                .replace("moldado", "moldada")
+                .replace("forjado", "forjada")
+                .replace("cansado", "cansada")
+                .replace("sozinho", "sozinha")
+                .replace("preparado", "preparada")
+                .replace("forasteiro", "forasteira")
             )
 
         if reliquia_racial not in formatted:

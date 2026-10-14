@@ -1,0 +1,181 @@
+{
+  "titulo": "Manual do Jogador - Regras Oficiais D&D 5e (SRD / RPGMesaPY)",
+  "versao": "5.1-SRD",
+  "secoes": {
+    "regras_basicas": {
+      "titulo": "Regras Básicas e Resolução de Ações",
+      "dado_vinte": "O d20 é o núcleo mecânico de D&D 5e. Para resolver qualquer ação desafiadora, role 1d20, some o Modificador de Atributo relevante e adicione o Bônus de Proficiência (se aplicável). Se o resultado for igual ou superior à Classe de Armadura (CA) ou Classe de Dificuldade (CD), a ação é bem-sucedida.",
+      "vantagem_desvantagem": "Com Vantagem, role 2d20 e escolha o maior resultado. Com Desvantagem, role 2d20 e escolha o menor resultado.",
+      "acertos_criticos": "Um resultado 20 natural no d20 em uma jogada de ataque é um Acerto Crítico, garantindo sucesso automático e dobrando todos os dados de dano do ataque. Um resultado 1 natural é uma Falha Crítica, errando automaticamente.",
+      "descanso": {
+        "descanso_curto": "Pelo menos 1 hora de repouso leve. Permite gastar Dados de Vida para recuperar Pontos de Vida (PV) e recarrega certas habilidades de classe como Retomar o Fôlego.",
+        "descanso_longo": "Pelo menos 8 horas de sono ou repouso no Hub ou Acampamento. Restaura todos os Pontos de Vida, metade dos Dados de Vida totais e todos os Espaços de Magia (Spell Slots)."
+      }
+    },
+    "atributos_e_pericias": {
+      "titulo": "Atributos, Modificadores e Perícias",
+      "standard_array": [15, 14, 13, 12, 10, 8],
+      "formula_modificador": "(Valor do Atributo - 10) // 2",
+      "tabela_modificadores": {
+        "8-9": -1,
+        "10-11": 0,
+        "12-13": 1,
+        "14-15": 2,
+        "16-17": 3,
+        "18-19": 4,
+        "20": 5
+      },
+      "atributos": {
+        "FOR": "Força: Poder físico, dano corpo a corpo, capacidade de carga e Atletismo.",
+        "DES": "Destreza: Agilidade, reflexos, iniciativa, Classe de Armadura (CA) e ataques à distância/acuidade.",
+        "CON": "Constituição: Vigor, resistência biológica e Pontos de Vida máximos.",
+        "INT": "Inteligência: Raciocínio lógico, memória, Arcanismo, História, Investigação, Natureza e Religião.",
+        "SAB": "Sabedoria: Percepção do ambiente, intuição, força de vontade, Medicina e Sobrevivência.",
+        "CAR": "Carisma: Força de personalidade, liderança, persuasão, intimidação e presença social."
+      },
+      "matriz_pericias": {
+        "Atletismo": "FOR",
+        "Acrobacia": "DES",
+        "Furtividade": "DES",
+        "Prestidigitação": "DES",
+        "Arcanismo": "INT",
+        "História": "INT",
+        "Investigação": "INT",
+        "Natureza": "INT",
+        "Religião": "INT",
+        "Adestrar Animais": "SAB",
+        "Intuição": "SAB",
+        "Medicina": "SAB",
+        "Percepção": "SAB",
+        "Sobrevivência": "SAB",
+        "Atuação": "CAR",
+        "Enganação": "CAR",
+        "Intimidação": "CAR",
+        "Persuasão": "CAR"
+      }
+    },
+    "deslocamento_e_viagem": {
+      "titulo": "Deslocamento Racial, Marcha e Viagem",
+      "regras_marcha": "O deslocamento base do personagem determina a velocidade de marcha pelo mapa e a quantidade de provisões (rações) necessárias para a travessia.",
+      "tabela_deslocamento": {
+        "Elfo da Floresta": {"deslocamento_m": 10.5, "tempo_marcha_dias": 1, "suprimentos_consumidos": 1},
+        "Humano": {"deslocamento_m": 9.0, "tempo_marcha_dias": 2, "suprimentos_consumidos": 2},
+        "Draconato": {"deslocamento_m": 9.0, "tempo_marcha_dias": 2, "suprimentos_consumidos": 2},
+        "Meio-Orc": {"deslocamento_m": 9.0, "tempo_marcha_dias": 2, "suprimentos_consumidos": 2},
+        "Tiefling": {"deslocamento_m": 9.0, "tempo_marcha_dias": 2, "suprimentos_consumidos": 2},
+        "Anão da Colina": {"deslocamento_m": 7.5, "tempo_marcha_dias": 3, "suprimentos_consumidos": 3},
+        "Halfling": {"deslocamento_m": 7.5, "tempo_marcha_dias": 3, "suprimentos_consumidos": 3}
+      },
+      "sobrecarga_inventario": {
+        "regra": "Se os itens do inventário ultrapassarem a capacidade máxima de slots da mochila (10 + mod FOR), o personagem fica Sobrecarregado.",
+        "penalidade_deslocamento_m": -1.5,
+        "penalidade_suprimentos": 1,
+        "efeito": "O deslocamento é reduzido em 1.5m e as viagens consomem +1 suprimento e +1 dia de marcha adicional."
+      }
+    },
+    "capacidade_e_inventario": {
+      "titulo": "Capacidade de Carga e Slots de Inventário",
+      "formula_slots": "min(14, max(10, 10 + max(0, mod_FOR)))",
+      "regras_empilhamento": {
+        "rações": "Até 5 por slot (i_rations, i_hearty_rations)",
+        "poções_pergaminhos": "Até 3 por slot (poções de cura, elixires, pergaminhos)",
+        "acessórios": "Até 2 por slot (anéis, amuletos, mantos)",
+        "armas_armaduras": "1 por slot (espadas, machados, escudos, cotas de malha)"
+      }
+    },
+    "racas": {
+      "Humano": {
+        "bonus": {"FOR": 1, "DES": 1, "CON": 1, "INT": 1, "SAB": 1, "CAR": 1},
+        "deslocamento_m": 9.0,
+        "tamanho": "Médio",
+        "traco_racial": "Versatilidade Humana (+1 em todos os atributos e sinete da linhagem)."
+      },
+      "Elfo da Floresta": {
+        "bonus": {"FOR": 0, "DES": 2, "CON": 0, "INT": 0, "SAB": 1, "CAR": 0},
+        "deslocamento_m": 10.5,
+        "tamanho": "Médio",
+        "traco_racial": "Pés Ligeiros (10.5m), Visão no Escuro, Sentidos Aguçados, Ancestralidade Feérica."
+      },
+      "Anão da Colina": {
+        "bonus": {"FOR": 0, "DES": 0, "CON": 2, "INT": 0, "SAB": 1, "CAR": 0},
+        "deslocamento_m": 7.5,
+        "tamanho": "Médio",
+        "traco_racial": "Tenacidade Anã (+1 PV por nível), Resiliência Anã contra veneno, Visão no Escuro."
+      },
+      "Halfling": {
+        "bonus": {"FOR": 0, "DES": 2, "CON": 0, "INT": 0, "SAB": 0, "CAR": 1},
+        "deslocamento_m": 7.5,
+        "tamanho": "Pequeno",
+        "traco_racial": "Sorte (relance de 1 natural), Bravura, Agilidade Halfling."
+      },
+      "Draconato": {
+        "bonus": {"FOR": 2, "DES": 0, "CON": 0, "INT": 0, "SAB": 0, "CAR": 1},
+        "deslocamento_m": 9.0,
+        "tamanho": "Médio",
+        "traco_racial": "Ancestral Dracônico, Arma de Sopro de Fogo, Resistência a dano ígneo."
+      },
+      "Meio-Orc": {
+        "bonus": {"FOR": 2, "DES": 0, "CON": 1, "INT": 0, "SAB": 0, "CAR": 0},
+        "deslocamento_m": 9.0,
+        "tamanho": "Médio",
+        "traco_racial": "Tolerância Infindável (resiste com 1 PV ao invés de 0), Ataques Selvagens."
+      },
+      "Tiefling": {
+        "bonus": {"FOR": 0, "DES": 0, "CON": 0, "INT": 1, "SAB": 0, "CAR": 2},
+        "deslocamento_m": 9.0,
+        "tamanho": "Médio",
+        "traco_racial": "Resistência Infernal a fogo, Visão no Escuro, Legado Infernal (magias inatas)."
+      }
+    },
+    "classes": {
+      "Guerreiro": {
+        "pv_base": 10,
+        "dado_vida": 10,
+        "saves": ["FOR", "CON"],
+        "atributos_prioritarios": ["FOR", "CON", "DES"],
+        "armaduras": "Todas as armaduras e escudos",
+        "armas": "Armas simples e marciais"
+      },
+      "Clérigo": {
+        "pv_base": 8,
+        "dado_vida": 8,
+        "saves": ["SAB", "CAR"],
+        "atributos_prioritarios": ["SAB", "CON", "FOR"],
+        "armaduras": "Armaduras leves, médias e escudos",
+        "armas": "Armas simples"
+      },
+      "Paladino": {
+        "pv_base": 10,
+        "dado_vida": 10,
+        "saves": ["SAB", "CAR"],
+        "atributos_prioritarios": ["FOR", "CAR", "CON"],
+        "armaduras": "Todas as armaduras e escudos",
+        "armas": "Armas simples e marciais"
+      },
+      "Mago": {
+        "pv_base": 6,
+        "dado_vida": 6,
+        "saves": ["INT", "SAB"],
+        "atributos_prioritarios": ["INT", "CON", "DES"],
+        "armaduras": "Nenhuma",
+        "armas": "Adagas, dardos, fundas, bordões, bestas leves"
+      },
+      "Patrulheiro": {
+        "pv_base": 10,
+        "dado_vida": 10,
+        "saves": ["FOR", "DES"],
+        "atributos_prioritarios": ["DES", "SAB", "CON"],
+        "armaduras": "Armaduras leves, médias e escudos",
+        "armas": "Armas simples e marciais"
+      },
+      "Ladino": {
+        "pv_base": 8,
+        "dado_vida": 8,
+        "saves": ["DES", "INT"],
+        "atributos_prioritarios": ["DES", "INT", "CON"],
+        "armaduras": "Armaduras leves",
+        "armas": "Armas simples, bestas de mão, espadas longas, rapieiras, espadas curtas"
+      }
+    }
+  }
+}

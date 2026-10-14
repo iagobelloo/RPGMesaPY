@@ -461,6 +461,9 @@ class StoryManager:
         Seleciona adaptativamente o próximo aliado do pool, respeitando diversidade
         completa de classes e evitando repetição da classe e raça do jogador.
         """
+        if not player_character or not isinstance(player_character, dict):
+            player_character = {}
+            
         candidatos = self.get_available_allies_for_player(player_character)
         if not candidatos:
             return None

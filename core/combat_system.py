@@ -134,6 +134,8 @@ from core.dnd_rules import MATRIZ_DE_PERICIAS, get_modifier, expand_unlocked_ski
 
 def _get_player_attr_value(player_sheet: dict, attr_pt: str, default: int = 10) -> int:
     """Obtém valor de atributo da ficha aceitando tanto chaves PT (FOR..CAR) quanto EN (STR..CHA)."""
+    if not player_sheet or not isinstance(player_sheet, dict):
+        return default
     attrs = player_sheet.get("attributes") or player_sheet.get("atributos") or {}
     if not isinstance(attrs, dict):
         return default
@@ -151,6 +153,8 @@ def _get_player_attr_value(player_sheet: dict, attr_pt: str, default: int = 10) 
 
 def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities: list, active_combat_targets: dict, game_state: dict = None) -> str:
     """Resolve mecanicamente habilidades ativas de classe (tanto IDs sk_* quanto canônicos ou nomes PT)."""
+    if not player_sheet or not isinstance(player_sheet, dict):
+        player_sheet = {}
     raw_ref = (
         parsed_json.get("recurso_utilizado")
         or parsed_json.get("habilidade")
@@ -262,10 +266,14 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
 
 
 def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list = None, active_combat_targets: dict = None, game_state: dict = None) -> dict:
-    if active_combat_targets is None:
+    if player_sheet is None or not isinstance(player_sheet, dict):
+        player_sheet = {}
+    if active_combat_targets is None or not isinstance(active_combat_targets, dict):
         active_combat_targets = {}
-    if target_entities is None:
+    if target_entities is None or not isinstance(target_entities, list):
         target_entities = []
+    if parsed_json is None or not isinstance(parsed_json, dict):
+        parsed_json = {}
         
     raw_tipo = str(parsed_json.get("tipo_acao") or "").strip()
     if raw_tipo.upper() in ["USAR_HABILIDADE", "ACAO_TATICA_5E", "HABILIDADE"]:
@@ -693,6 +701,10 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
     Bloco 31: O Turno dos Inimigos em Lote (Batch Processing & Predatory AI).
     Itera sobre os inimigos vivos, escolhe o alvo mais fraco, e retorna o log concatenado.
     """
+    if player_character is None or not isinstance(player_character, dict):
+        player_character = {}
+    if active_combat_targets is None or not isinstance(active_combat_targets, dict):
+        active_combat_targets = {}
     from core.dice_engine import DiceEngine
     from core.dnd_rules import BESTIARIO_5E
     import random

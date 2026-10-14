@@ -28,6 +28,7 @@ from ui.hud_components import (
     ChatBox,
     LoadingDiceAnimation,
     QuickActionBar,
+    PlayerManualModal,
 )
 from ui.menu_components import (
     CharacterCreationPanel,
@@ -78,10 +79,14 @@ def main():
     grimoire.game_state_ref = session.game_state
     grimoire.session_ref = session
     grimoire.is_visible = False
+    grimoire.active_tab = "habilidades"
 
     backpack = BackpackModal((WINDOW_WIDTH - 840) // 2, (WINDOW_HEIGHT - 560) // 2, 840, 560)
     backpack.game_state_ref = session.game_state
     backpack.is_visible = False
+
+    player_manual = PlayerManualModal((WINDOW_WIDTH - 840) // 2, (WINDOW_HEIGHT - 560) // 2, 840, 560)
+    player_manual.is_visible = False
 
     panel_w = int(WINDOW_WIDTH * 0.40)
     quick_bar = QuickActionBar(12, WINDOW_HEIGHT - 76, panel_w, 28)
@@ -113,11 +118,27 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            # Atalho Global F1 ou H para alternar o Manual do Jogador
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_F1, pygame.K_h):
+                is_typing = (current_state == "CHARACTER_CREATION" and getattr(creation_menu, "active_input", False))
+                if not is_typing:
+                    player_manual.is_visible = not player_manual.is_visible
+                    continue
+
+            # Se o Manual do Jogador estiver aberto, consome os eventos prioritariamente
+            if player_manual.is_visible:
+                m_act = player_manual.handle_event(event)
+                if m_act == "close":
+                    player_manual.is_visible = False
+                continue
+
             # Delegação de Estado: MAIN MENU
             if current_state == "MAIN_MENU":
                 action = main_menu.handle_event(event)
                 if action == "action_quit":
                     running = False
+                elif action == "action_player_manual":
+                    player_manual.is_visible = True
                 elif action == "action_new_game":
                     session = SessionManager(ai_master)
                     journal_modal.game_state_ref = session.game_state
@@ -401,6 +422,8 @@ def main():
                         grimoire.is_visible = True
                         pause_menu.is_visible = False
                         current_state = "IN_GAME"
+                    elif action == "action_player_manual":
+                        player_manual.is_visible = True
                     elif action == "save":
                         session.save_game()
                         session._push_event("system_event", {"text": "Jogo salvo com sucesso!"})
@@ -538,6 +561,10 @@ def main():
             if grimoire.is_visible:
                 screen.blit(overlay_grimoire, (0, 0))
                 grimoire.draw(screen)
+
+        if player_manual.is_visible:
+            screen.blit(overlay_grimoire, (0, 0))
+            player_manual.draw(screen)
 
         pygame.display.flip()
         clock.tick(FPS)

@@ -282,7 +282,10 @@ class AssetManager:
     BASE_ICONS = [os.path.normpath("assets/sprites/heroes/icones"),
                   os.path.normpath("assets/sprites/icones")]
     BASE_SKILLS = os.path.normpath("assets/ui/skills")
-    FONT_PATH = os.path.normpath("assets/fonts/pixel_font.ttf")
+    
+    _PRIMARY_FONT = os.path.normpath("assets/fonts/Retro Gaming.ttf")
+    _FALLBACK_FONT = os.path.normpath("assets/fonts/pixel_font.ttf")
+    FONT_PATH = _PRIMARY_FONT if os.path.exists(_PRIMARY_FONT) else _FALLBACK_FONT
 
     _image_cache = {}
     _cache = _image_cache          # Alias legado (hud_components usa AssetManager._cache)
@@ -292,22 +295,39 @@ class AssetManager:
     # ------------------------------------------------------------------ FONTES
     @classmethod
     def get_font(cls, size: int, bold: bool = False, italic: bool = False) -> pygame.font.Font:
-        key = (size, bold, italic)
-        if key in cls._fonts:
-            return cls._fonts[key]
-
         if not pygame.font.get_init():
             pygame.font.init()
+            cls._fonts.clear()
+
+        key = (size, bold, italic)
+        if key in cls._fonts:
+            try:
+                cls._fonts[key].get_height()
+                return cls._fonts[key]
+            except (pygame.error, Exception):
+                cls._fonts.clear()
 
         try:
             font = pygame.font.Font(cls.FONT_PATH, size)
         except (FileNotFoundError, OSError, pygame.error):
-            print(f"[ERRO UI] Fonte '{cls.FONT_PATH}' não encontrada. Fallback para Arial.")
-            font = pygame.font.SysFont("Arial", size)
+            fallback = os.path.normpath("assets/fonts/pixel_font.ttf")
+            if os.path.exists(fallback) and cls.FONT_PATH != fallback:
+                try:
+                    font = pygame.font.Font(fallback, size)
+                except Exception:
+                    font = pygame.font.SysFont("Arial", size)
+            else:
+                font = pygame.font.SysFont("Arial", size)
         if bold:
-            font.set_bold(True)
+            try:
+                font.set_bold(True)
+            except Exception:
+                pass
         if italic:
-            font.set_italic(True)
+            try:
+                font.set_italic(True)
+            except Exception:
+                pass
         cls._fonts[key] = font
         return font
 
@@ -341,6 +361,45 @@ class AssetManager:
         return cls._image_cache[key]
 
     @classmethod
+    def progressive_downscale(cls, surface: pygame.Surface, target_size: tuple) -> pygame.Surface:
+        """Reduz a resolução progressivamente em potências de 2 antes do smoothscale final.
+        Evita o efeito borrado e serrilhado em imagens de alta resolução (ex: 2048x2048 -> 100x100).
+        Utiliza cache de textura para garantir zero overhead por frame a 60 FPS."""
+        if surface is None:
+            return surface
+        target_w, target_h = int(target_size[0]), int(target_size[1])
+        if target_w <= 0 or target_h <= 0:
+            return surface
+        cur_w, cur_h = surface.get_size()
+        if (cur_w, cur_h) == (target_w, target_h):
+            return surface
+
+        key = (id(surface), (target_w, target_h), "progressive")
+        cached = cls._scaled_cache.get(key)
+        if cached is not None:
+            return cached
+
+        cur_surf = surface
+        # Reduz em passos graduais de 50% enquanto a dimensão atual for pelo menos o dobro da meta
+        while cur_w // 2 >= target_w and cur_h // 2 >= target_h:
+            cur_w //= 2
+            cur_h //= 2
+            try:
+                cur_surf = pygame.transform.smoothscale(cur_surf, (cur_w, cur_h))
+            except (ValueError, pygame.error):
+                cur_surf = pygame.transform.scale(cur_surf, (cur_w, cur_h))
+
+        # Redimensionamento final para o tamanho exato solicitado
+        if (cur_w, cur_h) != (target_w, target_h):
+            try:
+                cur_surf = pygame.transform.smoothscale(cur_surf, (target_w, target_h))
+            except (ValueError, pygame.error):
+                cur_surf = pygame.transform.scale(cur_surf, (target_w, target_h))
+
+        cls._scaled_cache[key] = cur_surf
+        return cur_surf
+
+    @classmethod
     def get_scaled(cls, surface: pygame.Surface, size: tuple, smooth: bool = False) -> pygame.Surface:
         """Redimensiona com cache. Evita `smoothscale` a cada frame (queda de FPS)."""
         size = (int(size[0]), int(size[1]))
@@ -349,11 +408,15 @@ class AssetManager:
         key = (id(surface), size, smooth)
         cached = cls._scaled_cache.get(key)
         if cached is None:
-            fn = pygame.transform.smoothscale if smooth else pygame.transform.scale
-            try:
-                cached = fn(surface, size)
-            except ValueError:  # smoothscale exige 24/32 bits
-                cached = pygame.transform.scale(surface, size)
+            # Para downscales significativos com smooth=True, usa downscale progressivo
+            if smooth and surface.get_width() > size[0] * 1.5:
+                cached = cls.progressive_downscale(surface, size)
+            else:
+                fn = pygame.transform.smoothscale if smooth else pygame.transform.scale
+                try:
+                    cached = fn(surface, size)
+                except ValueError:  # smoothscale exige 24/32 bits
+                    cached = pygame.transform.scale(surface, size)
             cls._scaled_cache[key] = cached
         return cached
 
@@ -421,8 +484,9 @@ class AssetManager:
         return names
 
     @classmethod
-    def get_hero_icon(cls, race: str, char_class: str, gender: str = None) -> pygame.Surface:
-        logical_key = ("__hero_icon__", _slug(race), _slug(char_class), _slug(gender))
+    def get_hero_icon(cls, race: str, char_class: str, gender: str = None, size: tuple = (128, 128)) -> pygame.Surface:
+        target_size = size or (128, 128)
+        logical_key = ("__hero_icon__", _slug(race), _slug(char_class), _slug(gender), target_size)
         if logical_key in cls._image_cache:
             return cls._image_cache[logical_key]
 
@@ -464,6 +528,9 @@ class AssetManager:
             print(f"[ERRO UI] Ícone de herói ausente: raça='{race}' classe='{char_class}' "
                   f"gênero='{gender}'. Usando Ciano.")
             surf = cls._placeholder(COLOR_MISSING_HERO)
+
+        if target_size:
+            surf = cls.progressive_downscale(surf, target_size)
 
         cls._image_cache[logical_key] = surf
         return surf
@@ -584,15 +651,15 @@ class AssetManager:
 
     # --------------------------------------------------------------- RETRATOS
     @classmethod
-    def get_portrait_sprite(cls, name: str) -> pygame.Surface:
-        """Retrato 100x100 para a caixa de diálogo (suporta Menestrel/DM, Heróis, Aliados e Inimigos)."""
+    def get_portrait_sprite(cls, name: str, size: tuple = (100, 100)) -> pygame.Surface:
+        """Retrato com downscale progressivo para a caixa de diálogo (suporta Menestrel/DM, Heróis, Aliados e Inimigos)."""
         if not name:
-            return cls._placeholder(COLOR_MISSING_ENEMY)
+            return cls.progressive_downscale(cls._placeholder(COLOR_MISSING_ENEMY), size)
 
         clean_name = str(name).strip()
         chave = re.sub(r"_(\d+|[0-9a-f]{4})$", "", _slug(clean_name))
 
-        cache_key = ("__portrait__", chave)
+        cache_key = ("__portrait__", chave, size)
         if cache_key in cls._image_cache:
             return cls._image_cache[cache_key]
 
@@ -603,7 +670,7 @@ class AssetManager:
                     path = os.path.join(icon_dir, candidate)
                     surf = cls._load_file(path)
                     if surf is not None:
-                        res = pygame.transform.scale(surf, (100, 100))
+                        res = cls.progressive_downscale(surf, size)
                         cls._image_cache[cache_key] = res
                         return res
 
@@ -613,7 +680,7 @@ class AssetManager:
                     path = os.path.join(icon_dir, candidate)
                     surf = cls._load_file(path)
                     if surf is not None:
-                        res = pygame.transform.scale(surf, (100, 100))
+                        res = cls.progressive_downscale(surf, size)
                         cls._image_cache[cache_key] = res
                         return res
 
@@ -627,7 +694,7 @@ class AssetManager:
                     probe_path = os.path.join(icon_dir, probe)
                     surf = cls._load_file(probe_path)
                     if surf is not None:
-                        res = pygame.transform.scale(surf, (100, 100))
+                        res = cls.progressive_downscale(surf, size)
                         cls._image_cache[cache_key] = res
                         return res
 
@@ -637,7 +704,7 @@ class AssetManager:
                 if _slug(f_base) == chave or _slug(f_base).startswith(chave) or chave.startswith(_slug(f_base)):
                     surf = cls._load_file(os.path.join(icon_dir, fname))
                     if surf is not None:
-                        res = pygame.transform.scale(surf, (100, 100))
+                        res = cls.progressive_downscale(surf, size)
                         cls._image_cache[cache_key] = res
                         return res
 
@@ -647,7 +714,7 @@ class AssetManager:
                 probe_path = os.path.join(cls.BASE_HEROES, clean_name + ext)
                 surf = cls._load_file(probe_path)
                 if surf is not None:
-                    res = pygame.transform.scale(surf, (100, 100))
+                    res = cls.progressive_downscale(surf, size)
                     cls._image_cache[cache_key] = res
                     return res
 
@@ -656,13 +723,13 @@ class AssetManager:
         enemy_path = os.path.join(cls.BASE_ENEMIES, enemy_filename)
         surf = cls._load_file(enemy_path)
         if surf is not None:
-            res = pygame.transform.scale(surf, (100, 100))
+            res = cls.progressive_downscale(surf, size)
             cls._image_cache[cache_key] = res
             return res
 
         # 5. Fallback se não encontrar
         print(f"[AVISO UI] Retrato não encontrado para '{name}' (chave='{chave}'). Usando Magenta.")
-        placeholder = cls._placeholder(COLOR_MISSING_ENEMY)
+        placeholder = cls.progressive_downscale(cls._placeholder(COLOR_MISSING_ENEMY), size)
         cls._image_cache[cache_key] = placeholder
         return placeholder
 

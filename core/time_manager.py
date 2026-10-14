@@ -10,6 +10,8 @@ class RestSystem:
         Calcula a cura de um descanso curto.
         Utiliza os dados de vida gastos e atualiza hp_current sem ultrapassar hp_max.
         """
+        if character_state is None or not isinstance(character_state, dict):
+            return {}
         # Em D&D a média de recuperação de um dado é: floor((Max / 2) + 1)
         average_roll = math.floor((hit_die_type / 2) + 1)
         heal_per_die = max(1, average_roll + con_modifier) # Pelo menos 1 de cura por dado
@@ -32,6 +34,10 @@ class RestSystem:
         - Restaura recursos diários (ex: MP).
         - Incrementa o current_day da campanha em +1.
         """
+        if character_state is None or not isinstance(character_state, dict):
+            character_state = {}
+        if campaign_state is None or not isinstance(campaign_state, dict):
+            campaign_state = {}
         # Cura e Recursos Mágicos
         character_state["hp_current"] = character_state.get("hp_max", 1)
         

@@ -38,6 +38,14 @@ def get_class_base_attributes(class_name: str) -> dict:
     result["LUCK"] = 10
     return result
 
+def get_base_attributes(class_name: str) -> dict:
+    """Retorna os atributos base do Standard Array D&D 5e (15, 14, 13, 12, 10, 8) sem forçar raça ou antecedentes pré-selecionados."""
+    return get_class_base_attributes(class_name)
+
+def get_standard_array(class_name: str) -> dict:
+    """Retorna os atributos base do Standard Array D&D 5e da classe."""
+    return get_class_base_attributes(class_name)
+
 # 7 ITENS ÚNICOS RACIAIS (HERANÇA DE ORIGEM)
 ITENS_UNICOS_RACIAIS = {
     "Humano": {
@@ -305,7 +313,9 @@ def get_protagonist_gender_info(race_name: str, class_name: str) -> dict:
 RACAS_5E = {
     "Humano": {
         "atributos": {"Força": 1, "Destreza": 1, "Constituição": 1, "Inteligência": 1, "Sabedoria": 1, "Carisma": 1},
-        "deslocamento_m": 9,
+        "bonus": {"FOR": 1, "DES": 1, "CON": 1, "INT": 1, "SAB": 1, "CAR": 1},
+        "deslocamento_m": 9.0,
+        "speed": 9.0,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Escolha 1"],
         "habilidades_raciais": ["Versatilidade Humana"],
@@ -313,7 +323,9 @@ RACAS_5E = {
     },
     "Halfling": {
         "atributos": {"Força": 0, "Destreza": 2, "Constituição": 0, "Inteligência": 0, "Sabedoria": 0, "Carisma": 1},
+        "bonus": {"FOR": 0, "DES": 2, "CON": 0, "INT": 0, "SAB": 0, "CAR": 1},
         "deslocamento_m": 7.5,
+        "speed": 7.5,
         "tamanho": "Pequeno",
         "idiomas": ["Comum", "Halfling"],
         "habilidades_raciais": ["Sorte", "Bravura", "Agilidade Halfling", "Furtividade Natural"],
@@ -321,7 +333,9 @@ RACAS_5E = {
     },
     "Draconato": {
         "atributos": {"Força": 2, "Destreza": 0, "Constituição": 0, "Inteligência": 0, "Sabedoria": 0, "Carisma": 1},
-        "deslocamento_m": 9,
+        "bonus": {"FOR": 2, "DES": 0, "CON": 0, "INT": 0, "SAB": 0, "CAR": 1},
+        "deslocamento_m": 9.0,
+        "speed": 9.0,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Dracônico"],
         "habilidades_raciais": ["Ancestral Dracônico", "Arma de Sopro", "Resistência a Dano"],
@@ -329,7 +343,9 @@ RACAS_5E = {
     },
     "Meio-Orc": {
         "atributos": {"Força": 2, "Destreza": 0, "Constituição": 1, "Inteligência": 0, "Sabedoria": 0, "Carisma": 0},
-        "deslocamento_m": 9,
+        "bonus": {"FOR": 2, "DES": 0, "CON": 1, "INT": 0, "SAB": 0, "CAR": 0},
+        "deslocamento_m": 9.0,
+        "speed": 9.0,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Orc"],
         "habilidades_raciais": ["Visão no Escuro", "Ameaçador", "Tolerância Infindável", "Ataques Selvagens"],
@@ -337,7 +353,9 @@ RACAS_5E = {
     },
     "Tiefling": {
         "atributos": {"Força": 0, "Destreza": 0, "Constituição": 0, "Inteligência": 1, "Sabedoria": 0, "Carisma": 2},
-        "deslocamento_m": 9,
+        "bonus": {"FOR": 0, "DES": 0, "CON": 0, "INT": 1, "SAB": 0, "CAR": 2},
+        "deslocamento_m": 9.0,
+        "speed": 9.0,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Infernal"],
         "habilidades_raciais": ["Visão no Escuro", "Resistência Infernal", "Legado Infernal"],
@@ -345,7 +363,9 @@ RACAS_5E = {
     },
     "Anão da Colina": {
         "atributos": {"Força": 0, "Destreza": 0, "Constituição": 2, "Inteligência": 0, "Sabedoria": 1, "Carisma": 0},
+        "bonus": {"FOR": 0, "DES": 0, "CON": 2, "INT": 0, "SAB": 1, "CAR": 0},
         "deslocamento_m": 7.5,
+        "speed": 7.5,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Anão"],
         "habilidades_raciais": ["Visão no Escuro", "Resiliência Anã", "Treinamento Anão em Combate", "Tenacidade Anã"],
@@ -353,13 +373,59 @@ RACAS_5E = {
     },
     "Elfo da Floresta": {
         "atributos": {"Força": 0, "Destreza": 2, "Constituição": 0, "Inteligência": 0, "Sabedoria": 1, "Carisma": 0},
+        "bonus": {"FOR": 0, "DES": 2, "CON": 0, "INT": 0, "SAB": 1, "CAR": 0},
         "deslocamento_m": 10.5,
+        "speed": 10.5,
         "tamanho": "Médio",
         "idiomas": ["Comum", "Élfico"],
         "habilidades_raciais": ["Visão no Escuro", "Sentidos Aguçados", "Ancestralidade Feérica", "Transe", "Treinamento Élfico com Armas", "Pés Ligeiros"],
         "descricao_ui": "Seres graciosos e antigos, dotados de sentidos sobrenaturais, reflexos impecáveis e uma conexão profunda com o mundo natural."
     }
 }
+
+# Aliases de compatibilidade para consultas canônicas
+RACAS_5E["Elfo"] = RACAS_5E["Elfo da Floresta"]
+RACAS_5E["Anão"] = RACAS_5E["Anão da Colina"]
+RACAS_5E["Anao"] = RACAS_5E["Anão da Colina"]
+
+def get_racial_bonus(race_name: str) -> dict:
+    """
+    Retorna o bônus racial estruturado de atributos padronizado para FOR, DES, CON, INT, SAB, CAR.
+    Ex: get_racial_bonus('Humano') -> {'FOR': 1, 'DES': 1, 'CON': 1, 'INT': 1, 'SAB': 1, 'CAR': 1}
+    """
+    if not race_name:
+        return {"FOR": 0, "DES": 0, "CON": 0, "INT": 0, "SAB": 0, "CAR": 0}
+    r = RACAS_5E.get(race_name)
+    if not r:
+        r_low = race_name.lower().strip()
+        for k, v in RACAS_5E.items():
+            if k.lower() == r_low or r_low in k.lower() or k.lower() in r_low:
+                r = v
+                break
+    if r and "bonus" in r:
+        return r["bonus"].copy()
+    return {"FOR": 0, "DES": 0, "CON": 0, "INT": 0, "SAB": 0, "CAR": 0}
+
+def get_racial_speed(race_name: str) -> float:
+    """
+    Retorna o deslocamento racial oficial do D&D 5e em metros:
+    - Elfo (Elfo da Floresta): 10.5m
+    - Humano, Draconato, Meio-Orc, Tiefling: 9.0m
+    - Anão (Anão da Colina), Halfling: 7.5m
+    """
+    if not race_name:
+        return 9.0
+    r = RACAS_5E.get(race_name)
+    if not r:
+        r_low = race_name.lower().strip()
+        for k, v in RACAS_5E.items():
+            if k.lower() == r_low or r_low in k.lower() or k.lower() in r_low:
+                r = v
+                break
+    if r and "deslocamento_m" in r:
+        return float(r["deslocamento_m"])
+    return 9.0
+
 
 EQUIPAMENTOS_5E = {
     "Guerreiro": {"iniciais": ["Cota de Malha", "Espada Longa", "Escudo de Carvalho", "Besta Leve", "Pacote de Aventureiro"]},
@@ -548,22 +614,31 @@ class CharacterCalculator:
 
         if race_name in RACAS_5E:
             r5 = RACAS_5E[race_name]
-            speed = f"{r5.get('deslocamento_m', 9)}m"
+            speed = f"{r5.get('deslocamento_m', 9.0)}m"
             traits = r5.get("habilidades_raciais", [])
             if apply_racial:
-                map_raca = {
-                    "Força": ("FOR", "STR"),
-                    "Destreza": ("DES", "DEX"),
-                    "Constituição": ("CON", "CON"),
-                    "Inteligência": ("INT", "INT"),
-                    "Sabedoria": ("SAB", "WIS"),
-                    "Carisma": ("CAR", "CHA")
-                }
-                for pt_full, (pt_short, en_short) in map_raca.items():
-                    bonus = r5.get("atributos", {}).get(pt_full, 0)
-                    val = final_attrs.get(pt_short, final_attrs.get(en_short, 10)) + bonus
-                    final_attrs[pt_short] = val
-                    final_attrs[en_short] = val
+                if "bonus" in r5:
+                    pt_to_en = {"FOR": "STR", "DES": "DEX", "CON": "CON", "INT": "INT", "SAB": "WIS", "CAR": "CHA"}
+                    for pt_k, b_val in r5["bonus"].items():
+                        en_k = pt_to_en.get(pt_k, pt_k)
+                        val = final_attrs.get(pt_k, final_attrs.get(en_k, 10)) + b_val
+                        final_attrs[pt_k] = val
+                        final_attrs[en_k] = val
+                else:
+                    map_raca = {
+                        "Força": ("FOR", "STR"),
+                        "Destreza": ("DES", "DEX"),
+                        "Constituição": ("CON", "CON"),
+                        "Inteligência": ("INT", "INT"),
+                        "Sabedoria": ("SAB", "WIS"),
+                        "Carisma": ("CAR", "CHA")
+                    }
+                    for pt_full, (pt_short, en_short) in map_raca.items():
+                        bonus = r5.get("atributos", {}).get(pt_full, 0)
+                        val = final_attrs.get(pt_short, final_attrs.get(en_short, 10)) + bonus
+                        final_attrs[pt_short] = val
+                        final_attrs[en_short] = val
+
 
         sync_attributes_dict(final_attrs)
 
@@ -654,6 +729,7 @@ class CharacterCalculator:
             "ac": ac,
             "initiative": initiative,
             "speed": speed,
+            "speed_m": float(str(speed).replace("m", "")),
             "equipment": equipment,
             "equipped_armor": equipped_armor,
             "equipped_weapon": equipped_weapon,
@@ -1311,10 +1387,21 @@ def load_character_creation_jsons():
                         raca_info["descricao_ui"] = val.get("description_pt", "")
                     if "stat_bonuses" in val:
                         raca_info["stat_bonuses"] = val["stat_bonuses"]
+                        pt_map = {"Força": "FOR", "Destreza": "DES", "Constituição": "CON", "Inteligência": "INT", "Sabedoria": "SAB", "Carisma": "CAR"}
+                        bonus_dict = {"FOR": 0, "DES": 0, "CON": 0, "INT": 0, "SAB": 0, "CAR": 0}
+                        for full_k, v in val["stat_bonuses"].items():
+                            if full_k in pt_map:
+                                bonus_dict[pt_map[full_k]] = v
+                        raca_info["bonus"] = bonus_dict
                     if "speed" in val:
                         raca_info["speed"] = val["speed"]
+                        raca_info["deslocamento_m"] = float(val["speed"])
                     if "size" in val:
                         raca_info["size"] = val["size"]
+            # Sincroniza aliases canônicos
+            RACAS_5E["Elfo"] = RACAS_5E["Elfo da Floresta"]
+            RACAS_5E["Anão"] = RACAS_5E["Anão da Colina"]
+            RACAS_5E["Anao"] = RACAS_5E["Anão da Colina"]
     except Exception:
         pass
 
@@ -1375,4 +1462,28 @@ def load_character_creation_jsons():
     except Exception:
         pass
 
+MANUAL_DO_JOGADOR_5E = {}
+
+def get_manual_do_jogador(secao: str = None) -> dict:
+    """Retorna os dados estruturados do Manual do Jogador D&D 5e (SRD)."""
+    global MANUAL_DO_JOGADOR_5E
+    if not MANUAL_DO_JOGADOR_5E:
+        try:
+            with open("data/manual_do_jogador.json", "r", encoding="utf-8") as f:
+                MANUAL_DO_JOGADOR_5E = json.load(f)
+        except Exception:
+            try:
+                with open("data/player_handbook.json", "r", encoding="utf-8") as f:
+                    MANUAL_DO_JOGADOR_5E = json.load(f)
+            except Exception:
+                MANUAL_DO_JOGADOR_5E = {}
+    if secao:
+        return MANUAL_DO_JOGADOR_5E.get("secoes", {}).get(secao, {})
+    return MANUAL_DO_JOGADOR_5E
+
+get_player_handbook = get_manual_do_jogador
+get_player_handbook_entry = get_manual_do_jogador
+
 load_character_creation_jsons()
+get_manual_do_jogador()
+

@@ -23,6 +23,8 @@ class SceneRenderer:
         self._formatted_messages = []
         self._panel_bg_cache = {}
         self._shadow_cache = {}
+        self._aura_cache = {}
+        self.current_player = None
         self._cached_panel_w = int(self.width * 0.40)
         self.last_msg_id = None
         self.scroll_y = 0
@@ -41,9 +43,9 @@ class SceneRenderer:
         falante = msg.get("npc_falando") or "nenhum"
         msg_type = msg.get("type", "narrative")
         
-        font_to_use = self.font_narrative if msg_type == "narrative" else self.font_log
+        font_to_use = self.font_narrative if msg_type in ["narrative", "player"] else self.font_log
         
-        has_portrait = falante.lower() != "nenhum" and msg_type == "narrative"
+        has_portrait = falante.lower() != "nenhum" and (msg_type in ["narrative", "player"])
         if has_portrait:
             msg_w = panel_w - 120
         else:
@@ -104,7 +106,30 @@ class SceneRenderer:
             return AssetManager.get_hero_sprite(race, char_class, gender)
         return AssetManager.get_enemy_sprite(tipo or (target or {}).get("tipo_bestiario", ""))
 
-    def draw_board_token(self, screen: pygame.Surface, image: pygame.Surface, x: int, y: int, size: int):
+    def _get_golden_aura(self, size: int) -> pygame.Surface:
+        if size not in self._aura_cache:
+            aura_pad = 28
+            surf_dim = size + aura_pad * 2
+            aura_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
+            cx, cy = surf_dim // 2, surf_dim // 2
+            # Gradiente concêntrico luminoso dourado pré-renderizado (Zero Garbage)
+            radii_alphas = [
+                (size // 2 + 24, 25),
+                (size // 2 + 18, 50),
+                (size // 2 + 12, 85),
+                (size // 2 + 6, 125),
+                (size // 2 + 2, 160)
+            ]
+            for r, a in radii_alphas:
+                pygame.draw.circle(aura_surf, (255, 215, 65, a), (cx, cy), r)
+            self._aura_cache[size] = aura_surf
+        return self._aura_cache[size]
+
+    def draw_board_token(self, screen: pygame.Surface, image: pygame.Surface, x: int, y: int, size: int, has_aura: bool = False):
+        if has_aura:
+            aura = self._get_golden_aura(size)
+            aura_offset = (aura.get_width() - size) // 2
+            screen.blit(aura, (x - aura_offset, y - aura_offset))
         if size not in self._shadow_cache:
             shadow_surf = pygame.Surface((size, size // 2), pygame.SRCALPHA)
             pygame.draw.ellipse(shadow_surf, (0, 0, 0, 150), shadow_surf.get_rect())
@@ -169,8 +194,9 @@ class SceneRenderer:
         bg_surf = AssetManager.get_background(bg_image)
         screen.blit(AssetManager.get_scaled(bg_surf, (self.width, self.height)), (0, 0))
 
-        if game_state.get("player_character"):
-            self.draw_top_hud(screen, game_state["player_character"])
+        self.current_player = game_state.get("player_character", {})
+        if self.current_player:
+            self.draw_top_hud(screen, self.current_player)
 
         # Coleta Inimigos e Monstros Vivos com porte proporcional (lado direito)
         living_enemies = []
@@ -227,7 +253,7 @@ class SceneRenderer:
                 # Feedback visual de hover/mira em combate
                 if is_combat and enemy_rect.collidepoint(mouse_pos):
                     pygame.draw.rect(screen, (255, 60, 60), enemy_rect, 2, border_radius=4)
-                    tip_surf = self.font_names.render("⚔ Atacar", True, (255, 215, 0))
+                    tip_surf = self.font_names.render("Atacar", True, (255, 215, 0))
                     cx_tip = x_pos + (draw_w // 2)
                     tip_bg = pygame.Rect(cx_tip - tip_surf.get_width() // 2 - 6, y_pos - 22, tip_surf.get_width() + 12, tip_surf.get_height() + 4)
                     pygame.draw.rect(screen, (25, 15, 15), tip_bg, border_radius=3)
@@ -361,11 +387,11 @@ class SceneRenderer:
         play_area_x = int(self.width * 0.40)
         play_area_w = self.width - play_area_x
         spacing = play_area_w // (len(players) + 1)
-        token_size = 104
+        token_size = 128
 
         for i, p in enumerate(players):
             cx = play_area_x + spacing * (i + 1)
-            cy = self.height - 165
+            cy = self.height - 180
 
             if p.get("sprite_key") or p.get("faction") == "ally":
                 hero_surf = AssetManager.get_entity_sprite(p, kind="corpo", size=(token_size, token_size))
@@ -374,7 +400,8 @@ class SceneRenderer:
                                                          p.get("gender") or p.get("genero"))
                 hero_surf = AssetManager.get_scaled(hero_surf, (token_size, token_size))
             
-            self.draw_board_token(screen, hero_surf, cx - (token_size // 2), cy - (token_size // 2), token_size)
+            is_hero_player = (i == 0)
+            self.draw_board_token(screen, hero_surf, cx - (token_size // 2), cy - (token_size // 2), token_size, has_aura=is_hero_player)
             box_rect = pygame.Rect(cx - (token_size // 2), cy - (token_size // 2), token_size, token_size)
             if i == 0:
                 hitboxes["player"] = box_rect
@@ -450,13 +477,25 @@ class SceneRenderer:
             if current_y + msg_h > panel_y and current_y < panel_y + panel_h:
                 draw_x = panel_x + 20
                 if pmsg["has_portrait"]:
-                    portrait = AssetManager.get_portrait_sprite(pmsg["falante"])
-                    portrait = AssetManager.get_scaled(portrait, (60, 60))
-                    screen.blit(portrait, (draw_x, current_y))
-                    pygame.draw.rect(screen, (180, 150, 50), (draw_x, current_y, 60, 60), 1)
-                    
-                    name_tag = self.font_names.render(pmsg["falante"].capitalize(), True, (180, 150, 50))
-                    screen.blit(name_tag, (draw_x + 70, current_y))
+                    if pmsg["msg_type"] == "player":
+                        pc = getattr(self, "current_player", {}) or {}
+                        race = pc.get("race", "Humano")
+                        char_class = pc.get("class", "Guerreiro")
+                        gender = pc.get("gender") or pc.get("genero")
+                        portrait = AssetManager.get_hero_icon(race, char_class, gender, size=(60, 60))
+                        screen.blit(portrait, (draw_x, current_y))
+                        pygame.draw.rect(screen, (220, 180, 60), (draw_x, current_y, 60, 60), 2, border_radius=3)
+                        
+                        falante_name = pmsg["falante"].capitalize()
+                        name_tag = self.font_names.render(f"[Você] {falante_name}", True, (255, 215, 0))
+                        screen.blit(name_tag, (draw_x + 70, current_y))
+                    else:
+                        portrait = AssetManager.get_portrait_sprite(pmsg["falante"], size=(60, 60))
+                        screen.blit(portrait, (draw_x, current_y))
+                        pygame.draw.rect(screen, (180, 150, 50), (draw_x, current_y, 60, 60), 1)
+                        
+                        name_tag = self.font_names.render(pmsg["falante"].capitalize(), True, (180, 150, 50))
+                        screen.blit(name_tag, (draw_x + 70, current_y))
                     
                     text_y = current_y + 25
                     line_h = pmsg["font"].get_linesize()
@@ -766,7 +805,7 @@ class BeatTransitionScene:
             })
             
             # Tag Épica de Abertura / Moldura Superior
-            tag_str = f"❖  {info['tag'].upper()}  ❖"
+            tag_str = f"-  {info['tag'].upper()}  -"
             tag_surf = self.font_interlude_tag.render(tag_str, True, (215, 175, 80))
             tag_rect = tag_surf.get_rect(center=(cx, top_y + 35))
             screen.blit(tag_surf, tag_rect)
@@ -778,13 +817,13 @@ class BeatTransitionScene:
             screen.blit(act_surf, act_rect)
             
             # Subtítulo Poético / Atmosférico
-            sub_str = f"« {info['subtitle']} »"
+            sub_str = f'"{info["subtitle"]}"'
             sub_surf = self.font_interlude_sub.render(sub_str, True, (240, 215, 175))
             sub_rect = sub_surf.get_rect(center=(cx, top_y + 115))
             screen.blit(sub_surf, sub_rect)
             
             # Divisor Ornamental
-            div_txt = "❖ ────────── ◆ ────────── ❖"
+            div_txt = "-----------------"
             div_surf = self.font_prompt.render(div_txt, True, (175, 135, 55))
             div_rect = div_surf.get_rect(center=(cx, top_y + 148))
             screen.blit(div_surf, div_rect)
@@ -827,7 +866,7 @@ class BeatTransitionScene:
             screen.blit(act_surf, act_rect)
             
             # Divisor decorativo
-            div_txt = "◆ ──────── ❖ ──────── ◆"
+            div_txt = "-----------------"
             div_surf = self.font_prompt.render(div_txt, True, (160, 130, 60))
             div_rect = div_surf.get_rect(center=(cx, self.card_y + 80))
             screen.blit(div_surf, div_rect)

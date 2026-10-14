@@ -692,40 +692,48 @@ Detailed 2.5D pixel art portrait icon of male half-orc wizard protagonist, 32-bi
 
 ---
 
-### [PROT-35] Protagonista Meio-Orc Patrulheiro (Rastreador das Estepes)
-* **Diferença dos Patrulheiros Aliados:** Caçador selvagem de feras colossais. Veste couro de rinoceronte com peles grossas, arco composto pesado reforçado com ossos nas extremidades, aljava de dardos de arremesso e lança curta presa às costas.
+### [PROT-35] Protagonista Meio-Orc Patrulheiro (Rastreador dos Ermos Ferozes)
+* **Diferença dos Patrulheiros Aliados:** Caçador veterano e implacável das tundras e estepes cinzentas. Pele verde-oliva acinzentada marcada por escarificações rituais de caça e pinturas de guerra em ocre, presas inferiores irregulares reforçadas com aros de arame de bronze, coque de guerreiro alto preso com tendão e atravessado por uma garra de urso das cavernas. Veste couraça de couro pesado de mamute rebitada com escamas de serpe e tachas de ferro batido, manto assimétrico de pele de lobo atroz sobre o ombro direito preso por fivela de crânio de fera em ferro negro, bandoleira de dardos com pontas de osso entalhado. Empunha um arco recurvo de guerra colossal de chifre de monstro e madeira negra reforçado com tendões, puxando uma flecha pesada com ponta de obsidiana farpada; na cintura, traz um facão serrilhado de desossar com cabo de osso.
 * **Sprite:** `assets/sprites/heroes/meio_orc_patrulheiro_male.png`
 * **Retrato:** `assets/sprites/heroes/icones/meio_orc_patrulheiro_male.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, male half-orc savage hunter ranger protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 alert wilderness stance, weathered olive-grey skin, sharp tusks, heavy rhino-hide brigandine with dark fur shoulder mantle, pulling back a massive bone-reinforced recurve war bow with barbed arrow, heavy hunting machete at belt, crisp pixel outlines, wilderness shadow dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, male half-orc beast-tracker ranger protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 dynamic stalking stance, weathered ash-olive skin, tribal ritual scars across brow, sharp lower tusks bound in bronze wire, high warrior topknot tied with sinew and pierced by a cave-bear claw, heavy mammoth-leather brigandine with dark wyvern scales and forged iron rivets, asymmetrical dire-wolf fur pelt over right shoulder fastened by an iron wolf-skull buckle, drawing a massive recurve war bow crafted from blackened horn and darkwood with sinew wrapping, nocking a heavy barbed hunting arrow with black obsidian broadhead, serrated bone-handled gutting cleaver at hip, bandolier of bone-tipped hunting darts, crisp pixel outlines, gritty chiaroscuro shadow dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of male half-orc ranger protagonist, 32-bit dark fantasy avatar, keen observant yellow eyes, weathered olive skin, tusks, fur-lined leather collar, low-angle rugged campfire lighting, framed by a carved mammoth tusk and barbed arrow pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of male half-orc ranger protagonist, 32-bit dark fantasy avatar, intense piercing amber predator eyes, weathered ash-olive skin with deep ritual hunt scarification across cheekbone and brow, sharp lower tusks bound in bronze wire, coarse black hair tied in topknot with bone pins, thick dire-wolf fur mantle collar with iron wolf-skull clasp, dramatic low-angle torchlight dithering, enclosed within a thick square chiseled weathered granite and iron studs pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-masterpiece 2.5D pixel art sprite, male half-orc ranger hunter, rhino-hide armor, bone-reinforced war bow, barbed arrow, fur mantle, 32-bit tactical RPG angle, crisp pixel clusters, isolated on solid black background
+masterpiece 2.5D pixel art sprite, male half-orc ranger tracker, ash-olive skin, ritual scarification, tusk rings, mammoth-leather brigandine with wyvern scales, dire-wolf fur mantle, massive horn recurve war bow with obsidian barbed arrow, 32-bit tactical RPG angle, crisp pixel clusters, gritty chiaroscuro dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, male half-orc ranger protagonist, intense amber eyes, ritual scars, tusks bound in bronze wire, dire-wolf fur collar, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, chiaroscuro lighting
 ```
 
 ---
 
 ### [PROT-36] Protagonista Meio-Orc Ladina (Bruta das Sombras)
-* **Diferença dos Ladinos Aliados:** Uma assassina de impacto físico que prefere emboscadas implacáveis. Veste couro negro laminado com pregos de ferro, capuz justo de lã escura, empunhando duas machadinhas de arremesso balanceadas e um facão curvo de cortar tendões.
+* **Diferença dos Ladinos Aliados:** Uma assassina furtiva de impacto devastador e agilidade física incomparável. Pele verde-ardósia escura, têmporas e laterais da cabeça raspadas com dreadlocks grossos presos por anéis de ferro escurecido, presas inferiores afiadas como agulhas entalhadas com ranhuras de contagem ritual, olhos ferozes cor de cobre-âmbar sob pintura facial de fuligem ao redor dos olhos. Veste gibão ajustado de couro preto flexível curtido a carvão com placas de aço escurecido nos ombros, gola alta de linho negro dobrada como meia-máscara, luvas sem dedos com nós dos dedos reforçados por bronze. Empunha duas machadinhas de arremesso em aço escurecido com gumes serrilhados e lâminas barbudas em guarda cruzada ágil, além de um facão curvo de decepar tendões preso à coxa.
 * **Sprite:** `assets/sprites/heroes/meio_orc_ladino_female.png`
 * **Retrato:** `assets/sprites/heroes/icones/meio_orc_ladino_female.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, female half-orc enforcer rogue protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 aggressive crouched ambush stance, athletic muscular build, dark olive-grey skin, sharp lower tusks, fitted studded black leather armor, dark cowl wrapped tightly, dual-wielding blackened throwing hatchets with serrated edges, cleaver dagger at hip, crisp pixel outlines, moonlight chiaroscuro dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, female half-orc shadow enforcer rogue protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 agile low-crouched ambush stance, athletic muscular silhouette, dark slate-green skin, side-shaved hair with thick dreadlocks bound in blackened-iron bands, sharp needle-pointed lower tusks etched with tally marks, charcoal warpaint mask across eyes, form-fitting oil-treated matte-black leather cuirass with blackened steel shoulder plates, midnight linen cowl pulled to collar, dual-wielding blackened-steel bearded throwing hatchets with serrated edges, curved tendon-cleaving trench knife strapped to thigh, fingerless knuckle-reinforced brawler gloves, dynamic cold moonlight chiaroscuro dithering, crisp pixel outlines, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of female half-orc rogue protagonist, 32-bit dark fantasy avatar, lethal cold amber eyes, olive skin with small tusks, dark cowl over braided black hair, studded leather collar, high-contrast cool moonlight lighting, framed by crossed serrated hatchets pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of female half-orc rogue protagonist, 32-bit dark fantasy avatar, cold calculating copper-amber eyes, dark slate-green skin, sharp needle-pointed tusks etched with ritual tally notches, charcoal stealth warpaint around eye sockets, side-shaved dreadlocks with dark metal rings, high matte-black leather collar with studded rivets, harsh angular moonlit edge lighting, enclosed within a thick square blackened forged-steel pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-2.5D pixel art sprite, female half-orc rogue enforcer, studded black leather armor, tight cowl, serrated throwing hatchets, 32-bit tactical RPG style, sharp pixel dithering, isolated on black background
+masterpiece 2.5D pixel art sprite, female half-orc rogue assassin, slate-green skin, dreadlocks with iron rings, charcoal eye warpaint, matte-black leather cuirass, dual serrated throwing hatchets, 32-bit tactical RPG angle, crisp pixel clusters, high-contrast moonlit dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, female half-orc rogue protagonist, copper-amber eyes, charcoal warpaint, engraved tusks, side-shaved dreadlocks, studded black collar, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, moonlight chiaroscuro
 ```
 
 ---
@@ -735,115 +743,139 @@ Detailed 2.5D pixel art portrait icon of female half-orc rogue protagonist, 32-b
 ---
 
 ### [PROT-37] Protagonista Tiefling Guerreiro (Cavaleiro do Fogo Fátuo)
-* **Diferença dos Guerreiros Aliados:** Pele carmesim profunda, chifres grossos que se projetam para cima como uma coroa, armadura de placas completas de ferro fundido com sulcos por onde escapa calor avermelhado, empunhando uma espada larga de gume recortado que crepita em brasas e escudo com face demoníaca em ferro batido.
+* **Diferença dos Guerreiros Aliados:** Um tirano de batalha implacável forjado no calor infernal. Pele carmesim-sangue escura com escamas sutis de obsidiana nas maçãs do rosto, par de chifres maciços e anelados de obsidiana que se projetam para cima como uma coroa recortada gravada com runas que brilham em brasa rubra, olhos cor de latão incandescente sem pupilas exalando filamentos sutis de fumaça. Veste armadura articulada pesada de ferro gusa bruto com fissuras térmicas por onde brilha magma líquido, gorjal espinhoso no formato de queixada demoníaca, ombreiras serrilhadas, cauda espessa terminada em lâmina afiada de ferro. Empunha uma montante brutal de lâmina ondulada estilo flamberge em ferro negro que verte brasas e chamas laranjas, acompanhada de um pesado escudo de torre retangular com rebites de ferro forjado.
 * **Sprite:** `assets/sprites/heroes/tiefling_guerreiro_male.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_guerreiro_male.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, male tiefling hellknight warrior protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 menacing battle stance, deep-crimson skin, crown-like sweeping horns, heavy cast-iron plate armor with glowing red heat grooves, spade-tipped tail curling behind, brandishing an infernal jagged broadsword dripping glowing embers and a demon-faced wrought-iron shield, crisp pixel outlines, hellfire dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, male tiefling hellknight juggernaut warrior protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 imposing heavy battle stance, dark blood-crimson skin with obsidian micro-scales on temples, massive sweeping ribbed obsidian horns carved with glowing ember-hot infernal runes, pupil-less molten-brass demonic eyes venting faint smoke, heavy articulated cast-iron plate armor with glowing red volcanic fissure lines, spiked segmented pauldrons, demon-jaw gorget, thick spade-bladed tail coiled low, wielding a colossal wavy flamberge broadsword dripping orange glowing embers and sparks, heavy square iron-banded tower shield on off-hand, crisp pixel outlines, infernal furnace chiaroscuro dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of male tiefling warrior protagonist, 32-bit dark fantasy avatar, glowing solid-gold demonic eyes without pupils, crimson skin, crowned horns, cast-iron gorget with glowing red runes, intense ember backlighting, framed by a wrought-iron horned demon skull pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of male tiefling warrior protagonist, 32-bit dark fantasy avatar, glowing pupil-less molten-brass eyes with curling smoke wisps, dark blood-crimson skin, heavy ribbed obsidian horns engraved with glowing red runes, articulated cast-iron gorget with smoldering internal heat vents, fierce angular jawline, intense furnace-light rim dithering, enclosed within a thick square scorched black-iron and glowing rivet pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-masterpiece 2.5D pixel art sprite, male tiefling warrior hellknight, crimson skin, crowned horns, cast-iron plate armor with heat grooves, jagged ember broadsword, demon shield, 32-bit tactical RPG angle, crisp pixel clusters, isolated on black background
+masterpiece 2.5D pixel art sprite, male tiefling hellknight warrior, blood-crimson skin, runic ribbed obsidian horns, cast-iron plate armor with glowing magma veins, ember flamberge greatsword, heavy square iron shield, 32-bit tactical RPG angle, crisp pixel clusters, volcanic fire dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, male tiefling warrior protagonist, glowing molten brass eyes, blood-crimson skin, runic horns, smoldering iron gorget, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, furnace chiaroscuro
 ```
 
 ---
 
 ### [PROT-38] Protagonista Tiefling Clériga (Domínio do Fogo / Luz)
-* **Diferença dos Clérigos Aliados:** Pele lilás-cinzenta com chifres graciosos em espiral, vestes sacerdotais escuras com estola carmesim bordada em chamas douradas sobre cota de malha, empunhando um cetro de ferro batido com uma chama sagrada perpétua flutuando na ponta e escudo de prata polida.
+* **Diferença dos Clérigos Aliados:** Uma sacerdotisa solene que consagrou suas chamas ancestrais à liturgia sagrada da redenção. Pele lilás-cinzenta com finas escarificações litúrgicas em prata ao redor dos olhos, chifres delgados em espiral graciosa adornados com correntes finas de prata e berloques votivos, olhos prateados incandescentes e serenos. Veste cota de malha fosca sob vestes monásticas de veludo azul-profundo e estola sacerdotal carmesim bordada a ouro com versículos da chama divina; empunha um báculo de ferro forjado culminando em uma lanterna gótica hexagonal com uma chama sagrada dourada viva, e um escudo aquecedor de prata polida marcado em relevo com o cálice sagrado.
 * **Sprite:** `assets/sprites/heroes/tiefling_clerigo_female.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_clerigo_female.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, female tiefling sacred flame cleric protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 graceful casting stance, lavender-grey skin, elegant spiral horns, dark monastic vestments with crimson stole embroidered with golden flames over steel chainmail, holding a wrought-iron holy scepter topped with a perpetual hovering golden flame, polished silver shield on off-hand, crisp pixel outlines, warm holy fire dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, female tiefling sacred pyre cleric protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 solemn liturgical battle stance, soft lavender-grey skin with faint silver devotional scarification, elegant backwards-curving spiral horns draped in delicate silver reliquary chains and charms, glowing translucent silver-white eyes, blackened steel chainmail under midnight-blue robes with deep crimson stole embroidered in gold flame scriptures, gripping a forged-iron holy scepter topped with a gothic brazier cage sheltering a perpetual bright golden divine flame, polished mirror-sheen silver heater shield bearing an embossed sunburst chalice, slender tail draped gracefully, crisp pixel outlines, radiant holy fire dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of female tiefling cleric protagonist, 32-bit dark fantasy avatar, serene glowing silver eyes, lavender skin, spiral horns, crimson stole collar, soft golden holy fire glow illuminating brow, framed by an interlocking silver flame and sacred rune pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of female tiefling cleric protagonist, 32-bit dark fantasy avatar, serene glowing silver-white eyes, pale lavender-grey skin with fine silver prayer scars, spiral horns draped with miniature silver prayer chains, embroidered crimson silk liturgical cowl, soft golden radiance from holy flame reflecting warmly on cheek and forehead, enclosed within a thick square engraved antique silver and sanctified iron pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-2.5D pixel art sprite, female tiefling cleric of light, lavender-grey skin, spiral horns, crimson and gold vestments, holy flame scepter, silver shield, 32-bit retro tactical RPG style, divine flame dithering, isolated on black background
+masterpiece 2.5D pixel art sprite, female tiefling cleric of holy pyre, lavender-grey skin, spiral horns with silver chains, midnight-blue and crimson robes, holy brazier scepter with golden divine flame, silver sunburst shield, 32-bit tactical RPG angle, crisp pixel clusters, radiant chiaroscuro dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, female tiefling cleric protagonist, glowing silver-white eyes, lavender skin, chained horns, embroidered crimson stole, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, divine flame lighting
 ```
 
 ---
 
 ### [PROT-39] Protagonista Tiefling Paladino (Juramento da Redenção)
-* **Diferença dos Paladinos Aliados:** Um cruzado que busca redimir sua herança infernal. Veste armadura de placas completas de aço escovado branco com bordas douradas, capa branca de seda pesada, chifres adornados com tiras de linho sagrado e preces, empunhando uma maça pesada brilhando com luz pura e escudo oval imaculado.
+* **Diferença dos Paladinos Aliados:** Um penitente sagrado que jurou quebrar as correntes da tirania infernal. Pele vermelho-fuligem escura, chifres compridos curvados para trás envoltos em faixas de pergaminho sagrado com orações em caligrafia dourada afixadas por pregos rituais de ferro, olhos dourados de compaixão severa com cicatriz vertical sobre o supercílio esquerdo. Veste armadura pesada de placas completas de aço revestida por esmalte branco desgastado de batalha com biséis de latão martelado inscritos com votos de proteção, capa grossa de lã crua cor de marfim com fecho de sol radiante em bronze, empunhando uma maça de guerra flangeada pulsando luz solar dourada ofuscante e escudo gota de aço esmaltado exibindo o relevo de uma espada partida.
 * **Sprite:** `assets/sprites/heroes/tiefling_paladino_male.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_paladino_male.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, male tiefling redemption paladin protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 noble champion stance, dusky-red skin, backward horns wrapped in sacred white parchment ribbons, pristine white-enamelled plate armor with gold filigree, pure white flowing cape, wielding a heavy flanged holy mace glowing with intense celestial white radiance and an oval steel shield, crisp pixel outlines, divine light dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, male tiefling redemption paladin champion protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 unyielding heroic stance, dusky ash-rose skin, backwards-sweeping horns bound tight in white vellum scripture banners inscribed with golden litanies and iron devotional nails, noble sorrowful golden eyes with vertical dueling scar over left brow, heavy battle-worn plate armor of ivory-white enamel over dark steel with chased brass edges, coarse off-white wool cloak with heavy bronze sunburst clasp, wielding a heavy flanged holy war-mace pulsing with radiant solar dawnlight, pristine kite shield bearing an embossed broken sword emblem, crisp pixel outlines, celestial solar dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of male tiefling paladin protagonist, 32-bit dark fantasy avatar, sorrowful yet resolute glowing white eyes, dusky-red skin, parchment-wrapped horns, white-and-gold plate gorget, brilliant celestial halo reflection, framed by an ornate white enamel and gold holy chain pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of male tiefling paladin protagonist, 32-bit dark fantasy avatar, steadfast compassionate golden eyes, dusky ash-rose skin, scar over left eye, horns wrapped in sacred vellum scripture ribbons with golden calligraphy, weathered ivory-enamel and brass gorget, warm celestial solar backlight illuminating brow, enclosed within a thick square hammered ivory-enamel and burnished brass pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-masterpiece 2.5D pixel art sprite, male tiefling paladin of redemption, dusky-red skin, parchment-wrapped horns, white-and-gold plate armor, celestial glowing mace, 32-bit tactical RPG angle, crisp pixel clusters, isolated on solid black background
+masterpiece 2.5D pixel art sprite, male tiefling redemption paladin, ash-rose skin, scripture-wrapped horns, ivory-white plate armor with brass trim, radiant solar flanged war-mace, broken sword kite shield, 32-bit tactical RPG angle, crisp pixel clusters, celestial light dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, male tiefling paladin protagonist, compassionate golden eyes, scarred brow, scripture-bound horns, ivory-enamel gorget, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, solar rim light
 ```
 
 ---
 
 ### [PROT-40] Protagonista Tiefling Mago (Evocador Infernal)
-* **Diferença do Aliado Azaroth:** Azaroth veste túnica escura clássica com mísseis mágicos. O Mago Protagonista Tiefling tem pele carmesim com escamas sutis nas maçãs do rosto, vestes de couro de dragão negro com gola alta pontiaguda, flutuando grimório com fecho de crânio com chamas púrpuras e canalizando relâmpagos infernais de ambas as mãos.
+* **Diferença do Aliado Azaroth:** Um conjurador aristocrático das forças cósmicas e do abismo que canaliza energia bruta através de foco alquímico. Pele carmesim-viva com minúsculas escamas pretas brilhantes nas têmporas e queixo, chifres recurvados imponentes de obsidiana lapidada entalhados com runas abissais fluorescentes em ametista, olhos violeta incandescentes com pupilas em fenda felina, cabelos negros compridos presos em coque acadêmico alto com alfinete de osso esculpido. Veste casaco ajustado de couro de dragão negro com gola alta espetada forrado em seda púrpura imperial, bandoleira com filactérias de vidro fundido cheias de essências arcanas brilhantes, grimório flutuante com fecho de crânio em bronze irradiando círculos concêntricos de runas arcanas roxas enquanto suas mãos estalando canalizam arcos de relâmpagos violeta e plasma ardente.
 * **Sprite:** `assets/sprites/heroes/tiefling_mago_male.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_mago_male.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, male tiefling pyromancer wizard protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 dynamic floating casting stance, vivid crimson skin, long sweeping obsidian horns, high-collared dragon-leather wizard coat trimmed in purple silk, pointed tail swishing, floating skull-clasped grimoire radiating violet infernal glyphs, dual-channeling crackling dark-purple and orange flame arcs from open clawed hands, crisp pixel outlines, magical fire dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, male tiefling abyssal evoker wizard protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 floating dynamic casting stance, rich blood-crimson skin with fine obsidian scales along cheekbones, sweeping crown-like horns of polished obsidian etched with glowing amethyst abyssal runes, burning slit-pupil violet eyes, raven-black hair tied in high scholar topknot with carved demon-bone hairpin, tailored black dragon-hide coat with pointed high collar and royal-purple silk lining, bandolier of glowing alchemical phylacteries, floating brass-skull grimoire radiating violet runic script, dual-channeling crackling bifurcated purple lightning arcs and dark flame plasma from clawed fingers, whip-like spade tail, crisp pixel outlines, eldritch flame dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of male tiefling wizard protagonist, 32-bit dark fantasy avatar, intense pupil-less burning violet eyes, crimson skin, sweeping obsidian horns, high black leather collar, dramatic purple fire illumination, framed by an ancient infernal rune circle and blackened skull pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of male tiefling wizard protagonist, 32-bit dark fantasy avatar, intense burning violet slit eyes, blood-crimson skin with obsidian facial scales, sweeping black horns etched with glowing violet runes, high pointed black dragon-leather collar with royal-purple lapel, eerie purple plasma backlighting illuminating sharp cheekbones, enclosed within a thick square obsidian and runic dark-bronze pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-2.5D pixel art sprite, male tiefling wizard pyromancer, crimson skin, sweeping obsidian horns, high-collar dragon-leather coat, floating skull grimoire, violet infernal flames, 32-bit tactical RPG style, sharp pixel dithering, isolated on black background
+masterpiece 2.5D pixel art sprite, male tiefling abyssal wizard evoker, blood-crimson skin, runic obsidian horns, dragon-leather high-collar coat, floating brass skull grimoire, bifurcated purple lightning arcs, 32-bit tactical RPG angle, crisp pixel clusters, arcane plasma dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, male tiefling wizard protagonist, slit violet eyes, obsidian scales, runic horns, dragon-leather collar, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, purple eldritch lighting
 ```
 
 ---
 
 ### [PROT-41] Protagonista Tiefling Patrulheira (Caçadora dos Ermos Vulcânicos)
-* **Diferença dos Patrulheiros Aliados:** Especialista em caçar aberrações e demônios nas fendas de cinzas. Veste couraça de couro de quimera com proteções de osso negro, manto cinzento camuflado com fuligem, arco composto de ferro negro que dispara flechas embebidas em óleo incandescente.
+* **Diferença dos Patrulheiros Aliados:** Uma perseguidora mortal acostumada a sobreviver em caldeiras vulcânicas e desertos de cinzas asfixiantes. Pele púrpura-vulcânica escura salpicada com poeira de cinzas, chifres delgados varridos para trás rente ao crânio envoltos em tiras de couro e penas negras de corvo, olhos predatórios cor de enxofre com pupilas em fenda e pinturas tribais de cinza em divisas no nariz. Veste couraça de couro escamado de quimera com ombreiras de osso fossilizado negro, meia-capa com capuz desfiado manchada de fuligem, braçadeiras de arqueiro em couro escurecido. Empunha um arco recurvo pesado forjado em ferro negro e osso de monstro com roldanas de latão, disparando flechas de ponta de sílex embebidas em óleo incandescente que ardem em fumaça espessa; aljava no quadril com flechas de empenagem preta e cauda delgada armada com ponta cortante.
 * **Sprite:** `assets/sprites/heroes/tiefling_patrulheiro_female.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_patrulheiro_female.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, female tiefling ashland ranger protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 agile draw stance, dusk-purple skin, sleek backwards-swept horns, chimera-hide brigandine with dark bone pauldrons, soot-grey ragged cloak, tail with small blade tip, drawing a heavy blackened-iron recurve bow with incandescent flaming arrow, leather quiver on back, crisp pixel outlines, ember shadow dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, female tiefling ashland apex ranger protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 low stalking archery stance, dusky volcanic-purple skin dusted with grey soot, sleek swept-back horns wrapped in weathered leather bands with raven feathers, predatory sulfur-yellow slit eyes with tribal ash chevron marks on nose bridge, scaled chimera-hide cuirass reinforced with charred black bone pauldrons, tattered soot-grey travel cowl and half-cloak, drawing a heavy recurve war bow of blackened iron and fossil horn, nocking a flint-tipped broadhead arrow igniting with fiery pitch and trailing dark smoke, hip quiver of black-fletched arrows, sinewy bladed tail, crisp pixel outlines, ember smoke chiaroscuro dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of female tiefling ranger protagonist, 32-bit dark fantasy avatar, sharp predatory yellow slit eyes, dusk-purple skin, sleek horns, soot-grey cowl collar, warm ember sparks drifting across cheek, framed by a blackened iron thorn and smoking arrow pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of female tiefling ranger protagonist, 32-bit dark fantasy avatar, predatory luminous sulfur-yellow slit eyes, dusky volcanic-purple skin, chevron ash warpaint across nose bridge, sleek horns wrapped in dark leather with feather charms, soot-grey cowl collar, drifting burning ember particles casting warm directional light, enclosed within a thick square scorched basalt stone and iron rivet pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-masterpiece 2.5D pixel art sprite, female tiefling ranger, dusk-purple skin, sleek horns, chimera-hide armor, blackened-iron bow with flaming arrow, soot cloak, 32-bit tactical RPG angle, crisp pixel clusters, isolated on solid black background
+masterpiece 2.5D pixel art sprite, female tiefling ashland ranger, volcanic-purple skin, sleek wrapped horns, sulfur-yellow eyes, chimera-hide armor, charred bone pauldrons, blackened iron war bow with smoking fire arrow, soot cloak, 32-bit tactical RPG angle, crisp pixel clusters, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, female tiefling ranger protagonist, sulfur-yellow slit eyes, ash warpaint, wrapped horns, soot-grey cowl collar, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, ember glow lighting
 ```
 
 ---
 
 ### [PROT-42] Protagonista Tiefling Ladina (Sombra Infernal)
-* **Diferença dos Ladinos Aliados:** Uma ladra acrobática que usa sua cauda preênsil para roubar chaves e desarmar armadilhas. Veste couro preto flexível fosco, capuz recortado para os chifres, máscara leve e duas adagas de estilete em aço azulado envenenado.
+* **Diferença dos Ladinos Aliados:** Uma infiltradora felina e ladra acrobática sem rival em arrombamentos de tesouros arcanos e criptas lacradas. Pele obsidiana com reflexos de vinho escuro, chifres curvos esguios que despontam graciosamente através de um capuz recortado sob medida, olhos brilhantes cor de topázio incandescente vigiando por trás de um véu semitransparente de seda preta cobrindo boca e queixo, tranças pretas ajustadas com ganzuas de prata e ganchos embutidos. Veste gibão colado ao corpo de couro fosco lubrificado e sem rebites barulhentos, bandoleira de agulhas de arremesso, cauda preênsil flexível que manipula com astúcia um chaveiro de bronze com chave mestra roubada, enquanto as mãos empunham dois estiletes de perfuração em aço azulado em pegada invertida rápida.
 * **Sprite:** `assets/sprites/heroes/tiefling_ladino_female.png`
 * **Retrato:** `assets/sprites/heroes/icones/tiefling_ladino_female.png`
 * **Prompt Sprite (Midjourney v6):**
 ```text
-Full-body player character battle sprite, female tiefling shadow rogue protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 stealth crouching stance, obsidian-red skin, small elegant curved horns poking through fitted black leather hood, prehensile spade tail holding a stolen brass key, dual-wielding needle-thin blued-steel stiletto daggers in reverse grip, silent dark leather boots, crisp pixel outlines, midnight chiaroscuro dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
+Full-body player character battle sprite, female tiefling shadow phantom rogue protagonist, 2.5D HD pixel art, 32-bit dark fantasy tactical RPG, 3/4 acrobatic stealth prowl stance, deep obsidian-maroon skin, slender pointed horns poking precisely through a fitted matte-black cowl, glowing incandescent topaz-yellow eyes behind a gossamer black veil half-mask, tight braided dark hair interwoven with silver lockpicks, form-fitting silent oiled leather brigandine with muffled joints, prehensile spade-tipped tail deftly twirling a stolen glowing brass skeleton key, dual-wielding needle-thin triangular blued-steel stiletto daggers in reverse assassination grip, bandolier of throwing needles, soft-soled shadow boots, crisp pixel outlines, high-contrast moonlit shadow dithering, isolated on solid pure black background --v 6.0 --ar 1:1 --stylize 250
 ```
-* **Prompt Retrato (128x128 Token):**
+* **Prompt Retrato (128x128 Token - Midjourney v6):**
 ```text
-Detailed 2.5D pixel art portrait icon of female tiefling rogue protagonist, 32-bit dark fantasy avatar, cunning glowing golden eyes, obsidian-red skin, sleek horns through tight black hood, dark leather half-mask, high-contrast cool moonlit shadows, framed by a serrated blued-steel stiletto and shadow-wisp pixel art border, 1:1 square RPG token --v 6.0 --ar 1:1 --stylize 250
+Detailed 2.5D pixel art portrait icon of female tiefling rogue protagonist, 32-bit dark fantasy avatar, piercing incandescent topaz eyes, deep obsidian-maroon skin, sleek horns piercing through black leather cowl, sheer black veil mask over mouth and nose, silver lockpick charms in hair, oiled leather collar, high-contrast cool moonlight rim lighting, enclosed within a thick square blued-steel and studded dark-leather pixel art border flush to the canvas edges, full-bleed edge-to-edge square framing, solid dark pitch-black background extending completely into all four corners without any white space or margins --v 6.0 --ar 1:1 --stylize 250 --no white background, white corners, circular frame, rounded corners, white margins, empty borders, vignette, smooth, 3d, cgi, text, watermark
 ```
-* **Prompt SDXL / Flux.1:**
+* **Prompt SDXL / Flux.1 (Sprite):**
 ```text
-2.5D pixel art sprite, female tiefling rogue, obsidian-red skin, curved horns, fitted black leather hood, prehensile tail, twin blued-steel stiletto daggers, 32-bit tactical RPG style, sharp pixel dithering, isolated on black background
+masterpiece 2.5D pixel art sprite, female tiefling rogue infiltrator, obsidian-maroon skin, slender horns through cowl, topaz eyes, sheer veil mask, prehensile tail with skeleton key, twin blued-steel stiletto daggers, 32-bit tactical RPG angle, crisp pixel clusters, moonlit shadow dithering, isolated on solid black background
+```
+* **Prompt SDXL / Flux.1 (Retrato 128x128):**
+```text
+masterpiece 2.5D pixel art portrait icon, female tiefling rogue protagonist, luminous topaz eyes, sheer veil mask, horns through hood, silver lockpicks in hair, 32-bit retro tactical RPG token, full-bleed square portrait, thick square pixel art border flush to canvas edge, solid pure black background in all corners, no white margins, moonlight chiaroscuro
 ```
 
 ---

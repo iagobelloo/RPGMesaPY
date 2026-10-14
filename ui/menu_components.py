@@ -2,7 +2,7 @@ import pygame
 from typing import Dict, Any, Optional, List
 
 from ui.hud_components import (
-    Panel, draw_ui_panel, draw_ui_button,
+    Panel, draw_ui_panel, draw_ui_button, clean_tofu_glyphs, PlayerManualModal,
     COLOR_BG, COLOR_BORDER, COLOR_TEXT, COLOR_ACCENT, 
     COLOR_TEXT_DIM, COLOR_PANEL_BG, COLOR_WOOD_DARK, 
     COLOR_PARCHMENT, COLOR_GOLD, COLOR_INK
@@ -151,7 +151,7 @@ class GenericSelectionPanel(Panel):
 
         start_x = 185
         start_y = 178
-        btn_w, btn_h = 440, 34
+        btn_w, btn_h = 440, 30
 
         for i, item in enumerate(self.items):
             r = pygame.Rect(start_x, start_y + (i * btn_h), btn_w, btn_h)
@@ -173,7 +173,7 @@ class GenericSelectionPanel(Panel):
                     full_text = self.format_description_fn(item, data)
                 else:
                     full_text = data.get("descricao_ui", "")
-                _, _, lines = get_wrapped_text_dimensions(full_text, self.font_desc, self.desc_rect.width, fixed_line_height=28)
+                _, _, lines = get_wrapped_text_dimensions(full_text, self.font_desc, self.desc_rect.width, fixed_line_height=30)
                 self._desc_cache[item] = lines
 
     def draw(self, screen: pygame.Surface):
@@ -193,14 +193,14 @@ class GenericSelectionPanel(Panel):
                 pygame.draw.rect(screen, (139, 0, 0), r, 2, border_radius=4)
 
             label_text = self.button_labels.get(item, item)
-            txt_surf = self.font_ink.render(label_text, True, color_ink)
+            txt_surf = self.font_ink.render(clean_tofu_glyphs(label_text), True, color_ink)
             rect = txt_surf.get_rect(midleft=(r.left + 15, r.centery - 2))
             screen.blit(txt_surf, rect)
 
             tag_text = self.button_tags.get(item, "")
             if tag_text:
                 tag_color = (145, 35, 45) if "♀" in tag_text else (45, 70, 105)
-                tag_surf = self.font_ink_small.render(tag_text, True, tag_color)
+                tag_surf = self.font_ink_small.render(clean_tofu_glyphs(tag_text), True, tag_color)
                 tag_rect = tag_surf.get_rect(midright=(r.right - 14, r.centery - 1))
                 screen.blit(tag_surf, tag_rect)
 
@@ -212,7 +212,7 @@ class GenericSelectionPanel(Panel):
         if self.hover_item and self.hover_item in self._desc_cache:
             lines = self._desc_cache[self.hover_item]
             y_offset = self.desc_rect.y
-            line_h = 28
+            line_h = 30
             for line in lines:
                 if y_offset + self.font_desc.get_height() > self.desc_rect.bottom:
                     break
@@ -400,13 +400,14 @@ class CharacterCreationPanel(Panel):
         self._modal_overlay.fill((0, 0, 0, 150))
 
     def _build_gender_badge(self, text: str, bg_col: tuple, border_col: tuple, text_col: tuple) -> pygame.Surface:
-        tw, th = self.font_ink_12.size(text)
+        clean_text = clean_tofu_glyphs(text).strip()
+        tw, th = self.font_ink_12.size(clean_text)
         bw, bh = max(96, tw + 16), 24
         surf = pygame.Surface((bw, bh), pygame.SRCALPHA)
         pygame.draw.rect(surf, bg_col, (0, 0, bw, bh), border_radius=5)
         pygame.draw.rect(surf, border_col, (0, 0, bw, bh), 2, border_radius=5)
         pygame.draw.rect(surf, COLOR_GOLD, (2, 2, bw - 4, bh - 4), 1, border_radius=4)
-        txt_s = self.font_ink_12.render(text, True, text_col)
+        txt_s = self.font_ink_12.render(clean_text, True, text_col)
         surf.blit(txt_s, ((bw - tw) // 2, (bh - th) // 2))
         return surf
 
@@ -524,10 +525,10 @@ class CharacterCreationPanel(Panel):
         else:
             render_padded_text(self.selected_race, hb_raca)
         
-        # Dropdown Classe (Nome flexionado + símbolo ♂/♀ quando Raça e Classe preenchidas)
+        # Dropdown Classe (Nome flexionado sem tofu quando Raça e Classe preenchidas)
         draw_hitbox_border(self.hitbox_map["class"], False, self.hitbox_map["class"].collidepoint(mouse_pos))
-        class_text = f"{gender_info['class_display']} {gender_info['symbol']}" if has_both else self.selected_class
-        render_padded_text(class_text, hb_classe)
+        class_text = f"{gender_info['class_display']}" if has_both else self.selected_class
+        render_padded_text(clean_tofu_glyphs(class_text), hb_classe)
         
         draw_hitbox_border(self.hitbox_map["background"], False, self.hitbox_map["background"].collidepoint(mouse_pos))
         render_padded_text(self.selected_background, hb_bg)
@@ -537,31 +538,38 @@ class CharacterCreationPanel(Panel):
         
         # 3. Status Dinâmicos (center) via Cache de Alta Performance
         stats = self.get_current_stats()
-        from core.dnd_rules import get_modifier
+        from core.dnd_rules import RACAS_5E
         
         attr_map = {"FOR": "forca", "DES": "destreza", "CON": "constituicao", "INT": "inteligencia", "SAB": "sabedoria", "CAR": "carisma"}
         for attr_key, attr_pt in attr_map.items():
-            val = stats["attributes"].get(attr_key, 10)
-            mod = get_modifier(val)
-            mod_str = f"+{mod}" if mod >= 0 else str(mod)
-            draw_aligned_text(str(val), self.coords["atributos"][attr_pt]["base"], "center", self.font_ink)
-            draw_aligned_text(mod_str, self.coords["atributos"][attr_pt]["mod"], "center", self.font_ink)
+            # Coluna 1: Atributo Base (apenas quando classe estiver selecionada)
+            if self.selected_class:
+                base_val = self.base_attributes.get(attr_key, stats["attributes"].get(attr_key, 10))
+                draw_aligned_text(str(base_val), self.coords["atributos"][attr_pt]["base"], "center", self.font_ink)
             
-        c_stat = self.coords["status"]
-        draw_aligned_text(str(stats['ac']), c_stat["ca"], "center", self.font_ink)
-        draw_aligned_text(str(stats['initiative']), c_stat["iniciativa"], "center", self.font_ink)
-        draw_aligned_text(str(stats['speed']), c_stat["deslocamento"], "center", self.font_ink)
-        draw_aligned_text(str(stats['hp_max']), c_stat["pv"], "center", self.font_ink)
-        draw_aligned_text("+2", c_stat["proficiencia"], "center", self.font_ink)
+            # Coluna 2: Bônus Racial (apenas quando raça estiver selecionada)
+            if self.selected_race:
+                r_bonus = RACAS_5E.get(self.selected_race, {}).get("bonus", {}).get(attr_key, 0)
+                bonus_str = f"+{r_bonus}" if r_bonus > 0 else "0"
+                draw_aligned_text(bonus_str, self.coords["atributos"][attr_pt]["mod"], "center", self.font_ink)
+            
+        if self.selected_class:
+            c_stat = self.coords["status"]
+            draw_aligned_text(str(stats['ac']), c_stat["ca"], "center", self.font_ink)
+            draw_aligned_text(str(stats['initiative']), c_stat["iniciativa"], "center", self.font_ink)
+            draw_aligned_text(str(stats['speed']), c_stat["deslocamento"], "center", self.font_ink)
+            draw_aligned_text(str(stats['hp_max']), c_stat["pv"], "center", self.font_ink)
+            draw_aligned_text("+2", c_stat["proficiencia"], "center", self.font_ink)
         
-        # 4. Flutuação das Listas (Habilidades e Equipamento)
-        for i, ab in enumerate(stats["abilities"]):
-            if i < len(self.coords["listas"]["habilidades"]):
-                draw_aligned_text(ab, self.coords["listas"]["habilidades"][i], "bottomleft_offset", self.font_ink_small)
-            
-        for i, eq in enumerate(stats["equipment"]):
-            if i < len(self.coords["listas"]["equipamento"]):
-                draw_aligned_text(eq, self.coords["listas"]["equipamento"][i], "bottomleft_offset", self.font_ink_small)
+        # 4. Flutuação das Listas (Habilidades e Equipamento - ocultos até seleção de classe)
+        if self.selected_class:
+            for i, ab in enumerate(stats["abilities"]):
+                if i < len(self.coords["listas"]["habilidades"]):
+                    draw_aligned_text(ab, self.coords["listas"]["habilidades"][i], "bottomleft_offset", self.font_ink_small)
+                
+            for i, eq in enumerate(stats["equipment"]):
+                if i < len(self.coords["listas"]["equipamento"]):
+                    draw_aligned_text(eq, self.coords["listas"]["equipamento"][i], "bottomleft_offset", self.font_ink_small)
 
         # Botões
         draw_ui_button(screen, self.btn_cancel, "Cancelar", self.font_body, self.btn_cancel.collidepoint(mouse_pos), True)
@@ -803,13 +811,14 @@ class PauseMenuPanel(Panel):
     """Menu de Pausa In-Game."""
     def __init__(self, x: int, y: int, width: int, height: int):
         super().__init__(x, y, width, height, title="Menu de Pausa")
-        btn_w, btn_h = 250, 45
+        btn_w, btn_h = 250, 40
         btn_x = x + (width - btn_w) // 2
         
-        self.btn_resume = pygame.Rect(btn_x, y + 80, btn_w, btn_h)
-        self.btn_journal = pygame.Rect(btn_x, y + 140, btn_w, btn_h)
-        self.btn_save = pygame.Rect(btn_x, y + 200, btn_w, btn_h)
-        self.btn_quit = pygame.Rect(btn_x, y + 260, btn_w, btn_h)
+        self.btn_resume = pygame.Rect(btn_x, y + 70, btn_w, btn_h)
+        self.btn_journal = pygame.Rect(btn_x, y + 120, btn_w, btn_h)
+        self.btn_manual = pygame.Rect(btn_x, y + 170, btn_w, btn_h)
+        self.btn_save = pygame.Rect(btn_x, y + 220, btn_w, btn_h)
+        self.btn_quit = pygame.Rect(btn_x, y + 270, btn_w, btn_h)
         
     def _draw_button(self, screen, rect, text):
         from ui.hud_components import draw_ui_button
@@ -821,6 +830,7 @@ class PauseMenuPanel(Panel):
         if not self.is_visible: return
         self._draw_button(screen, self.btn_resume, "Retomar")
         self._draw_button(screen, self.btn_journal, "Diário de Aventuras")
+        self._draw_button(screen, self.btn_manual, "Manual do Jogador")
         self._draw_button(screen, self.btn_save, "Salvar Jogo")
         self._draw_button(screen, self.btn_quit, "Sair para o Menu")
 
@@ -829,6 +839,7 @@ class PauseMenuPanel(Panel):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.btn_resume.collidepoint(event.pos): return "resume"
             if self.btn_journal.collidepoint(event.pos): return "journal"
+            if hasattr(self, "btn_manual") and self.btn_manual.collidepoint(event.pos): return "action_player_manual"
             if self.btn_save.collidepoint(event.pos): return "save"
             if self.btn_quit.collidepoint(event.pos): return "quit"
         return ""
@@ -1034,12 +1045,12 @@ class SaveSelectionPanel(Panel):
             
             # Cabeçalho do Card (Número Romano do Slot)
             slot_roman = ["I", "II", "III"][i]
-            slot_header_txt = f"✦ PERGAMINHO {slot_roman} ✦"
+            slot_header_txt = f"PERGAMINHO {slot_roman}"
             hdr_surf = self.font_card_title.render(slot_header_txt, True, (130, 20, 20))
             screen.blit(hdr_surf, hdr_surf.get_rect(center=(cx, card_rect.y + 30)))
             
             # Divisor Ornamental superior
-            div_txt = "────── ◆ ──────"
+            div_txt = "-----------------"
             div_surf = self.font_info.render(div_txt, True, c_sep)
             screen.blit(div_surf, div_surf.get_rect(center=(cx, card_rect.y + 50)))
             

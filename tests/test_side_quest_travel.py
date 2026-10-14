@@ -184,7 +184,7 @@ class TestSideQuestTravel(unittest.TestCase):
         self.assertEqual(action, "accept_side_quest:sq_goblin_clearing")
 
     def test_07_grimoire_travel_button_in_hub(self):
-        """Valida exibição do botão Partir em Viagem no Grimório quando em local seguro."""
+        """Valida que o botão de teletransporte instantâneo foi eliminado do Grimório (missões são orgânicas)."""
         self.session.accept_side_quest("sq_goblin_clearing")
         self.grimoire.active_tab = "diario"
         self.grimoire.journal_filter = "ativas"
@@ -192,15 +192,8 @@ class TestSideQuestTravel(unittest.TestCase):
 
         self.grimoire.draw(self.screen)
 
-        self.assertGreater(self.grimoire.btn_travel_quest.width, 0)
+        self.assertEqual(self.grimoire.btn_travel_quest.width, 0)
         self.assertEqual(self.grimoire.btn_accept_quest.width, 0)
-
-        click_event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {
-            "button": 1,
-            "pos": self.grimoire.btn_travel_quest.center
-        })
-        action = self.grimoire.handle_event(click_event)
-        self.assertEqual(action, "travel_side_quest:sq_goblin_clearing")
 
     def test_08_save_and_load_with_active_side_quest(self):
         """Valida persistência do estado de side quest e origem no save/load."""

@@ -3,7 +3,7 @@
         "id": "beat_1_taverna",
         "name": "Taverna do Dragão Acordado",
         "type": "hub",
-        "environment_prompt": "Um local quente, vibrante e barulhento. A lareira estrala, bardos tocam músicas animadas e mercenários riem batendo canecos de cerveja. O taverneiro é amigável. Entre as risadas, ouvem-se rumores sobre monstros perigosos na Trilha dos Enforcados. O jogador é livre para conversar, beber e explorar.",
+        "environment_prompt": "Um refúgio enfumaçado e tenso contra o vento de cinzas lá fora. A lareira estala com troncos úmidos, o menestrel Maelor dedilha acordes solenes ao canto do fogo e mercenários bebem cerveja amarga em silêncio alerta. O taverneiro de um olho só atende atrás do balcão de carvalho. Ouvem-se sussurros sobre os perigos mortais na Trilha dos Enforcados e contratos de caçada no mural. O jogador é livre para puxar conversa com o taverneiro, indagar Maelor, pedir bebidas ou explorar os contratos.",
         "enemies": [],
         "bg_image": "tavern_bg.jpg",
         "recruitable_allies": true

@@ -79,6 +79,7 @@ class SessionManager:
             "suprimentos_maximos": 1,
             "inventory": {"i_potion_healing": 1, "i_rations": 2},
             "discovered_monsters": [],
+            "discovered_rumors": [],
             "meta": {"loop_count": 0, "segredo_tirano": False}
         }
         self.current_save_slot: int = 1
@@ -130,27 +131,39 @@ class SessionManager:
             if "player_character" not in data or not data["player_character"]:
                 raise ValueError("O save não contém dados válidos de personagem (player_character nulo ou ausente).")
                 
-            # Atualiza o estado da sessão (Desserialização)
+            # Atualiza o estado da sessão (Desserialização completa e resiliente)
+            self.game_state.update(data)
             self.game_state["player_character"] = data["player_character"]
-            self.game_state["recent_history"] = data.get("recent_history", [])
-            self.game_state["known_npcs"] = data.get("known_npcs", {})
-            self.game_state["quest_log"] = data.get("quest_log", [])
-            self.game_state["active_side_quest"] = data.get("active_side_quest", None)
-            self.game_state["side_quest_origin"] = data.get("side_quest_origin", None)
-            self.game_state["last_checkpoint_type"] = data.get("last_checkpoint_type", "TAVERNA")
-            self.game_state["last_checkpoint_beat"] = data.get("last_checkpoint_beat", 0)
-            self.game_state["current_day"] = data.get("current_day", 1)
-            self.game_state["suprimentos_acampamento"] = data.get("suprimentos_acampamento", 1)
-            self.game_state["suprimentos_maximos"] = data.get("suprimentos_maximos", 1)
-            self.game_state["inventory"] = data.get("inventory", {})
-            self.game_state["discovered_monsters"] = data.get("discovered_monsters", [])
-            self.game_state["meta"] = data.get("meta", {"loop_count": 0, "segredo_tirano": False})
-            self.game_state["saved_at"] = data.get("saved_at", "")
+            pc = self.game_state["player_character"]
+            if isinstance(pc, dict) and isinstance(pc.get("attributes"), dict):
+                from core.dnd_rules import sync_attributes_dict
+                sync_attributes_dict(pc["attributes"])
+
+            disc_m = data.get("discovered_monsters")
+            self.game_state["discovered_monsters"] = list(disc_m) if isinstance(disc_m, list) else []
+            disc_r = data.get("discovered_rumors")
+            self.game_state["discovered_rumors"] = list(disc_r) if isinstance(disc_r, list) else []
+            if not isinstance(self.game_state.get("quest_log"), list):
+                self.game_state["quest_log"] = []
+            if not isinstance(self.game_state.get("inventory"), dict):
+                self.game_state["inventory"] = {}
+            if not isinstance(self.game_state.get("meta"), dict):
+                self.game_state["meta"] = {"loop_count": 0, "segredo_tirano": False}
+
             self.game_state["slot"] = data.get("slot", getattr(self, "current_save_slot", 1))
-            
-            self.story.current_beat = data.get("story_beat", 0)
+            self.story.current_beat = data.get("story_beat", getattr(self.story, "current_beat", 1))
             self.game_state["story_beat"] = self.story.current_beat
-            self.story.flags = data.get("story_flags", self.story.flags)
+
+            # Restaura cenário e chave de background
+            cur_bg = data.get("current_background")
+            if cur_bg:
+                self.game_state["current_background"] = cur_bg
+                self.current_background_key = str(cur_bg).replace(".jpg", "").replace(".png", "")
+
+            # Mescla flags da campanha preservando as já inicializadas no pool
+            if "story_flags" in data and isinstance(data["story_flags"], dict):
+                self.story.flags.update(data["story_flags"])
+
             self.sync_inventory()
             
             print(f"[Sistema] Jogo carregado com sucesso de {target_path}. Atributos do personagem restaurados.")
@@ -187,13 +200,20 @@ class SessionManager:
             quests = data.get("quest_log", [])
             quests_done = sum(1 for q in quests if isinstance(q, dict) and q.get("status") == "concluida")
 
+            char_gender = pc.get("gender") or pc.get("genero")
+            if not char_gender:
+                from core.dnd_rules import PROTAGONIST_GENDER_MAP
+                char_race = pc.get("race", "Humano")
+                char_class = pc.get("class", "Guerreiro")
+                char_gender = PROTAGONIST_GENDER_MAP.get(char_race, {}).get(char_class, "male")
+
             return {
                 "slot": slot_num,
                 "is_empty": False,
                 "name": pc.get("name", "Aventureiro"),
                 "race": pc.get("race", "Humano"),
                 "class": pc.get("class", "Guerreiro"),
-                "gender": pc.get("gender") or pc.get("genero") or "male",
+                "gender": char_gender,
                 "level": pc.get("level", 1),
                 "hp_current": pc.get("hp_current", 10),
                 "hp_max": pc.get("hp_max", 10),
@@ -252,6 +272,44 @@ class SessionManager:
             self.game_state["discovered_monsters"] = []
             return []
         return list(discovered)
+
+    def discover_rumor(self, quest_id: str) -> bool:
+        """
+        Adiciona a quest_id aos rumores descobertos (discovered_rumors) caso exista em side_quests.json.
+        Evita duplicação caso já tenha sido descoberto.
+        Retorna True se for uma nova descoberta, False caso contrário.
+        """
+        if not quest_id:
+            return False
+        q_id = str(quest_id).strip()
+        if not q_id:
+            return False
+
+        quest_data = self.story.get_side_quest(q_id)
+        if not quest_data:
+            return False
+
+        rumors = self.game_state.setdefault("discovered_rumors", [])
+        if not isinstance(rumors, list):
+            self.game_state["discovered_rumors"] = []
+            rumors = self.game_state["discovered_rumors"]
+
+        if q_id not in rumors:
+            rumors.append(q_id)
+            title = quest_data.get("title", q_id)
+            sys_log = f"[SISTEMA] Novo Rumor Descoberto: '{title}'. Consulte seu Grimório/Diário."
+            self.ui_queue.put({"type": "system_message", "content": sys_log})
+            return True
+        return False
+
+    def get_discovered_rumors(self) -> List[str]:
+        """Retorna a lista de IDs de rumores e missões secundárias descobertos pelo jogador."""
+        rumors = self.game_state.get("discovered_rumors", [])
+        if not isinstance(rumors, list):
+            self.game_state["discovered_rumors"] = []
+            return []
+        return list(rumors)
+
 
     def sync_inventory(self) -> None:
         """Sincroniza game_state['inventory'] e pc['inventory'] para evitar AttributeError."""
@@ -452,6 +510,85 @@ class SessionManager:
             finally:
                 self.game_state["inventory"] = old_inv
 
+    def is_overencumbered(self, pc: dict = None) -> bool:
+        """Verifica se o personagem está sobrecarregado (itens acima do limite de slots de inventário)."""
+        target_pc = pc if pc is not None else self.game_state.get("player_character")
+        used, max_slots = self.get_inventory_capacity(target_pc)
+        return used > max_slots
+
+    def get_character_speed(self, pc: dict = None) -> float:
+        """
+        Retorna o deslocamento em metros do personagem, aplicando penalidade de -1.5m em caso de sobrecarga.
+        Elfo da Floresta: 10.5m, Humano/Draconato/Meio-Orc/Tiefling: 9.0m, Anão/Halfling: 7.5m.
+        """
+        target_pc = pc if pc is not None else self.game_state.get("player_character")
+        from core.dnd_rules import get_racial_speed
+        base_speed = 9.0
+        if isinstance(target_pc, dict):
+            if "speed_m" in target_pc:
+                try:
+                    base_speed = float(target_pc["speed_m"])
+                except (ValueError, TypeError):
+                    base_speed = 9.0
+            elif "speed" in target_pc:
+                try:
+                    base_speed = float(str(target_pc["speed"]).replace("m", "").strip())
+                except (ValueError, TypeError):
+                    base_speed = 9.0
+            else:
+                base_speed = get_racial_speed(target_pc.get("race", "Humano"))
+
+        if self.is_overencumbered(target_pc):
+            return max(1.5, base_speed - 1.5)
+        return base_speed
+
+    def calculate_travel_cost(self, pc: dict = None) -> tuple:
+        """
+        Calcula os custos de viagem (dias_de_viagem, suprimentos_consumidos, deslocamento_efetivo, is_overencumbered):
+        - Deslocamento 10.5m: 1 suprimento, 1 dia
+        - Deslocamento 9.0m: 2 suprimentos, 2 dias
+        - Deslocamento 7.5m: 3 suprimentos, 3 dias
+        - Sobrecarga de inventário: penalidade de -1.5m de deslocamento e +1 suprimento consumido (+1 dia).
+        """
+        target_pc = pc if pc is not None else self.game_state.get("player_character")
+        from core.dnd_rules import get_racial_speed
+        base_speed = 9.0
+        if isinstance(target_pc, dict):
+            if "speed_m" in target_pc:
+                try:
+                    base_speed = float(target_pc["speed_m"])
+                except (ValueError, TypeError):
+                    base_speed = 9.0
+            elif "speed" in target_pc:
+                try:
+                    base_speed = float(str(target_pc["speed"]).replace("m", "").strip())
+                except (ValueError, TypeError):
+                    base_speed = 9.0
+            else:
+                base_speed = get_racial_speed(target_pc.get("race", "Humano"))
+
+        is_encumbered = self.is_overencumbered(target_pc)
+        effective_speed = max(1.5, base_speed - 1.5) if is_encumbered else base_speed
+
+        if base_speed >= 10.0:
+            base_days = 1
+            base_supplies = 1
+        elif base_speed >= 8.5:
+            base_days = 2
+            base_supplies = 2
+        else:
+            base_days = 3
+            base_supplies = 3
+
+        if is_encumbered:
+            travel_days = base_days + 1
+            supplies_needed = base_supplies + 1
+        else:
+            travel_days = base_days
+            supplies_needed = base_supplies
+
+        return (travel_days, supplies_needed, effective_speed, is_encumbered)
+
     def apply_level_up(self, attr_bonuses: dict = None, chosen_skill_id: str = None, pc: dict = None) -> dict:
         """
         Aplica a progressão de Nível oficial do D&D 5e:
@@ -577,8 +714,12 @@ class SessionManager:
             "new_skill": added_skill_data
         }
 
-    def _recalculate_ac(self, pc: dict) -> int:
+    def _recalculate_ac(self, pc: dict = None) -> int:
         """Recalcula deterministicamente a CA (Classe de Armadura / ac) do personagem conforme regras do D&D 5e."""
+        if pc is None:
+            pc = self.game_state.get("player_character")
+        if not pc or not isinstance(pc, dict):
+            return 10
         from core.dnd_rules import get_modifier, ARMADURAS_5E
         dex_val = 10
         attrs = pc.get("attributes") or pc.get("atributos") or {}
@@ -980,6 +1121,7 @@ class SessionManager:
     def travel_to_side_quest(self, quest_id: str) -> bool:
         """
         Inicia a viagem para o cenário de uma side quest (Bifurcação de exploração).
+        Consome dias de marcha e suprimentos com base no deslocamento racial e sobrecarga.
         Salva a origem do hub, troca o cenário, spawna os inimigos da quest e inicia combate.
         """
         if self.game_mode == "COMBATE":
@@ -1003,6 +1145,13 @@ class SessionManager:
         is_in_log = any(isinstance(q, dict) and q.get("id") == quest_id for q in log)
         if not is_in_log:
             self.accept_side_quest(quest_id)
+
+        # Mecânica de Deslocamento e Viagem
+        travel_days, supplies_needed, effective_speed, is_encumbered = self.calculate_travel_cost()
+        self.game_state["current_day"] = self.game_state.get("current_day", 1) + travel_days
+        self.game_state["suprimentos_acampamento"] = max(0, self.game_state.get("suprimentos_acampamento", 0) - supplies_needed)
+        if self.get_inventory_item_count("i_rations") > 0:
+            self.consume_inventory_item("i_rations", min(self.get_inventory_item_count("i_rations"), supplies_needed))
 
         # Salva o ponto de origem no Hub da campanha principal
         beat_str = str(self.story.current_beat)
@@ -1031,19 +1180,34 @@ class SessionManager:
             self.discover_monster(e)
         self.game_mode = "COMBATE"
 
-        # Dispara eventos de transição e narrativa
+        # Dispara eventos de transição e narrativa com beat inteiro
         q_title = quest_data.get("title", quest_id)
+        current_beat_int = int(self.story.current_beat) if str(self.story.current_beat).isdigit() else 1
         self.ui_queue.put({
             "type": "beat_transition",
-            "beat": f"Missão: {q_title}",
-            "name": q_title,
-            "bg": quest_bg
+            "beat": current_beat_int,
+            "name": f"Missão: {q_title}",
+            "bg": quest_bg,
+            "bg_image": quest_bg,
+            "description": quest_data.get("description", "")
         })
 
-        dialogue = quest_data.get("dialogue_intro", f"Você adentra a área de '{q_title}'. O perigo se manifesta!")
-        sys_msg = f"[SISTEMA] Viagem para '{q_title}' concluída! O combate tem início!"
+        encumber_note = " A sobrecarga da mochila (-1.5m) desacelerou o passo (+1 suprimento consumido)." if is_encumbered else ""
+        sys_msg = (
+            f"[SISTEMA] Viagem para '{q_title}' concluída! "
+            f"Marcha de {travel_days} {'dia' if travel_days == 1 else 'dias'} (Deslocamento: {effective_speed}m). "
+            f"Consumidos {supplies_needed} suprimentos/rações.{encumber_note} O combate tem início!"
+        )
         self.ui_queue.put({"type": "system_message", "content": sys_msg})
-        self.ui_queue.put({"type": "narrative", "content": dialogue, "npc_falando": "Maelor"})
+
+        travel_narrative = (
+            f"Após marchar por {travel_days} {'dia' if travel_days == 1 else 'dias'} pelas trilhas perigosas e consumir "
+            f"{supplies_needed} {'ração' if supplies_needed == 1 else 'rações'} de suprimentos,{encumber_note} "
+            f"você alcança o covil do perigo."
+        )
+        dialogue = quest_data.get("dialogue_intro", f"Você adentra a área de '{q_title}'. O perigo se manifesta!")
+        full_narrative = f"{travel_narrative} {dialogue}"
+        self.ui_queue.put({"type": "narrative", "content": full_narrative, "npc_falando": "Maelor"})
         return True
 
     def return_from_side_quest(self, victory: bool = True) -> None:
@@ -1060,6 +1224,7 @@ class SessionManager:
         origin_bg = origin.get("background", "tavern_bg.jpg")
         origin_name = origin.get("location_name", "Hub Seguro")
         origin_beat = origin.get("beat", self.story.current_beat)
+        origin_beat_int = int(origin_beat) if str(origin_beat).isdigit() else int(self.story.current_beat)
 
         quest_data = self.story.get_side_quest(quest_id) or {}
         q_title = quest_data.get("title", quest_id)
@@ -1080,9 +1245,10 @@ class SessionManager:
             res = self.complete_side_quest(quest_id)
             self.ui_queue.put({
                 "type": "beat_transition",
-                "beat": f"Retorno ao Hub: Beat {origin_beat}",
-                "name": origin_name,
-                "bg": origin_bg
+                "beat": origin_beat_int,
+                "name": f"Retorno ao Hub: {origin_name}",
+                "bg": origin_bg,
+                "bg_image": origin_bg
             })
             ret_text = (
                 f"Vitorioso, você deixa o cenário de '{q_title}' com os despojos recolhidos "
@@ -1092,9 +1258,10 @@ class SessionManager:
         else:
             self.ui_queue.put({
                 "type": "beat_transition",
-                "beat": f"Recuo Tático: Beat {origin_beat}",
-                "name": origin_name,
-                "bg": origin_bg
+                "beat": origin_beat_int,
+                "name": f"Recuo Tático: {origin_name}",
+                "bg": origin_bg,
+                "bg_image": origin_bg
             })
             ret_text = (
                 f"Percebendo o perigo iminente, você recua taticamente de '{q_title}' "
@@ -1170,7 +1337,7 @@ class SessionManager:
 
     def resolve_player_death(self):
         """Resolve a Morte do Jogador ou Wipe da Party."""
-        pc = self.game_state.get("player_character", {})
+        pc = self.game_state.get("player_character") or {}
         
         # Bloco 7 / Bloco 37: O Clímax do Tirano das Cinzas - Déjà Vu
         if self.story.is_climax():
@@ -1290,7 +1457,10 @@ class SessionManager:
     def _async_turn_processor(self, player_input: str, bgs_list: list, lista_bestiario: list):
         """Pipeline do Motor Triplo rodando em Background."""
         try:
-            pc = self.game_state.get("player_character", {})
+            pc = self.game_state.get("player_character")
+            if not pc or not isinstance(pc, dict):
+                self.ui_queue.put({"type": "system_message", "content": "[SISTEMA] Nenhum personagem ativo encontrado. Crie ou carregue seu herói para iniciar a aventura."})
+                return
             
             if self.story.current_beat == 0 and pc:
                 self.story.inject_prologue_data(pc.get("race", ""), pc.get("class", ""), pc.get("background", ""))
@@ -1615,21 +1785,23 @@ class SessionManager:
                     self.save_game()
                     
                     sys_log = f"[SISTEMA] Descanso seguro na Taverna (Dia {self.game_state.get('current_day', 1)}). HP 100%. Suprimentos restaurados. Jogo Salvo."
-                    self.ui_queue.put({"type": "system_message", "content": sys_log})
+                    narrative_descanso = ""
                     try:
-                        narrative = self.ai.generate_narrative_from_math(sys_log, "Descanso na taverna com fogo e guisado")
-                        self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
-                    except:
-                        pass
+                        narrative_descanso = self.ai.generate_narrative_from_math(sys_log, "Descanso na taverna com fogo e guisado")
+                    except Exception:
+                        narrative_descanso = sys_log
 
                     # Reatividade de Aliados no Hub da Taverna (Item 4.1)
                     rumor = self.get_tavern_allies_rumors()
+                    extra_allies_text = ""
                     if rumor:
                         self.ui_queue.put({"type": "system_message", "content": rumor})
                         unlocked = self.story.get_unlocked_allies()
                         nomes = ", ".join([ally.get("name", k) for k, ally in unlocked.items()])
-                        maelor_msg = f"Maelor observa os rostos na penumbra e assente com solenidade: 'Seus companheiros {nomes} estão atentos nas sombras. Quando a hora chegar, não lutará sozinho.'"
-                        self.ui_queue.put({"type": "narrative", "content": maelor_msg, "npc_falando": "Maelor"})
+                        extra_allies_text = f"\n\nMaelor observa os rostos na penumbra e assente com solenidade: 'Seus companheiros {nomes} estão atentos nas sombras. Quando a hora chegar, não lutará sozinho.'"
+
+                    combined_narrative = f"{narrative_descanso}{extra_allies_text}" if extra_allies_text else narrative_descanso
+                    self.ui_queue.put({"type": "narrative", "content": combined_narrative, "npc_falando": "Mestre"})
                     return
                 else:
                     # Ermo (Acampamento)
@@ -1680,6 +1852,7 @@ class SessionManager:
                             "faction": "enemy"
                         }
                         self.active_visual_npcs[nome_inimigo] = tipo_best
+                        self.discover_monster(tipo_best)
                         
                         sys_log = f"[SISTEMA] EMBOSCADA! O descanso foi interrompido. HP restaurado em 80%. Iniciativa rolada!"
                         self.ui_queue.put({"type": "system_message", "content": sys_log})
@@ -1826,22 +1999,29 @@ class SessionManager:
                     self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
                     return
 
-                # Reatividade de Aliados no Hub da Taverna (Item 4.1)
+                # Reatividade de Aliados e Rumores no Hub da Taverna (Beat 1)
+                extra_rumor_text = ""
                 if self.story.current_beat <= 1:
                     rumor = self.get_tavern_allies_rumors()
                     if rumor:
                         self.ui_queue.put({"type": "system_message", "content": rumor})
                         unlocked = self.story.get_unlocked_allies()
                         nomes = ", ".join([ally.get("name", k) for k, ally in unlocked.items()])
-                        maelor_msg = f"Maelor se inclina sobre o balcão da taverna e sussurra: 'Fique atento. {nomes} estão acampados nas proximidades e prontos para a batalha final.'"
-                        self.ui_queue.put({"type": "narrative", "content": maelor_msg, "npc_falando": "Maelor"})
-                
+                        extra_rumor_text = f"\n\nMaelor se inclina sobre o balcão da taverna e sussurra: 'Fique atento. {nomes} estão acampados nas proximidades e prontos para a batalha final.'"
+
+                    # Desbloqueio orgânico de rumores da Taverna no Beat 1 via interação/diálogo/balcão/mural
+                    rumor_keywords = ["rumor", "missao", "missão", "trabalho", "mural", "quadro", "lenhador", "balcao", "balcão", "ouvir", "noticia", "notícia", "servico", "serviço"]
+                    if any(kw in p_low for kw in rumor_keywords):
+                        self.discover_rumor("sq_goblin_clearing")
+
                 env_prompt = self.story.get_environment_prompt()
                 falante = "Taverneiro" if self.story.current_beat <= 1 else "Mestre"
                 try:
                     narrative = self.ai.generate_narrative_from_math(env_prompt, player_input)
                 except Exception as e:
                     narrative = f"[SISTEMA] Falha ao interagir com cenário: {e}"
+                if extra_rumor_text:
+                    narrative = f"{narrative}{extra_rumor_text}"
                 self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": falante})
                 return
                 
@@ -2202,10 +2382,12 @@ class SessionManager:
 
             if pc.get("hp_current", 0) <= 0:
                 self.resolve_player_death()
+                return
             else:
                 enemies_left = [t for t in self.active_combat_targets.values() if t.get("faction", "enemy") == "enemy" and t.get("status") != "morto" and t.get("pv_atual", 0) > 0]
                 if len(enemies_left) == 0 and self.game_mode == "COMBATE":
                     self.check_combat_resolution()
+                    return
             # Enviar para UI (após o turno completo): UMA ÚNICA mensagem narrativa estruturada por turno
             self.ui_queue.put({"type": "narrative", "content": player_bubble, "npc_falando": "Mestre"})
             
