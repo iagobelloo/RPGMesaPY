@@ -73,7 +73,8 @@ class SessionManager:
             "active_side_quest": None,
             "side_quest_origin": None,
             "last_checkpoint_type": "TAVERNA",
-            "last_checkpoint_beat": 0,
+            "last_checkpoint_beat": 1,
+            "last_checkpoint_bg": "tavern_bg.jpg",
             "current_day": 1,
             "suprimentos_acampamento": 1,
             "suprimentos_maximos": 1,
@@ -85,40 +86,122 @@ class SessionManager:
         self.current_save_slot: int = 1
 
     def save_game(self, slot: int = None, save_path: str = None) -> bool:
-        """Salva o estado atual do jogo em disco."""
+        """
+        Salva o estado atual do jogo em disco com fidelidade absoluta de metadados nos 3 slots.
+        Garante a gravação estruturada em 'saves/save_slot_{slot}.json' e compatibilidade com 'saves/slot{slot}.json'.
+        """
         import datetime
+        import re
         if save_path:
             target_path = save_path
+            slot_paths = [save_path]
+            m = re.search(r'(?:slot_?)([1-3])', save_path)
+            target_slot = int(m.group(1)) if m else getattr(self, "current_save_slot", 1)
         elif slot is not None and isinstance(slot, str) and (".json" in slot or "/" in slot or "\\" in slot):
             target_path = slot
+            slot_paths = [slot]
+            m = re.search(r'(?:slot_?)([1-3])', slot)
+            target_slot = int(m.group(1)) if m else getattr(self, "current_save_slot", 1)
         else:
-            target_slot = int(slot) if slot is not None else getattr(self, "current_save_slot", 1)
+            try:
+                target_slot = int(slot) if slot is not None else getattr(self, "current_save_slot", 1)
+            except (ValueError, TypeError):
+                target_slot = getattr(self, "current_save_slot", 1)
+            if target_slot not in [1, 2, 3]:
+                target_slot = getattr(self, "current_save_slot", 1) if getattr(self, "current_save_slot", 1) in [1, 2, 3] else 1
             self.current_save_slot = target_slot
-            target_path = f"saves/slot{target_slot}.json"
+            slot_paths = [
+                f"saves/save_slot_{target_slot}.json",
+                f"saves/slot{target_slot}.json"
+            ]
+            target_path = slot_paths[0]
 
         try:
-            os.makedirs(os.path.dirname(target_path) or "saves", exist_ok=True)
-            self.game_state["story_beat"] = self.story.current_beat
-            self.game_state["story_flags"] = self.story.flags
-            self.game_state["saved_at"] = datetime.datetime.now().isoformat()
-            self.game_state["slot"] = getattr(self, "current_save_slot", 1)
-            with open(target_path, "w", encoding="utf-8") as f:
-                json.dump(self.game_state, f, ensure_ascii=False, indent=4)
+            pc = self.game_state.get("player_character") or {}
+            now_iso = datetime.datetime.now().isoformat()
+            
+            beat_num = int(self.story.current_beat) if str(self.story.current_beat).isdigit() else 1
+            act_title = "Ato I" if beat_num <= 5 else ("Ato II" if beat_num <= 10 else "Ato III")
+            beat_name = "Taverna do Dragão Acordado"
+            try:
+                with open("data/campaign.json", "r", encoding="utf-8") as cf:
+                    camp_data = json.load(cf)
+                    if str(beat_num) in camp_data:
+                        beat_name = camp_data[str(beat_num)].get("name", beat_name)
+            except Exception:
+                pass
+            location_str = f"{act_title} • {beat_name}"
+
+            char_gender = pc.get("gender") or pc.get("genero")
+            if not char_gender:
+                from core.dnd_rules import PROTAGONIST_GENDER_MAP
+                char_race = pc.get("race", "Humano")
+                char_class = pc.get("class", "Guerreiro")
+                char_gender = PROTAGONIST_GENDER_MAP.get(char_race, {}).get(char_class, "male")
+
+            quests = self.game_state.get("quest_log", [])
+            quests_done = sum(1 for q in quests if isinstance(q, dict) and q.get("status") == "concluida")
+
+            self.game_state["slot"] = target_slot
+            self.game_state["timestamp"] = now_iso
+            self.game_state["saved_at"] = now_iso
+            self.game_state["name"] = pc.get("name", "Aventureiro")
+            self.game_state["race"] = pc.get("race", "Humano")
+            self.game_state["class"] = pc.get("class", "Guerreiro")
+            self.game_state["gender"] = char_gender
+            self.game_state["level"] = pc.get("level", 1)
+            self.game_state["hp_current"] = pc.get("hp_current", 10)
+            self.game_state["hp_max"] = pc.get("hp_max", 10)
+            self.game_state["gold"] = pc.get("gold", self.game_state.get("gold", 15))
+            self.game_state["current_day"] = self.game_state.get("current_day", 1)
+            self.game_state["location"] = location_str
+            self.game_state["quests_completed"] = quests_done
+            self.game_state["discovered_rumors"] = list(self.game_state.get("discovered_rumors", []))
+            self.game_state["discovered_monsters"] = list(self.game_state.get("discovered_monsters", []))
+            self.game_mode = getattr(self, "game_mode", "EXPLORACAO")
+            self.game_state["game_mode"] = self.game_mode
+            self.game_state["story_beat"] = beat_num
+            self.game_state["story_flags"] = dict(self.story.flags)
+
+            save_payload = copy.deepcopy(self.game_state)
+            for p in slot_paths:
+                os.makedirs(os.path.dirname(p) or "saves", exist_ok=True)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump(save_payload, f, ensure_ascii=False, indent=4)
             return True
         except Exception as e:
             print(f"[Sistema] Erro ao salvar o jogo em {target_path}: {e}")
             return False
 
     def load_game(self, slot: int = None, save_path: str = None) -> bool:
-        """Carrega o estado do jogo do disco para o Core Engine."""
+        """Carrega o estado do jogo do disco para o Core Engine com isolamento estrito entre slots."""
+        import re
         if save_path:
             target_path = save_path
+            m = re.search(r'(?:slot_?)([1-3])', save_path)
+            target_slot = int(m.group(1)) if m else getattr(self, "current_save_slot", 1)
         elif slot is not None and isinstance(slot, str) and (".json" in slot or "/" in slot or "\\" in slot):
             target_path = slot
+            m = re.search(r'(?:slot_?)([1-3])', slot)
+            target_slot = int(m.group(1)) if m else getattr(self, "current_save_slot", 1)
         else:
-            target_slot = int(slot) if slot is not None else getattr(self, "current_save_slot", 1)
+            try:
+                target_slot = int(slot) if slot is not None else getattr(self, "current_save_slot", 1)
+            except (ValueError, TypeError):
+                target_slot = getattr(self, "current_save_slot", 1)
+            if target_slot not in [1, 2, 3]:
+                target_slot = getattr(self, "current_save_slot", 1) if getattr(self, "current_save_slot", 1) in [1, 2, 3] else 1
             self.current_save_slot = target_slot
-            target_path = f"saves/slot{target_slot}.json"
+            p1 = f"saves/save_slot_{target_slot}.json"
+            p2 = f"saves/slot{target_slot}.json"
+            if os.path.exists(p1) and os.path.exists(p2):
+                target_path = p1 if os.path.getmtime(p1) >= os.path.getmtime(p2) else p2
+            elif os.path.exists(p1):
+                target_path = p1
+            elif os.path.exists(p2):
+                target_path = p2
+            else:
+                target_path = p1
 
         if not os.path.exists(target_path):
             print(f"[Sistema] Nenhum save encontrado em {target_path}.")
@@ -131,9 +214,30 @@ class SessionManager:
             if "player_character" not in data or not data["player_character"]:
                 raise ValueError("O save não contém dados válidos de personagem (player_character nulo ou ausente).")
                 
-            # Atualiza o estado da sessão (Desserialização completa e resiliente)
-            self.game_state.update(data)
-            self.game_state["player_character"] = data["player_character"]
+            # Limpa e restaura o estado da sessão (evitando vazamento de dados de outros slots)
+            default_state = {
+                "player_character": None,
+                "recent_history": [],
+                "known_npcs": {},
+                "quest_log": [],
+                "story_beat": 1,
+                "active_side_quest": None,
+                "side_quest_origin": None,
+                "last_checkpoint_type": "TAVERNA",
+                "last_checkpoint_beat": 1,
+                "last_checkpoint_bg": "tavern_bg.jpg",
+                "current_day": 1,
+                "suprimentos_acampamento": 1,
+                "suprimentos_maximos": 1,
+                "inventory": {"i_potion_healing": 1, "i_rations": 2},
+                "discovered_monsters": [],
+                "discovered_rumors": [],
+                "meta": {"loop_count": 0, "segredo_tirano": False}
+            }
+            self.game_state.clear()
+            self.game_state.update(default_state)
+            self.game_state.update(copy.deepcopy(data))
+
             pc = self.game_state["player_character"]
             if isinstance(pc, dict) and isinstance(pc.get("attributes"), dict):
                 from core.dnd_rules import sync_attributes_dict
@@ -150,23 +254,32 @@ class SessionManager:
             if not isinstance(self.game_state.get("meta"), dict):
                 self.game_state["meta"] = {"loop_count": 0, "segredo_tirano": False}
 
-            self.game_state["slot"] = data.get("slot", getattr(self, "current_save_slot", 1))
+            self.game_state["slot"] = target_slot
+            self.current_save_slot = target_slot
             self.story.current_beat = data.get("story_beat", getattr(self.story, "current_beat", 1))
             self.game_state["story_beat"] = self.story.current_beat
 
             # Restaura cenário e chave de background
-            cur_bg = data.get("current_background")
-            if cur_bg:
-                self.game_state["current_background"] = cur_bg
-                self.current_background_key = str(cur_bg).replace(".jpg", "").replace(".png", "")
+            cur_bg = data.get("current_background", "tavern_bg.jpg")
+            self.game_state["current_background"] = cur_bg
+            self.current_background_key = str(cur_bg).replace(".jpg", "").replace(".png", "")
 
-            # Mescla flags da campanha preservando as já inicializadas no pool
+            # Reset e mescla flags da campanha para evitar contaminação entre slots
+            for k in list(self.story.flags.keys()):
+                if k.startswith("ally_") or k == "final_boss_retried":
+                    self.story.flags[k] = False
+                else:
+                    self.story.flags.pop(k, None)
             if "story_flags" in data and isinstance(data["story_flags"], dict):
                 self.story.flags.update(data["story_flags"])
 
+            self.game_mode = data.get("game_mode", "EXPLORACAO")
+            self.active_combat_targets.clear()
+            self.active_visual_npcs.clear()
+
             self.sync_inventory()
             
-            print(f"[Sistema] Jogo carregado com sucesso de {target_path}. Atributos do personagem restaurados.")
+            print(f"[Sistema] Jogo carregado com sucesso de {target_path} (Slot {target_slot}). Atributos do personagem restaurados.")
             return True
         except Exception as e:
             raise RuntimeError(f"Falha crítica ao desserializar save de {target_path}: {e}")
@@ -174,15 +287,28 @@ class SessionManager:
     @staticmethod
     def get_slot_metadata(slot_num: int) -> dict:
         """Coleta resumo estruturado de um slot para a tela visual de saves."""
-        save_path = f"saves/slot{slot_num}.json"
-        if not os.path.exists(save_path):
-            return {"slot": slot_num, "is_empty": True}
+        try:
+            slot_int = int(slot_num)
+        except (ValueError, TypeError):
+            slot_int = 1
+
+        p1 = f"saves/save_slot_{slot_int}.json"
+        p2 = f"saves/slot{slot_int}.json"
+        if os.path.exists(p1) and os.path.exists(p2):
+            save_path = p1 if os.path.getmtime(p1) >= os.path.getmtime(p2) else p2
+        elif os.path.exists(p1):
+            save_path = p1
+        elif os.path.exists(p2):
+            save_path = p2
+        else:
+            return {"slot": slot_int, "is_empty": True}
+
         try:
             with open(save_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             pc = data.get("player_character")
             if not pc or not isinstance(pc, dict):
-                return {"slot": slot_num, "is_empty": True}
+                return {"slot": slot_int, "is_empty": True}
             
             beat_num = data.get("story_beat", 1)
             # Resolve nome do Beat e Ato
@@ -200,35 +326,41 @@ class SessionManager:
             quests = data.get("quest_log", [])
             quests_done = sum(1 for q in quests if isinstance(q, dict) and q.get("status") == "concluida")
 
-            char_gender = pc.get("gender") or pc.get("genero")
+            char_gender = data.get("gender") or pc.get("gender") or pc.get("genero")
             if not char_gender:
                 from core.dnd_rules import PROTAGONIST_GENDER_MAP
-                char_race = pc.get("race", "Humano")
-                char_class = pc.get("class", "Guerreiro")
+                char_race = data.get("race") or pc.get("race", "Humano")
+                char_class = data.get("class") or pc.get("class", "Guerreiro")
                 char_gender = PROTAGONIST_GENDER_MAP.get(char_race, {}).get(char_class, "male")
 
+            time_val = data.get("timestamp") or data.get("saved_at", "")
+
             return {
-                "slot": slot_num,
+                "slot": slot_int,
                 "is_empty": False,
-                "name": pc.get("name", "Aventureiro"),
-                "race": pc.get("race", "Humano"),
-                "class": pc.get("class", "Guerreiro"),
+                "name": data.get("name") or pc.get("name", "Aventureiro"),
+                "race": data.get("race") or pc.get("race", "Humano"),
+                "class": data.get("class") or pc.get("class", "Guerreiro"),
                 "gender": char_gender,
-                "level": pc.get("level", 1),
-                "hp_current": pc.get("hp_current", 10),
-                "hp_max": pc.get("hp_max", 10),
-                "gold": pc.get("gold", data.get("gold", 15)),
+                "level": data.get("level", pc.get("level", 1)),
+                "hp_current": data.get("hp_current", pc.get("hp_current", 10)),
+                "hp_max": data.get("hp_max", pc.get("hp_max", 10)),
+                "gold": data.get("gold", pc.get("gold", 15)),
                 "story_beat": beat_num,
                 "act_title": act_title,
                 "beat_name": beat_name,
-                "location": f"{act_title} • {beat_name}",
+                "location": data.get("location") or f"{act_title} • {beat_name}",
                 "current_day": data.get("current_day", 1),
-                "quests_completed": quests_done,
-                "saved_at": data.get("saved_at", "")
+                "quests_completed": data.get("quests_completed", quests_done),
+                "discovered_rumors": list(data.get("discovered_rumors", [])),
+                "discovered_monsters": list(data.get("discovered_monsters", [])),
+                "game_mode": data.get("game_mode", "EXPLORACAO"),
+                "timestamp": time_val,
+                "saved_at": time_val
             }
         except Exception as e:
-            print(f"[Sistema] Aviso ao ler metadata do slot {slot_num}: {e}")
-            return {"slot": slot_num, "is_empty": True}
+            print(f"[Sistema] Aviso ao ler metadata do slot {slot_int}: {e}")
+            return {"slot": slot_int, "is_empty": True}
 
     @classmethod
     def get_all_slots_summary(cls) -> list:
@@ -237,17 +369,18 @@ class SessionManager:
 
     @staticmethod
     def delete_save_slot(slot_num: int) -> bool:
-        """Exclui o arquivo de salvamento do slot especificado."""
-        save_path = f"saves/slot{slot_num}.json"
-        if os.path.exists(save_path):
-            try:
-                os.remove(save_path)
-                print(f"[Sistema] Slot {slot_num} excluído com sucesso.")
-                return True
-            except Exception as e:
-                print(f"[Sistema] Erro ao excluir slot {slot_num}: {e}")
-                return False
-        return True
+        """Exclui os arquivos de salvamento do slot especificado."""
+        paths = [f"saves/save_slot_{slot_num}.json", f"saves/slot{slot_num}.json"]
+        success = True
+        for p in paths:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                    print(f"[Sistema] Slot {slot_num} ({p}) excluído com sucesso.")
+                except Exception as e:
+                    print(f"[Sistema] Erro ao excluir {p}: {e}")
+                    success = False
+        return success
 
     def discover_monster(self, monster_id: str) -> bool:
         """
@@ -906,6 +1039,379 @@ class SessionManager:
         rumor = f"[RUMORES DA TAVERNA] Sussurros entre os lenhadores confirmam: {nomes} afiam suas armas e vigiam as rotas da montanha aguardando o chamado para o clímax."
         return rumor
 
+    def get_available_skills(self) -> list[dict]:
+        """
+        Retorna a lista de habilidades ativas e passivas disponíveis para o personagem do jogador,
+        baseado na sua classe, nível e habilidades desbloqueadas.
+        Formato: {"id": str, "name": str, "desc": str, "cost": str, "tier": int, "acquired": bool}
+        """
+        pc = self.game_state.get("player_character", {})
+        c_name = pc.get("class", "Guerreiro")
+        level = max(1, int(pc.get("level", 1)))
+        
+        from core.combat_system import expand_unlocked_skills, normalize_skill_id
+        unlocked_set = expand_unlocked_skills(pc.get("unlocked_skills", []))
+        
+        skills_db = {}
+        try:
+            with open("data/class_skills.json", "r", encoding="utf-8") as f:
+                skills_db = json.load(f)
+        except Exception as e:
+            print(f"[SessionManager] Erro ao ler class_skills.json: {e}")
+
+        available = []
+        seen_ids = set()
+        
+        # 1. Habilidades da árvore da classe
+        for sk in skills_db.get(c_name, []):
+            s_id = sk.get("id", "")
+            s_tier = int(sk.get("tier", 1))
+            s_req = int(sk.get("level_req", s_tier))
+            
+            # Disponível se o nível for suficiente ou se estiver em unlocked_skills
+            if s_req <= level or s_id in unlocked_set:
+                if s_id in ["second_wind", "hunters_mark", "sneak_attack", "cunning_action"]:
+                    cost = "Ação Bônus"
+                else:
+                    cost = sk.get("cost")
+                    if not cost:
+                        if sk.get("type") == "passiva":
+                            cost = "Passiva"
+                        else:
+                            cost = "Ação"
+                
+                available.append({
+                    "id": s_id,
+                    "name": sk.get("name", s_id.title()),
+                    "desc": sk.get("description", ""),
+                    "cost": cost,
+                    "tier": s_tier,
+                    "acquired": True
+                })
+                seen_ids.add(s_id)
+        
+        # 2. Habilidades inatas / fundamentais de classe 5e
+        if c_name == "Patrulheiro" and "hunters_mark" not in seen_ids:
+            available.append({
+                "id": "hunters_mark",
+                "name": "Marca do Caçador",
+                "desc": "Foca sua atenção em uma criatura como presa. Seus ataques contra o alvo causam +1d6 de dano adicional.",
+                "cost": "Ação Bônus",
+                "tier": 1,
+                "acquired": True
+            })
+            seen_ids.add("hunters_mark")
+
+        if c_name == "Ladino" and "sneak_attack" not in seen_ids:
+            available.append({
+                "id": "sneak_attack",
+                "name": "Ataque Furtivo",
+                "desc": "Aproveita a distração do inimigo para causar +1d6 de dano de precisão no próximo ataque.",
+                "cost": "Ação Bônus",
+                "tier": 1,
+                "acquired": True
+            })
+            seen_ids.add("sneak_attack")
+
+        if c_name == "Guerreiro" and "second_wind" not in seen_ids:
+            available.append({
+                "id": "second_wind",
+                "name": "Retomar o Fôlego",
+                "desc": "Usa sua ação bônus para recuperar 1d10 + Nível de Guerreiro em Pontos de Vida.",
+                "cost": "Ação Bônus",
+                "tier": 1,
+                "acquired": True
+            })
+            seen_ids.add("second_wind")
+
+        return available
+
+    def get_available_spells(self) -> list[dict]:
+        """
+        Retorna a lista de magias disponíveis para conjuradores (Mago e Clérigo).
+        Retorna lista vazia para classes puramente marciais no nível 1 (Guerreiro, Ladino, Patrulheiro Nv 1).
+        Formato: {"id": str, "name": str, "desc": str, "level": int, "cost": str, "slots": int | None}
+        """
+        pc = self.game_state.get("player_character", {})
+        c_name = pc.get("class", "Guerreiro")
+        level = max(1, int(pc.get("level", 1)))
+        
+        # Classes puramente marciais no nível 1 não possuem magias
+        if c_name in ["Guerreiro", "Ladino"] or (c_name == "Patrulheiro" and level == 1):
+            return []
+        if c_name not in ["Mago", "Clérigo", "Paladino"]:
+            return []
+        if c_name == "Paladino" and level < 2:
+            return []
+            
+        slots_dict = pc.setdefault("spell_slots", {"1": 2})
+        slots_nv1 = int(slots_dict.get("1", 2))
+        
+        spells = []
+        if c_name == "Mago":
+            spells = [
+                {
+                    "id": "fire_bolt",
+                    "name": "Raio de Fogo",
+                    "desc": "Você arremessa um feixe ardente contra um alvo ao alcance, causando 1d10 de dano ígneo.",
+                    "level": 0,
+                    "cost": "Ação",
+                    "slots": None
+                },
+                {
+                    "id": "magic_missile",
+                    "name": "Mísseis Mágicos",
+                    "desc": "Cria dardos mágicos brilhantes causando dano de força infalível (3d4+3).",
+                    "level": 1,
+                    "cost": "Ação",
+                    "slots": slots_nv1
+                },
+                {
+                    "id": "shield",
+                    "name": "Escudo Arcano",
+                    "desc": "Ergue uma barreira mágica instantânea, ganhando +5 na sua CA.",
+                    "level": 1,
+                    "cost": "Reação",
+                    "slots": slots_nv1
+                },
+                {
+                    "id": "mage_armor",
+                    "name": "Armadura Arcana",
+                    "desc": "Envolve o corpo com energia protetora, fixando a CA base em 13 + Modificador de Destreza.",
+                    "level": 1,
+                    "cost": "Ação",
+                    "slots": slots_nv1
+                }
+            ]
+        elif c_name == "Clérigo":
+            spells = [
+                {
+                    "id": "sacred_flame",
+                    "name": "Chama Sagrada",
+                    "desc": "Radiação divina desce sobre o alvo, causando 1d8 de dano radiante.",
+                    "level": 0,
+                    "cost": "Ação",
+                    "slots": None
+                },
+                {
+                    "id": "cure_wounds",
+                    "name": "Curar Ferimentos",
+                    "desc": "Uma criatura tocada recupera 1d8 + modificador de conjuração em Pontos de Vida.",
+                    "level": 1,
+                    "cost": "Ação",
+                    "slots": slots_nv1
+                },
+                {
+                    "id": "guiding_bolt",
+                    "name": "Raio Guiador",
+                    "desc": "Um raio de luz ofuscante atinge o inimigo causando 4d6 de dano radiante.",
+                    "level": 1,
+                    "cost": "Ação",
+                    "slots": slots_nv1
+                },
+                {
+                    "id": "shield_of_faith",
+                    "name": "Escudo da Fé",
+                    "desc": "Um campo cintilante envolve o alvo, concedendo um bônus de +2 na CA.",
+                    "level": 1,
+                    "cost": "Ação Bônus",
+                    "slots": slots_nv1
+                }
+            ]
+        elif c_name == "Paladino" and level >= 2:
+            spells = [
+                {
+                    "id": "cure_wounds",
+                    "name": "Curar Ferimentos",
+                    "desc": "Uma criatura tocada recupera 1d8 + modificador de conjuração em Pontos de Vida.",
+                    "level": 1,
+                    "cost": "Ação",
+                    "slots": slots_nv1
+                },
+                {
+                    "id": "shield_of_faith",
+                    "name": "Escudo da Fé",
+                    "desc": "Um campo cintilante envolve o alvo, concedendo um bônus de +2 na CA.",
+                    "level": 1,
+                    "cost": "Ação Bônus",
+                    "slots": slots_nv1
+                }
+            ]
+
+        return spells
+
+    def use_skill(self, skill_id_or_name: str, target: str = None) -> dict:
+        """
+        Execução mecânica real de uma habilidade de classe (D&D 5e).
+        Aplica os efeitos reais (cura, marca, buff) no PC ou nos alvos ativos,
+        e despacha os logs de sistema e narrativa na ui_queue.
+        """
+        pc = self.game_state.get("player_character", {})
+        from core.combat_system import resolve_skill_effect, normalize_skill_id
+        from core.dice_engine import DiceEngine
+        
+        canon_id = normalize_skill_id(skill_id_or_name)
+        s_low = str(skill_id_or_name).lower().strip()
+        level = max(1, int(pc.get("level", 1)))
+        hp_max = max(1, int(pc.get("hp_max", 10)))
+        
+        log_msg = ""
+        success = True
+        
+        if canon_id in ["hunters_mark", "sk_ranger_2"] or "marca" in s_low:
+            alvo_obj = None
+            if target and target in self.active_combat_targets:
+                alvo_obj = self.active_combat_targets[target]
+            elif self.active_combat_targets:
+                enemies = [t for t in self.active_combat_targets.values() if t.get("faction") == "enemy" and t.get("status") != "morto" and t.get("pv_atual", 0) > 0]
+                if enemies:
+                    alvo_obj = enemies[0]
+            
+            if alvo_obj:
+                alvo_obj["_marked_by_hunters_mark"] = True
+                alvo_nome = alvo_obj.get("name", "Inimigo")
+                pc["_active_hunters_mark_target"] = alvo_nome
+            else:
+                alvo_nome = target or "o alvo"
+                pc["_active_hunters_mark_target"] = alvo_nome
+            log_msg = f"🏹 [HABILIDADE] Marca do Caçador fixada em {alvo_nome}! (+1d6 de dano em ataques contra este alvo)\n"
+            
+        elif canon_id == "second_wind" or "retomar" in s_low or "folego" in s_low or "fôlego" in s_low:
+            cura = DiceEngine.parse_and_roll_dice("1d10") + level
+            pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
+            log_msg = f"🎲 [HABILIDADE - CURA] Retomar o Fôlego: recuperou +{cura} PV (1d10 + Nv {level}) ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+
+        elif canon_id == "lay_on_hands" or "cura pelas m" in s_low:
+            cura = level * 5
+            pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
+            log_msg = f"🎲 [HABILIDADE - CURA] Cura pelas Mãos: restaurou +{cura} PV (5x Nv {level}) ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+
+        elif canon_id in ["sneak_attack", "sk_rogue_1"] or "furtivo" in s_low:
+            pc["_sneak_attack_active"] = True
+            log_msg = "🗡️ [HABILIDADE] Ataque Furtivo preparado! (+1d6 de dano de precisão no próximo ataque)\n"
+
+        elif canon_id in ["arcane_recovery", "sk_mage_1"] or "recupera" in s_low:
+            slots = pc.setdefault("spell_slots", {"1": 2})
+            slots["1"] = int(slots.get("1", 0)) + 1
+            log_msg = f"✨ [HABILIDADE - ARCANO] Recuperação Arcana: +1 Espaço de Magia de Nível 1 restaurado (Total Nv 1: {slots['1']})!\n"
+
+        else:
+            target_list = [self.active_combat_targets[target]] if (target and target in self.active_combat_targets) else []
+            log_msg = resolve_skill_effect(skill_id_or_name, pc, target_list, self.active_combat_targets, self.game_state)
+            if not log_msg:
+                log_msg = f"⚡ [HABILIDADE] {skill_id_or_name.title()} ativada com sucesso!\n"
+
+        self.ui_queue.put({"type": "system_message", "content": log_msg})
+        self.ui_queue.put({"type": "narrative", "content": log_msg, "npc_falando": "Mestre"})
+        return {"success": success, "log": log_msg, "skill": skill_id_or_name}
+
+    def cast_spell(self, spell_id_or_name: str, target: str = None) -> dict:
+        """
+        Execução mecânica real de conjuração de magia (D&D 5e).
+        Consome spell slots caso o nível da magia seja > 0.
+        Aplica dano, cura ou buff e despacha os logs de sistema e narrativa na ui_queue.
+        """
+        pc = self.game_state.get("player_character", {})
+        from core.dice_engine import DiceEngine
+        from core.dnd_rules import get_modifier
+        
+        s_norm = str(spell_id_or_name).lower().strip().replace(" ", "_")
+        
+        spell_db = {
+            "magic_missile": {"name": "Mísseis Mágicos", "level": 1, "type": "damage", "dice": "3d4+3", "element": "força"},
+            "misseis_magicos": {"name": "Mísseis Mágicos", "level": 1, "type": "damage", "dice": "3d4+3", "element": "força"},
+            "mísseis_mágicos": {"name": "Mísseis Mágicos", "level": 1, "type": "damage", "dice": "3d4+3", "element": "força"},
+            "fire_bolt": {"name": "Raio de Fogo", "level": 0, "type": "damage", "dice": "1d10", "element": "fogo"},
+            "raio_de_fogo": {"name": "Raio de Fogo", "level": 0, "type": "damage", "dice": "1d10", "element": "fogo"},
+            "sacred_flame": {"name": "Chama Sagrada", "level": 0, "type": "damage", "dice": "1d8", "element": "radiante"},
+            "chama_sagrada": {"name": "Chama Sagrada", "level": 0, "type": "damage", "dice": "1d8", "element": "radiante"},
+            "guiding_bolt": {"name": "Raio Guiador", "level": 1, "type": "damage", "dice": "4d6", "element": "radiante"},
+            "raio_guiador": {"name": "Raio Guiador", "level": 1, "type": "damage", "dice": "4d6", "element": "radiante"},
+            "cure_wounds": {"name": "Curar Ferimentos", "level": 1, "type": "heal", "dice": "1d8"},
+            "curar_ferimentos": {"name": "Curar Ferimentos", "level": 1, "type": "heal", "dice": "1d8"},
+            "shield": {"name": "Escudo Arcano", "level": 1, "type": "buff", "ac_bonus": 5},
+            "escudo_arcano": {"name": "Escudo Arcano", "level": 1, "type": "buff", "ac_bonus": 5},
+            "shield_of_faith": {"name": "Escudo da Fé", "level": 1, "type": "buff", "ac_bonus": 2},
+            "escudo_da_fe": {"name": "Escudo da Fé", "level": 1, "type": "buff", "ac_bonus": 2},
+            "escudo_da_fé": {"name": "Escudo da Fé", "level": 1, "type": "buff", "ac_bonus": 2},
+            "mage_armor": {"name": "Armadura Arcana", "level": 1, "type": "buff", "base_ac": 13},
+            "armadura_arcana": {"name": "Armadura Arcana", "level": 1, "type": "buff", "base_ac": 13}
+        }
+        
+        spell_info = spell_db.get(s_norm)
+        if not spell_info:
+            for k, data in spell_db.items():
+                if k in s_norm or s_norm in k:
+                    spell_info = data
+                    break
+                    
+        if not spell_info:
+            spell_info = {"name": spell_id_or_name.title(), "level": 1, "type": "damage", "dice": "1d8", "element": "mágico"}
+
+        spell_level = spell_info.get("level", 1)
+        spell_name = spell_info.get("name", spell_id_or_name.title())
+
+        # Consome slots se level > 0
+        if spell_level > 0:
+            slots = pc.setdefault("spell_slots", {"1": 2})
+            disponiveis = int(slots.get(str(spell_level), 0))
+            if disponiveis <= 0:
+                err_msg = f"[SISTEMA] Você não possui espaços de magia de nível {spell_level} restantes!"
+                self.ui_queue.put({"type": "system_message", "content": err_msg})
+                return {"success": False, "message": err_msg, "log": err_msg}
+            slots[str(spell_level)] = disponiveis - 1
+
+        log_msg = ""
+        m_type = spell_info.get("type", "damage")
+
+        if m_type == "heal":
+            mod_conjuracao = get_modifier(pc.get("attributes", {}).get("SAB", pc.get("attributes", {}).get("WIS", 10)))
+            if pc.get("class") == "Paladino":
+                mod_conjuracao = get_modifier(pc.get("attributes", {}).get("CAR", pc.get("attributes", {}).get("CHA", 10)))
+            cura = DiceEngine.parse_and_roll_dice(spell_info.get("dice", "1d8")) + max(0, mod_conjuracao)
+            hp_max = max(1, int(pc.get("hp_max", 10)))
+            pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
+            log_msg = f"🎲 [MAGIA - CURA] {spell_name}: restaurou +{cura} PV ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+
+        elif m_type == "buff":
+            if "ac_bonus" in spell_info:
+                bonus = spell_info["ac_bonus"]
+                pc["ca"] = pc.get("ca", 10) + bonus
+                pc["ac"] = pc["ca"]
+                log_msg = f"🛡️ [MAGIA] {spell_name} ativada! Concede +{bonus} na CA (CA atual: {pc['ca']})!\n"
+            elif "base_ac" in spell_info:
+                mod_des = get_modifier(pc.get("attributes", {}).get("DES", pc.get("attributes", {}).get("DEX", 10)))
+                nova_ca = spell_info["base_ac"] + mod_des
+                pc["ca"] = max(pc.get("ca", 10), nova_ca)
+                pc["ac"] = pc["ca"]
+                log_msg = f"🛡️ [MAGIA] {spell_name} ativada! Sua CA foi fixada em {pc['ca']}!\n"
+
+        else:
+            alvo_obj = None
+            if target and target in self.active_combat_targets:
+                alvo_obj = self.active_combat_targets[target]
+            elif self.active_combat_targets:
+                enemies = [t for t in self.active_combat_targets.values() if t.get("faction") == "enemy" and t.get("status") != "morto" and t.get("pv_atual", 0) > 0]
+                if enemies:
+                    alvo_obj = enemies[0]
+
+            dano = DiceEngine.parse_and_roll_dice(spell_info.get("dice", "1d8"))
+            if alvo_obj:
+                alvo_obj["pv_atual"] = max(0, alvo_obj.get("pv_atual", 10) - dano)
+                if alvo_obj["pv_atual"] == 0:
+                    alvo_obj["status"] = "morto"
+                alvo_nome = alvo_obj.get("name", "o inimigo")
+                pv_rest = alvo_obj.get("pv_atual", 0)
+                pv_max_t = alvo_obj.get("pv_max", 10)
+                log_msg = f"✨ [MAGIA] {spell_name} atinge {alvo_nome} causando {dano} de dano! (PV: {pv_rest}/{pv_max_t})\n"
+            else:
+                alvo_nome = target or "o vazio"
+                log_msg = f"✨ [MAGIA] {spell_name} conjurada contra {alvo_nome} causando {dano} de dano de dispersão!\n"
+
+        self.ui_queue.put({"type": "system_message", "content": log_msg})
+        self.ui_queue.put({"type": "narrative", "content": log_msg, "npc_falando": "Mestre"})
+        return {"success": True, "log": log_msg, "spell": spell_name}
+
     def accept_side_quest(self, quest_id: str) -> bool:
         """
         Registra uma side quest no quest_log do jogador com status 'ativa'.
@@ -1340,80 +1846,70 @@ class SessionManager:
         pc = self.game_state.get("player_character") or {}
         
         # Bloco 7 / Bloco 37: O Clímax do Tirano das Cinzas - Déjà Vu
-        if self.story.is_climax():
-            meta = self.game_state.setdefault("meta", {"loop_count": 0, "segredo_tirano": False})
-            loop_count = meta.get("loop_count", 0)
+        meta = self.game_state.setdefault("meta", {"loop_count": 0, "segredo_tirano": False})
+        if self.story.is_climax() and meta.get("loop_count", 0) == 0:
+            # O wipe mortal do sopro do Dragão no Beat 15 (Loop 0)
+            # Aciona o Déjà Vu!
+            meta["loop_count"] = 1
+            meta["segredo_tirano"] = True
             
-            if loop_count == 0:
-                # O wipe mortal do sopro do Dragão no Beat 15 (Loop 0)
-                # Aciona o Déjà Vu!
-                meta["loop_count"] = 1
-                meta["segredo_tirano"] = True
-                
-                # Restaura snapshot exato (mesmo HP, XP, itens, habilidades e equipe de aliados completa intacta)
-                snap = self.story.load_snapshot()
-                if snap:
-                    pc_snap, targets_snap, visual_snap = snap
-                    self.game_state["player_character"] = pc_snap
-                    self.active_combat_targets = targets_snap
-                    self.active_visual_npcs = visual_snap
-                    extra = self.story.get_snapshot_extra()
-                    if "inventory" in extra:
-                        self.game_state["inventory"] = copy.deepcopy(extra["inventory"])
-                else:
-                    pc["hp_current"] = pc.get("hp_max", 10)
-                    pc["status"] = "vivo"
-                
-                pc_atual = self.game_state.get("player_character", {})
-                pc_atual["status"] = "vivo"
-                if pc_atual.get("hp_current", 0) <= 0:
-                    pc_atual["hp_current"] = pc_atual.get("hp_max", 10)
-                    
-                for t_id, t_data in self.active_combat_targets.items():
-                    if t_data.get("faction") == "ally":
-                        t_data["status"] = "vivo"
-                        if t_data.get("pv_atual", 0) <= 0:
-                            t_data["pv_atual"] = t_data.get("pv_max", 10)
-                    elif t_data.get("faction") == "enemy":
-                        # Armadura do dragão quebrada!
-                        t_data["status"] = "vivo"
-                        t_data["pv_max"] = 100
-                        t_data["pv_atual"] = 100
-                        t_data["ca"] = 14
-                        t_data["charge_turn"] = 0
-                
-                self.game_mode = "COMBATE"
-                self.game_state["current_background"] = "deja_vu_bg.jpg"
-                
-                # Carrega o texto da cutscene do Déjà Vu (beat_15_loop_0_death)
-                cutscene_text = ""
-                try:
-                    with open("data/game_cutscenes.json", "r", encoding="utf-8") as f:
-                        cutscenes_db = json.load(f)
-                        lines = cutscenes_db.get("beat_15_loop_0_death", [])
-                        if lines:
-                            cutscene_text = "\n\n".join(lines)
-                except Exception:
-                    pass
-                
-                sys_log = "[SISTEMA DÉJÀ VU] O fogo aniquila o seu corpo, mas o tempo se estilhaça e retrocede! O Déjà Vu é acionado. Você e todos os seus aliados retornam intactos ao momento exato em que pisaram no covil. O segredo do dragão foi ativado e sua carapaça está quebrada (CA 14, 100 PV)! A vitória é possível!"
-                self.ui_queue.put({"type": "system_message", "content": sys_log})
-                full_deja_vu_narrative = f"{cutscene_text}\n\n{sys_log}" if cutscene_text else sys_log
-                self.ui_queue.put({"type": "narrative", "content": full_deja_vu_narrative, "npc_falando": "Mestre"})
-                return
+            # Restaura snapshot exato (mesmo HP, XP, itens, habilidades e equipe de aliados completa intacta)
+            snap = self.story.load_snapshot()
+            if snap:
+                pc_snap, targets_snap, visual_snap = snap
+                self.game_state["player_character"] = pc_snap
+                self.active_combat_targets = targets_snap
+                self.active_visual_npcs = visual_snap
+                extra = self.story.get_snapshot_extra()
+                if "inventory" in extra:
+                    self.game_state["inventory"] = copy.deepcopy(extra["inventory"])
             else:
-                self.game_mode = "GAME_OVER"
-                self.active_combat_targets.clear()
-                self.active_visual_npcs.clear()
-                sys_log = "[SISTEMA] VOCÊ MORREU NO CONFRONTO FINAL. Retornando ao último ponto de descanso..."
-                self.ui_queue.put({"type": "system_message", "content": sys_log})
-                self.load_game()
-                return
+                pc["hp_current"] = pc.get("hp_max", 10)
+                pc["status"] = "vivo"
+            
+            pc_atual = self.game_state.get("player_character", {})
+            pc_atual["status"] = "vivo"
+            if pc_atual.get("hp_current", 0) <= 0:
+                pc_atual["hp_current"] = pc_atual.get("hp_max", 10)
+                
+            for t_id, t_data in self.active_combat_targets.items():
+                if t_data.get("faction") == "ally":
+                    t_data["status"] = "vivo"
+                    if t_data.get("pv_atual", 0) <= 0:
+                        t_data["pv_atual"] = t_data.get("pv_max", 10)
+                elif t_data.get("faction") == "enemy":
+                    # Armadura do dragão quebrada!
+                    t_data["status"] = "vivo"
+                    t_data["pv_max"] = 100
+                    t_data["pv_atual"] = 100
+                    t_data["ca"] = 14
+                    t_data["charge_turn"] = 0
+            
+            self.game_mode = "COMBATE"
+            self.game_state["current_background"] = "deja_vu_bg.jpg"
+            self.current_background_key = "deja_vu_bg"
+            
+            # Carrega o texto da cutscene do Déjà Vu (beat_15_loop_0_death)
+            cutscene_text = ""
+            try:
+                with open("data/game_cutscenes.json", "r", encoding="utf-8") as f:
+                    cutscenes_db = json.load(f)
+                    lines = cutscenes_db.get("beat_15_loop_0_death", [])
+                    if lines:
+                        cutscene_text = "\n\n".join(lines)
+            except Exception:
+                pass
+            
+            sys_log = "[SISTEMA DÉJÀ VU] O fogo aniquila o seu corpo, mas o tempo se estilhaça e retrocede! O Déjà Vu é acionado. Você e todos os seus aliados retornam intactos ao momento exato em que pisaram no covil. O segredo do dragão foi ativado e sua carapaça está quebrada (CA 14, 100 PV)! A vitória é possível!"
+            self.ui_queue.put({"type": "system_message", "content": sys_log})
+            full_deja_vu_narrative = f"{cutscene_text}\n\n{sys_log}" if cutscene_text else sys_log
+            self.ui_queue.put({"type": "narrative", "content": full_deja_vu_narrative, "npc_falando": "Mestre"})
+            return
 
         # Condição A: Ressurreição Automática por Item (Pergaminho de Ressurreição)
-        elif self.get_inventory_item_count("i_scroll_revive") > 0 and not self.game_state.setdefault("meta", {}).get("revive_used", False):
+        elif self.get_inventory_item_count("i_scroll_revive") > 0 and not meta.get("revive_used", False):
             self.consume_inventory_item("i_scroll_revive", 1)
-            self.game_state["meta"]["revive_used"] = True
+            meta["revive_used"] = True
             pc["hp_current"] = max(1, pc.get("hp_max", 10) // 2)
             pc["status"] = "vivo"
             sys_log = "[SISTEMA] O Pergaminho de Ressurreição brilha intensamente! Você engana a morte e revive no meio do combate."
@@ -1425,27 +1921,131 @@ class SessionManager:
             self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
             return
             
-        # Condição B: Morte Verdadeira
+        # Condição B: Morte Verdadeira e Retorno ao Checkpoint Seguro
         else:
-            self.game_mode = "GAME_OVER"
+            try:
+                raw_beat = self.game_state.get("last_checkpoint_beat", 1)
+                beat_destino = int(raw_beat) if raw_beat is not None else 1
+            except (ValueError, TypeError):
+                beat_destino = 1
+            if beat_destino < 1:
+                beat_destino = 1
+
+            self.story.current_beat = beat_destino
+            self.game_state["story_beat"] = beat_destino
+
+            bg_destino = "tavern_bg.jpg" if beat_destino <= 1 else self.game_state.get("last_checkpoint_bg", "tavern_bg.jpg")
+            self.game_state["current_background"] = bg_destino
+            self.current_background_key = str(bg_destino).replace(".jpg", "").replace(".png", "")
+
+            pc["hp_current"] = pc.get("hp_max", 10)
+            pc["status"] = "vivo"
+            self.game_mode = "EXPLORACAO"
             self.active_combat_targets.clear()
             self.active_visual_npcs.clear()
-            
-            sys_log = "[SISTEMA] VOCÊ MORREU. O mundo escurece. Retornando ao último ponto de descanso..."
-            self.ui_queue.put({"type": "system_message", "content": sys_log})
-            try:
-                narrative = self.ai.generate_narrative_from_math(sys_log, "Morte visceral e definitiva.")
-            except Exception:
-                narrative = sys_log
-            self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
-                
-            print("[Sistema] Executando load_game() devido a Morte Verdadeira...")
-            self.load_game()
+            self.game_state["active_side_quest"] = None
+            self.game_state["side_quest_origin"] = None
+
+            # Emitir evento de transição de cena para a UI via self.ui_queue.put
+            self.ui_queue.put({
+                "type": "beat_transition",
+                "beat": beat_destino,
+                "name": "Taverna do Dragão Acordado" if beat_destino <= 1 else "Acampamento Seguro",
+                "description": "Você acorda com a respiração ofegante junto às chamas crepitantes da lareira...",
+                "bg_image": self.game_state["current_background"]
+            })
+
+            # Emitir a narrativa poética e imersiva do Menestrel Maelor via self.ui_queue.put
+            narrativa_morte = (
+                "O mundo escureceu e o golpe parecia ter selado seu destino... Contudo, você abre os olhos com um sobressalto "
+                "junto às brasas crepitantes da Taverna do Dragão Acordado. O Menestrel Maelor dedilha seu alaúde "
+                "em uma melodia serena e observa: 'Nem toda derrota é o fim da canção, bravo aventureiro. O fogo das cinzas "
+                "ainda queima em seu peito. Descanse, recupere o fôlego e erga-se novamente, pois o Tirano ainda aguarda.'"
+            )
+            self.ui_queue.put({"type": "narrative", "content": narrativa_morte, "npc_falando": "Maelor"})
+
+            # Salvar o estado do jogo atualizado no slot atual chamando self.save_game(self.current_save_slot)
+            self.save_game(self.current_save_slot)
 
     def _push_event(self, event_type: str, data: Dict[str, Any]):
         event = {"type": event_type}
         event.update(data)
         self.ui_event_queue.append(event)
+
+    def find_combat_target(self, target_ref: str) -> Optional[Dict[str, Any]]:
+        """
+        Localiza um participante de combate com base em referência flexível (D&D 5e targeting):
+        - 'self', 'eu', 'heroi', 'player' -> player_character
+        - Chave exata em active_combat_targets
+        - Campo 'id' ou 'narrative_id' dentro dos dados do monstro
+        - Índice numérico (ex: '1' -> 1º inimigo vivo, '2' -> 2º)
+        - Sufixo UUID (ex: 'a1b2' para 'Lobo Terrível a1b2')
+        - tipo_bestiario (ex: 'm_bandit', 'bandit', 'goblin')
+        - Substring no nome ou na chave
+        - Fallback: primeiro inimigo vivo
+        """
+        pc = self.game_state.get("player_character") or {}
+        hero_name = str(pc.get("name", "Herói")).lower()
+        if not target_ref:
+            living_enemies = [
+                v for v in self.active_combat_targets.values()
+                if v.get("faction", "enemy") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0
+            ]
+            return living_enemies[0] if living_enemies else None
+
+        ref_str = str(target_ref).strip()
+        ref_low = ref_str.lower()
+
+        if ref_low in ["self", "eu", "heroi", "herói", "proprio", "próprio", "si mesmo", "player", hero_name]:
+            return pc
+
+        living_enemies = [
+            (k, v) for k, v in self.active_combat_targets.items()
+            if v.get("faction", "enemy") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0
+        ]
+
+        # 1. Chave exata
+        for k, v in self.active_combat_targets.items():
+            if k.lower() == ref_low:
+                return v
+
+        # 2. Índice numérico (1-indexed entre inimigos vivos)
+        if ref_str.isdigit():
+            idx = int(ref_str) - 1
+            if 0 <= idx < len(living_enemies):
+                return living_enemies[idx][1]
+
+        # 3. Campo 'id' ou 'narrative_id'
+        for k, v in self.active_combat_targets.items():
+            v_id = str(v.get("id", "")).lower()
+            if v_id and (v_id == ref_low or v_id == ref_low.replace("m_", "")):
+                return v
+
+        # 4. Sufixo UUID / 4-char suffix (ex: 'Lobo Terrível a1b2')
+        for k, v in self.active_combat_targets.items():
+            parts = k.split()
+            if len(parts) > 1 and parts[-1].lower() == ref_low:
+                return v
+
+        # 5. tipo_bestiario
+        for k, v in self.active_combat_targets.items():
+            t_best = str(v.get("tipo_bestiario", "")).lower()
+            if t_best and (t_best == ref_low or t_best.replace("m_", "") == ref_low.replace("m_", "")):
+                return v
+
+        # 6. Substring de nome ou chave
+        clean_ref = ref_low.replace("m_", "").replace("_", " ")
+        for k, v in self.active_combat_targets.items():
+            k_clean = k.lower().replace("m_", "").replace("_", " ")
+            v_name = str(v.get("name", "")).lower().replace("m_", "").replace("_", " ")
+            if clean_ref in k_clean or k_clean in clean_ref or clean_ref in v_name or v_name in clean_ref:
+                return v
+
+        # 7. Fallback para o primeiro inimigo vivo em combate
+        if living_enemies:
+            return living_enemies[0][1]
+
+        return None
 
     def process_action_async(self, player_input: str, bgs_list: list, lista_bestiario: list):
         """Inicia o Worker Daemon da IA."""
@@ -1476,10 +2076,24 @@ class SessionManager:
             temp_state["active_combat_targets"] = {k: v for k, v in self.active_combat_targets.items() if v.get("status") != "morto"}
             
             # Atalho direto para comandos vindos do Grimório ou UI
-            if player_input.startswith("travel_side_quest:"):
-                quest_id = player_input.split("travel_side_quest:", 1)[1].strip()
-                self.travel_to_side_quest(quest_id)
-                return
+            travel_prefixes = [
+                "travel_side_quest:", "travel_side_quest ", "travel_quest:", "travel_quest ",
+                "btn_travel_quest:", "btn_travel_quest "
+            ]
+            if any(player_input.startswith(p) for p in travel_prefixes) or player_input in ["btn_travel_quest", "travel_quest", "travel_side_quest"]:
+                prefix = next((p for p in travel_prefixes if player_input.startswith(p)), "")
+                quest_id = player_input[len(prefix):].strip() if prefix else ""
+                if not quest_id:
+                    active_q = self.get_active_quests()
+                    if active_q:
+                        quest_id = active_q[0].get("id", "")
+                    else:
+                        avail = self.story.get_available_quests_for_current_act()
+                        if avail:
+                            quest_id = avail[0].get("id", "")
+                if quest_id:
+                    self.travel_to_side_quest(quest_id)
+                    return
             elif player_input.startswith("accept_side_quest:"):
                 quest_id = player_input.split("accept_side_quest:", 1)[1].strip()
                 self.accept_side_quest(quest_id)
@@ -1506,13 +2120,6 @@ class SessionManager:
                 parts = spell_target.split(":", 1)
                 spell_id = parts[0].strip()
                 alvo = [parts[1].strip()] if len(parts) > 1 and parts[1].strip() else []
-                if not alvo and self.active_combat_targets:
-                    for k, v in self.active_combat_targets.items():
-                        if v.get("faction") != "ally" and v.get("status") != "morto":
-                            alvo = [k]
-                            break
-                    if not alvo:
-                        alvo = [list(self.active_combat_targets.keys())[0]]
                 json_data = {
                     "tipo_acao": "CONJURAR_MAGIA",
                     "recurso_utilizado": spell_id,
@@ -1555,6 +2162,29 @@ class SessionManager:
                     "alvo": alvo,
                     "intencao_cena": f"O herói desfere um ataque contra {target_str or 'o inimigo'}."
                 }
+            elif any(player_input.lower().startswith(p) for p in ["dodge", "esquivar", "esquivo", "acao_esquiva", "action_dodge"]):
+                json_data = {
+                    "tipo_acao": "ESQUIVAR",
+                    "recurso_utilizado": "nenhum",
+                    "alvo": [],
+                    "intencao_cena": "O herói assume a postura tática de Esquivar (Dodge)."
+                }
+            elif any(player_input.lower().startswith(p) for p in ["disengage", "desengajar", "desengajo", "recuar_seguro"]):
+                json_data = {
+                    "tipo_acao": "DESENGAJAR",
+                    "recurso_utilizado": "nenhum",
+                    "alvo": [],
+                    "intencao_cena": "O herói executa a ação de Desengajar (Disengage)."
+                }
+            elif any(player_input.lower().startswith(p) for p in ["move:", "mover:", "deslocar:", "movimento:"]):
+                prefix = next(p for p in ["move:", "mover:", "deslocar:", "movimento:"] if player_input.lower().startswith(p))
+                sub_move = player_input[len(prefix):].strip()
+                json_data = {
+                    "tipo_acao": "MOVER",
+                    "recurso_utilizado": sub_move or "fechar_distancia",
+                    "alvo": [],
+                    "intencao_cena": f"Movimento tático: {sub_move or 'fechar distância'}."
+                }
             else:
                 p_low = player_input.lower().strip()
                 # Detecção rápida de viagem ou aceitação em linguagem natural
@@ -1585,37 +2215,248 @@ class SessionManager:
                         self.accept_side_quest(matched_qid)
                         return
 
+                import re
+                # 1. Comando direto de salvamento de jogo (Chat / Interface)
+                is_save_cmd = False
+                if p_low in ["salvar", "save", "salvar jogo", "salvar o jogo", "save game"]:
+                    is_save_cmd = True
+                elif p_low.startswith("save_slot:") or p_low.startswith("salvar_slot:"):
+                    is_save_cmd = True
+                elif re.match(r'^(?:salvar|save)(?:\s+o\s+jogo|\s+jogo)?(?:\s+no)?\s+slot\s*[:=]?\s*[1-3]', p_low):
+                    is_save_cmd = True
+                elif re.match(r'^(?:salvar|save)\s+[1-3]$', p_low):
+                    is_save_cmd = True
+
+                if is_save_cmd:
+                    target_slot = getattr(self, "current_save_slot", 1)
+                    m = re.search(r'(?:slot\s*[:=]?\s*|slot_)?([1-3])\b', p_low)
+                    if m:
+                        try:
+                            target_slot = int(m.group(1))
+                        except (ValueError, TypeError):
+                            target_slot = getattr(self, "current_save_slot", 1)
+                    if target_slot not in [1, 2, 3]:
+                        target_slot = 1
+
+                    success = self.save_game(slot=target_slot)
+                    if success:
+                        sys_msg = f"[SISTEMA] Jogo salvo com sucesso no Slot {target_slot}!"
+                        self.ui_queue.put({"type": "system_message", "content": sys_msg})
+                        self.ui_queue.put({
+                            "type": "narrative",
+                            "content": f"O tempo se curva à sua vontade e o destino da sua jornada foi registrado no Slot {target_slot}.",
+                            "npc_falando": "Mestre"
+                        })
+                        self._push_event("system_event", {"text": f"Jogo salvo com sucesso no Slot {target_slot}!"})
+                    else:
+                        sys_msg = f"[SISTEMA] Erro ao tentar salvar no Slot {target_slot}."
+                        self.ui_queue.put({"type": "system_message", "content": sys_msg})
+                        self.ui_queue.put({
+                            "type": "narrative",
+                            "content": "Uma força invisível impede a gravação dos seus feitos no momento.",
+                            "npc_falando": "Mestre"
+                        })
+                    return
+
+                # 2. Ação Rápida: Observação do Cenário (Percepção CD 12)
+                if (
+                    "observo atentamente" in p_low
+                    or "procurando detalhes" in p_low
+                    or p_low == "observar"
+                    or p_low == "olhar ao redor"
+                    or p_low.startswith("observar ")
+                ):
+                    import random
+                    from core.dnd_rules import get_modifier
+                    attrs = pc.get("attributes", {})
+                    wis_val = attrs.get("SAB", attrs.get("WIS", 10))
+                    wis_mod = get_modifier(wis_val)
+                    profs = pc.get("proficiencies", [])
+                    is_prof = any("percep" in str(p).lower() for p in profs)
+                    prof_bonus = pc.get("proficiency_bonus", 2) if is_prof else 0
+
+                    d20_roll = random.randint(1, 20)
+                    total = d20_roll + wis_mod + prof_bonus
+                    dc = 12
+                    is_success = (d20_roll == 20) or (d20_roll != 1 and total >= dc)
+
+                    falante = "Taverneiro" if self.story.current_beat <= 1 else "Mestre"
+
+                    if self.game_mode == "COMBATE":
+                        if is_success:
+                            enemies_info = [
+                                f"{t.get('tipo_bestiario', k)} ({t.get('pv_atual', 0)}/{t.get('pv_max', 0)} PV)"
+                                for k, t in self.active_combat_targets.items()
+                                if t.get('faction') == 'enemy' and t.get('status') != 'morto'
+                            ]
+                            targets_desc = ", ".join(enemies_info) if enemies_info else "nenhuma ameaça direta"
+                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você avalia taticamente o combate: {targets_desc}."
+                            narrative = "Seus olhos experientes escaneiam o campo de batalha. Você nota os padrões de ataque e as vulnerabilidades na guarda dos inimigos."
+                        else:
+                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). O turbilhão do combate dispersa sua atenção."
+                            narrative = "O reflexo das lâminas e a adrenalina do momento impedem que você estude minuciosamente o terreno ou as aberturas inimigas."
+                    else:
+                        if is_success:
+                            if self.story.current_beat <= 1:
+                                self.discover_rumor("sq_goblin_clearing")
+                                sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você nota os detalhes e rumores do ambiente."
+                                narrative = "Você percorre os olhos pela Taverna do Dragão Acordado. Próximo à lareira crepitante, aventureiros cochicham sobre caravanas emboscadas na Clareira dos Goblins. No mural de avisos, um cartaz oficial promete recompensas para quem investigar a floresta."
+                            else:
+                                sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você examina detalhadamente os arredores."
+                                env_prompt = self.story.get_environment_prompt()
+                                try:
+                                    narrative = self.ai.generate_narrative_from_math(f"Percepção bem-sucedida ({total} vs CD {dc})", env_prompt)
+                                except Exception:
+                                    narrative = "Você observa com atenção cada detalhe do ambiente: pegadas no solo, a direção dos ventos e sinais sutis que revelam os perigos da região."
+                        else:
+                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). Você não nota nada de incomum."
+                            if self.story.current_beat <= 1:
+                                narrative = "A taverna segue em seu burburinho costumeiro; canecas batem nas mesas e fumaça de cachimbo paira no ar, sem nada além da rotina habitual."
+                            else:
+                                narrative = "A penumbra e o cansaço da marcha turvam sua visão; você não consegue identificar pistas ou detalhes além do óbvio."
+
+                    self.ui_queue.put({"type": "system_message", "content": sys_msg})
+                    self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": falante})
+                    return
+
+                # 3. Ação Rápida: Diálogo com quem estiver por perto (Persuasão CD 11)
+                if (
+                    "aproximo-me e tento conversar" in p_low
+                    or "conversar com quem estiver por perto" in p_low
+                    or p_low == "conversar"
+                    or p_low == "dialogar"
+                ):
+                    import random
+                    from core.dnd_rules import get_modifier
+                    attrs = pc.get("attributes", {})
+                    cha_val = attrs.get("CAR", attrs.get("CHA", 10))
+                    cha_mod = get_modifier(cha_val)
+                    profs = pc.get("proficiencies", [])
+                    is_prof = any("persua" in str(p).lower() for p in profs)
+                    prof_bonus = pc.get("proficiency_bonus", 2) if is_prof else 0
+
+                    d20_roll = random.randint(1, 20)
+                    total = d20_roll + cha_mod + prof_bonus
+                    dc = 11
+                    is_success = (d20_roll == 20) or (d20_roll != 1 and total >= dc)
+
+                    falante = "Taverneiro" if self.story.current_beat <= 1 else "Mestre"
+
+                    if self.game_mode == "COMBATE":
+                        if is_success:
+                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você tenta intimidar ou exigir rendição."
+                            narrative = "Você brada com firmeza através do caos do combate. Seus inimigos hesitam por um instante, intimidados pela autoridade de sua presença."
+                        else:
+                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). As ameaças são ignoradas."
+                            narrative = "Seus adversários respondem com zombaria e rosnados ferozes. No campo de batalha, suas palavras são engolidas pelo ferro e pelo sangue."
+                    else:
+                        if is_success:
+                            if self.story.current_beat <= 1:
+                                self.discover_rumor("sq_goblin_clearing")
+                                sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). O taverneiro compartilha informações valiosas."
+                                narrative = "Maelor, o taverneiro, enxuga uma caneca de estanho e inclina-se sobre o balcão: 'Se procura trabalho e ouro fácil, forasteiro, comerciantes relatam que goblins estão emboscando carroças na Clareira da Mata Leste. Os guardas nada fazem. Talvez alguém com sua têmpera consiga limpar o caminho.'"
+                            else:
+                                sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Seu interlocutor se mostra receptivo."
+                                env_prompt = self.story.get_environment_prompt()
+                                try:
+                                    narrative = self.ai.generate_narrative_from_math(f"Persuasão bem-sucedida ({total} vs CD {dc})", env_prompt)
+                                except Exception:
+                                    narrative = "A pessoa mais próxima baixa a guarda diante de sua cortesia e compartilha boatos sobre os acontecimentos recentes da região."
+                        else:
+                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). O interlocutor é reticente."
+                            if self.story.current_beat <= 1:
+                                narrative = "Maelor mal ergue a cabeça do balcão: 'Perguntas demais dão sede, novato. Se quiser prosear, peça um hidromel e pague a conta primeiro.'"
+                            else:
+                                narrative = "Aqueles ao redor evitam seu olhar, murmurando entre dentes e ignorando qualquer tentativa de aproximação."
+
+                    self.ui_queue.put({"type": "system_message", "content": sys_msg})
+                    self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": falante})
+                    return
+
                 json_data = self.ai.parse_player_intent(player_input, temp_state)
             
             tipo_acao = json_data.get("tipo_acao", "INTERAGIR_AMBIENTE")
             intencao = json_data.get("intencao_cena", "manter")
             p_low = player_input.lower().strip()
 
+            # Detecção de diálogos e interações com o ambiente na Taverna (Beat <= 1)
+            dialogue_interaction_keywords = [
+                "falar", "falo", "conversar", "converso", "perguntar", "pergunto", "dialogar", "dialogo",
+                "taverneiro", "estalajadeiro", "balcao", "balcão", "mesa", "cadeira", "pedir", "peço",
+                "ouvir", "ouço", "olhar", "olho", "observar", "observo", "examinar", "investigar",
+                "rumor", "rumores", "cerveja", "caneca", "bebida", "beber", "bebo", "comer", "como",
+                "comida", "garçom", "garcom", "garconete", "bardo", "menestrel"
+            ]
+            is_dialogue_or_interaction = any(kw in p_low for kw in dialogue_interaction_keywords)
+
+            # Detecção e Destravamento de Avanço Natural da Taverna (Beat 1 -> Beat 2)
+            has_table_exit = any(k in p_low for k in ["sair da mesa", "sair da cadeira", "levantar da mesa", "levantar da cadeira"])
+            strong_exit_keywords = [
+                "sair da taverna", "saio da taverna", "deixar a taverna", "deixo a taverna",
+                "abro a porta", "abrir a porta", "abro a porta da taverna", "abrir a porta da taverna",
+                "vou para a estrada", "pegar a estrada", "pego a estrada", "ir para a estrada",
+                "seguir viagem", "sigo viagem", "partir", "parto", "ir embora", "vou embora",
+                "vou lá fora", "vou la fora", "sair para a estrada", "saio para a estrada",
+                "seguir em frente", "sigo em frente", "estrada", "viajar", "viajo",
+                "prosseguir", "prossigo", "avancar", "avançar", "avanço", "avanco",
+                "proximo beat", "próximo beat"
+            ]
+            import re
+            has_strong_exit = any(
+                re.search(rf"\b{re.escape(kw)}\b", p_low) if len(kw.split()) == 1 else (kw in p_low)
+                for kw in strong_exit_keywords
+            )
+            has_standalone_exit = any(re.search(rf"\b{re.escape(kw)}\b", p_low) for kw in ["sair", "saio"]) and not has_table_exit
+            is_explicit_advance = (has_strong_exit or has_standalone_exit) and (not is_dialogue_or_interaction)
+
+            tavern_false_advances = [
+                "sair da mesa", "sair da cadeira", "levantar da mesa", "levantar da cadeira",
+                "levantar", "ir ao balcao", "ir ao balcão",
+                "balcao", "balcão", "mesa", "cadeira", "procurar missao", "procurar missão",
+                "ouvir rumor", "ouvir rumores", "conversar", "falar", "perguntar", "beber",
+                "cerveja", "caneca", "taverneiro", "pedir bebida", "olhar taverna"
+            ]
+            has_false_advance_kw = (not is_explicit_advance) and any(kw in p_low for kw in tavern_false_advances)
+
+            if self.story.current_beat <= 1:
+                # Se o jogador expressou claramente a intenção de sair da taverna sem diálogo ativo
+                if is_explicit_advance:
+                    tipo_acao = "AVANCAR_HISTORIA"
+                    intencao = "avancar"
+                    json_data["tipo_acao"] = "AVANCAR_HISTORIA"
+                    json_data["intencao_cena"] = "avancar"
+                elif is_dialogue_or_interaction and tipo_acao == "AVANCAR_HISTORIA":
+                    tipo_acao = "DIALOGAR" if any(w in p_low for w in ["falar", "falo", "convers", "dialog", "pergunt", "propost", "taverneiro", "estalajadeiro"]) else "INTERAGIR_CENARIO"
+                    intencao = f"Interagir no cenário: {player_input}"
+                    json_data["tipo_acao"] = tipo_acao
+                    json_data["intencao_cena"] = intencao
+
             # TRAVA ANTI-AVANÇO INVOLUNTÁRIO DE BEAT (Tarefa 2)
-            # Palavras como "sair", "sair da mesa", conversas ou buscas por missão na Taverna NÃO podem avançar beat.
             if tipo_acao == "AVANCAR_HISTORIA":
-                tavern_false_advances = [
-                    "sair da mesa", "sair da cadeira", "levantar", "ir ao balcao", "ir ao balcão",
-                    "balcao", "balcão", "mesa", "cadeira", "procurar missao", "procurar missão",
-                    "ouvir rumor", "ouvir rumores", "conversar", "falar", "perguntar", "beber",
-                    "cerveja", "caneca", "taverneiro", "pedir bebida", "olhar taverna"
-                ]
-                is_false_advance = any(kw in p_low for kw in tavern_false_advances)
-                if not is_false_advance and self.story.current_beat <= 1:
-                    explicit_advance_keywords = [
-                        "viajar", "estrada", "partir", "prosseguir", "avancar", "avançar",
-                        "seguir viagem", "sair para a estrada", "deixar a taverna", "ir para a estrada",
-                        "proximo beat", "próximo beat", "seguir em frente"
-                    ]
-                    if not any(kw in p_low for kw in explicit_advance_keywords):
+                is_false_advance = False
+                if self.story.current_beat <= 1:
+                    if not is_explicit_advance or is_dialogue_or_interaction:
                         is_false_advance = True
+                elif has_false_advance_kw:
+                    is_false_advance = True
 
                 if is_false_advance:
                     tipo_acao = "DIALOGAR" if any(w in p_low for w in ["falar", "convers", "dialog", "pergunt", "propost"]) else "INTERAGIR_CENARIO"
                     intencao = f"Interagir no cenário: {player_input}"
                     json_data["tipo_acao"] = tipo_acao
                     json_data["intencao_cena"] = intencao
-            
+
+            # Tratamento Civil/Social de Zona Segura na Taverna (Beat 1)
+            if self.story.current_beat <= 1 and tipo_acao == "ATACAR" and (self.game_mode == "EXPLORACAO" or not self.active_combat_targets):
+                self.game_mode = "EXPLORACAO"
+                self.active_combat_targets.clear()
+                self.active_visual_npcs.clear()
+                sys_msg = "[ZONA SEGURA] A Taverna do Dragão Acordado é um refúgio de paz. Conflitos armados são proibidos pelas regras da casa e pela guarda."
+                narrative = "Maelor desvia a lâmina com um toque firme de sua acha de lenha e bate no balcão de carvalho com olhar severo: 'Guarde o aço, forasteiro. Aqui bebe-se em paz; sangue derrama-se lá fora.' O bater metálico de alabardas do lado de fora ecoa o aviso silencioso da patrulha local."
+                self.ui_queue.put({"type": "system_message", "content": sys_msg})
+                self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Taverneiro"})
+                return
+
             # Filtro de Contexto (Modo de Jogo)
             if self.game_mode == "EXPLORACAO" and tipo_acao == "ATACAR":
                 self.game_mode = "COMBATE"
@@ -1642,47 +2483,18 @@ class SessionManager:
                 if isinstance(alvos, str):
                     alvos = [alvos] if alvos.strip() else []
 
-                living_enemies = [
-                    (k, v) for k, v in self.active_combat_targets.items()
-                    if v.get("faction", "enemy") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0
-                ]
-
+                raw_target = str(alvos[0]).strip() if alvos else ""
+                target_obj = self.find_combat_target(raw_target)
                 alvo_principal = None
-                if not alvos or alvos[0] in ["", "nenhum", None]:
-                    if living_enemies:
-                        alvo_principal = living_enemies[0][0]
-                    elif self.active_combat_targets:
-                        alvo_principal = list(self.active_combat_targets.keys())[0]
-                    else:
-                        alvo_principal = "Inimigo"
-                else:
-                    raw_target = str(alvos[0]).strip()
-                    # 1. Busca exata por chave
+                if target_obj:
                     for k, v in self.active_combat_targets.items():
-                        if k.lower() == raw_target.lower():
+                        if v is target_obj:
                             alvo_principal = k
                             break
-                    # 2. Busca por tipo_bestiario (ex: m_dire_wolf, m_bandit, goblin)
                     if not alvo_principal:
-                        for k, v in self.active_combat_targets.items():
-                            t_best = str(v.get("tipo_bestiario", "")).lower()
-                            if t_best and (t_best == raw_target.lower() or t_best.replace("m_", "") == raw_target.lower().replace("m_", "")):
-                                alvo_principal = k
-                                break
-                    # 3. Busca por substring no nome ou na chave
-                    if not alvo_principal:
-                        r_clean = raw_target.lower().replace("m_", "").replace("_", " ")
-                        for k, v in self.active_combat_targets.items():
-                            k_clean = k.lower().replace("m_", "").replace("_", " ")
-                            v_name = str(v.get("name", "")).lower().replace("m_", "").replace("_", " ")
-                            if r_clean in k_clean or k_clean in r_clean or r_clean in v_name or v_name in r_clean:
-                                alvo_principal = k
-                                break
-                    # 4. Fallback em combate ativo com inimigos vivos
-                    if not alvo_principal and living_enemies:
-                        alvo_principal = living_enemies[0][0]
-                    elif not alvo_principal:
-                        alvo_principal = raw_target
+                        alvo_principal = target_obj.get("name", raw_target or "Inimigo")
+                else:
+                    alvo_principal = raw_target or "Inimigo"
 
                 parsed["tipo_acao"] = "ataque"
                 parsed["recurso_utilizado"] = json_data.get("recurso_utilizado") or pc.get("equipped_weapon") or "ataque desarmado"
@@ -1733,13 +2545,28 @@ class SessionManager:
                         return
                     pc["spell_slots"][str(spell_level)] -= 1
                     
+                is_heal_or_support = (
+                    spell_data.get("mechanical_action") in ["heal", "buff", "support", "revive"]
+                    or spell_data.get("target_type") in ["single_ally", "touch", "self"]
+                    or "curar" in spell_data.get("name", "").lower()
+                    or "cura" in spell_data.get("name", "").lower()
+                )
+
                 if spell_data.get("mechanical_action") == "damage" and self.game_mode == "EXPLORACAO":
+                    if self.story.current_beat <= 1 and not [v for v in self.active_combat_targets.values() if v.get("faction") == "enemy" and v.get("pv_atual", 0) > 0]:
+                        self.ui_queue.put({"type": "system_message", "content": "[ZONA SEGURA] Magias ofensivas são estritamente proibidas dentro da Taverna!"})
+                        self.ui_queue.put({
+                            "type": "narrative",
+                            "content": "Maelor bate com a caneca pesada no balcão e ergue a mão aberta, dissipando a centelha arcana: 'Guarde a magia, conjurador. Aqui bebe-se em paz; sangue derrama-se lá fora.' Os olhares austeros da guarda advertem contra qualquer motim.",
+                            "npc_falando": "Taverneiro"
+                        })
+                        return
                     self.game_mode = "COMBATE"
                     
                 parsed["tipo_acao"] = "magia"
                 parsed["recurso_utilizado"] = recurso
                 parsed["spell_data"] = spell_data
-                parsed["intencao_cena"] = "iniciar_combate"
+                parsed["intencao_cena"] = "conjuracao_magia" if is_heal_or_support else "iniciar_combate"
                 
                 if spell_data.get("target_type") == "aoe":
                     # Define alvo dummy só para passar pelo validador do Phase 1 (já que AoE ignora o loop de alvos mas requer a lista)
@@ -1748,25 +2575,30 @@ class SessionManager:
                         return
                     parsed["alvo"] = [list(self.active_combat_targets.keys())[0]]
                 else:
-                    if not alvos:
-                        self.ui_queue.put({"type": "system_message", "content": "[SISTEMA] Você precisa de um alvo para esta magia direta."})
-                        return
-                        
-                    alvo_principal = alvos[0]
-                    achou_alvo = False
-                    
-                    for k in self.active_combat_targets.keys():
-                        if alvo_principal.lower() in k.lower() or k.lower() in alvo_principal.lower():
-                            achou_alvo = True
-                            alvo_principal = k
-                            break
-                            
-                    if not achou_alvo and self.game_mode == "COMBATE":
-                        self.ui_queue.put({"type": "system_message", "content": f"[SISTEMA] Alvo '{alvos[0]}' não encontrado no combate. Ação cancelada."})
-                        return
-                    elif not achou_alvo:
-                        alvo_principal = alvos[0]
-                        
+                    hero_name = pc.get("name", "Herói")
+                    raw_target = str(alvos[0]).strip() if (alvos and alvos[0] not in ["", "nenhum", None]) else ""
+                    if is_heal_or_support and (not raw_target or raw_target.lower() in ["self", "eu", "heroi", "herói", "proprio", "próprio", "si mesmo", hero_name.lower()]):
+                        alvo_principal = hero_name
+                    elif is_heal_or_support and not self.active_combat_targets:
+                        alvo_principal = hero_name
+                    else:
+                        target_obj = self.find_combat_target(raw_target)
+                        if target_obj:
+                            alvo_principal = None
+                            for k, v in self.active_combat_targets.items():
+                                if v is target_obj:
+                                    alvo_principal = k
+                                    break
+                            if not alvo_principal:
+                                alvo_principal = hero_name if target_obj is pc else target_obj.get("name", raw_target or "Inimigo")
+                        elif is_heal_or_support:
+                            alvo_principal = hero_name
+                        elif self.game_mode == "COMBATE":
+                            self.ui_queue.put({"type": "system_message", "content": f"[SISTEMA] Alvo '{raw_target}' não encontrado no combate. Ação cancelada."})
+                            return
+                        else:
+                            alvo_principal = hero_name
+
                     parsed["alvo"] = [alvo_principal]
                 
             elif tipo_acao == "DESCANSAR":
@@ -1782,6 +2614,7 @@ class SessionManager:
                     self.game_state["suprimentos_acampamento"] = self.game_state.get("suprimentos_maximos", 1)
                     self.game_state["last_checkpoint_beat"] = beat_atual
                     self.game_state["last_checkpoint_type"] = "TAVERNA"
+                    self.game_state["last_checkpoint_bg"] = "tavern_bg.jpg"
                     self.save_game()
                     
                     sys_log = f"[SISTEMA] Descanso seguro na Taverna (Dia {self.game_state.get('current_day', 1)}). HP 100%. Suprimentos restaurados. Jogo Salvo."
@@ -1818,6 +2651,7 @@ class SessionManager:
                         RestSystem.long_rest(pc, self.game_state)
                         self.game_state["last_checkpoint_beat"] = beat_atual
                         self.game_state["last_checkpoint_type"] = "ACAMPAMENTO"
+                        self.game_state["last_checkpoint_bg"] = self.game_state.get("current_background", "tavern_bg.jpg")
                         self.save_game()
                         sys_log = f"[SISTEMA] Acampamento seguro (Dia {self.game_state.get('current_day', 1)}). HP Restaurado. Suprimentos: {self.game_state['suprimentos_acampamento']}/{self.game_state.get('suprimentos_maximos', 1)}. Jogo Salvo."
                         self.ui_queue.put({"type": "system_message", "content": sys_log})
@@ -2159,8 +2993,17 @@ class SessionManager:
                     self.ui_queue.put({"type": "system_message", "content": sys_msg})
                     return
 
-            elif str(tipo_acao).upper() == "MOVER":
+            elif str(tipo_acao).upper() in ["ESQUIVAR", "DODGE", "ESQUIVA"]:
+                parsed["tipo_acao"] = "esquivar"
+                parsed["intencao_cena"] = intencao
+
+            elif str(tipo_acao).upper() in ["DESENGAJAR", "DISENGAGE", "RECUAR_SEGURO"]:
+                parsed["tipo_acao"] = "desengajar"
+                parsed["intencao_cena"] = intencao
+
+            elif str(tipo_acao).upper() in ["MOVER", "MOVIMENTO", "DESLOCAR"]:
                 parsed["tipo_acao"] = "movimento"
+                parsed["recurso_utilizado"] = json_data.get("recurso_utilizado") or intencao
                 parsed["intencao_cena"] = intencao
 
             elif str(tipo_acao).upper() in ["USAR_HABILIDADE", "ACAO_TATICA_5E"]:
@@ -2190,44 +3033,21 @@ class SessionManager:
                         {"inventory": self.game_state.get("inventory", {})}
                     )
                     
-            # FASE 1: MatemÃ¡tica
+            # FASE 1: Matemática
             from core.combat_system import resolve_action
             alvos_raw = parsed.get("alvo", ["nenhum"])
             if isinstance(alvos_raw, str):
                 alvos_raw = [alvos_raw]
                 
             target_entities = []
+            hero_name = pc.get("name", "Herói")
             for alvo in alvos_raw:
                 if alvo != "nenhum":
-                    achou_ent = None
-                    if alvo in self.active_combat_targets:
-                        achou_ent = self.active_combat_targets[alvo]
-                    if not achou_ent:
-                        for k, v in self.active_combat_targets.items():
-                            t_best = str(v.get("tipo_bestiario", "")).lower()
-                            if t_best and (t_best == alvo.lower() or t_best.replace("m_", "") == alvo.lower().replace("m_", "")):
-                                achou_ent = v
-                                break
-                    if not achou_ent:
-                        a_clean = alvo.lower().replace("m_", "").replace("_", " ")
-                        for k, v in self.active_combat_targets.items():
-                            k_clean = k.lower().replace("m_", "").replace("_", " ")
-                            v_name = str(v.get("name", "")).lower().replace("m_", "").replace("_", " ")
-                            if a_clean in k_clean or k_clean in a_clean or a_clean in v_name or v_name in a_clean:
-                                achou_ent = v
-                                break
-                    if not achou_ent and self.game_mode == "COMBATE":
-                        living_enemies = [
-                            v for v in self.active_combat_targets.values()
-                            if v.get("faction", "enemy") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0
-                        ]
-                        if living_enemies:
-                            achou_ent = living_enemies[0]
-                    
+                    achou_ent = self.find_combat_target(alvo)
                     if achou_ent:
                         target_entities.append(achou_ent)
-                    elif self.game_mode == "COMBATE":
-                        # Auto-instanciação de Segurança se nenhum inimigo existia
+                    elif self.game_mode == "COMBATE" and self.story.current_beat > 1:
+                        # Auto-instanciação de Segurança se nenhum inimigo existia fora de hub
                         tipo_bestiario_match = "goblin"
                         for k in BESTIARIO_5E.keys():
                             if k.lower() in alvo.lower() or alvo.lower() in k.lower():
@@ -2262,6 +3082,10 @@ class SessionManager:
                 result = resolve_action(parsed, pc, target_entities, self.active_combat_targets, self.game_state)
                 sys_log = result["sys_log"]
                 status = result["status"]
+                init_order = result.get("initiative_order", [])
+                if init_order:
+                    self.game_state["initiative_order"] = init_order
+                    self.ui_queue.put({"type": "initiative_order", "order": init_order})
                 
                 # O Lixeiro de CadÃ¡veres (Limpa quem morreu)
                 mortos = []
@@ -2315,7 +3139,7 @@ class SessionManager:
                 # MODO EXPLORACAO
                 if intencao == "fugir":
                     sys_log = "[SISTEMA] O jogador conseguiu escapar com sucesso! Combate encerrado."
-                elif parsed.get("tipo_acao") in ["teste_pericia", "uso_item", "habilidade"]:
+                elif parsed.get("tipo_acao") in ["teste_pericia", "uso_item", "habilidade", "magia", "esquivar", "desengajar"]:
                     result = resolve_action(parsed, pc, target_entities, {}, self.game_state)
                     sys_log = result["sys_log"]
                     status = result["status"]
@@ -2327,7 +3151,7 @@ class SessionManager:
                     tot = dado + mod + 2
                     cd = 12
                     res_str = "SUCESSO" if tot >= cd else "FALHA"
-                    sys_log = f"🎲 [DADO - TESTE] Percepção: d20 ({dado}) + Mod/Prof (+{mod+2}) = {tot} vs CD {cd} ➔ {res_str}!"
+                    sys_log = f"🎲 [DADO - TESTE] Percepção: {tot} vs CD {cd} ➔ {res_str}!"
                 elif any(w in (intencao or "").lower() for w in ["convers", "fal", "dialog", "pergunt", "propost"]):
                     from core.dice_engine import DiceEngine
                     from core.dnd_rules import get_modifier
@@ -2336,7 +3160,7 @@ class SessionManager:
                     tot = dado + mod + 2
                     cd = 11
                     res_str = "SUCESSO" if tot >= cd else "FALHA"
-                    sys_log = f"🎲 [DADO - TESTE] Persuasão: d20 ({dado}) + Mod/Prof (+{mod+2}) = {tot} vs CD {cd} ➔ {res_str}!"
+                    sys_log = f"🎲 [DADO - TESTE] Persuasão: {tot} vs CD {cd} ➔ {res_str}!"
                 elif parsed.get("tipo_acao") == "movimento":
                     sys_log = f"[SISTEMA] Deslocamento: O aventureiro avança explorando o caminho adiante."
                 else:
@@ -2395,6 +3219,12 @@ class SessionManager:
             import traceback
             traceback.print_exc()
             self.ui_queue.put({"type": "system_message", "content": f"[ERRO INTERNO] {str(e)}"})
+        finally:
+            self.is_ai_thinking = False
+
+# Alias de interoperabilidade
+GameEngine = SessionManager
+
 
 # Alias de interoperabilidade
 GameEngine = SessionManager

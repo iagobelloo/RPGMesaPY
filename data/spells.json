@@ -23,6 +23,53 @@
       "saving_throw": "DES",
       "damage_dice": "8d6",
       "description": "Uma explosão de chamas em um raio de 20 pés."
+    },
+    "cure_wounds": {
+      "id": "s_cure_wounds",
+      "name": "Curar Ferimentos",
+      "level": 1,
+      "casting_time": "1 action",
+      "range": "touch",
+      "mechanical_action": "heal",
+      "target_type": "single_ally",
+      "dice_value": "1d8+3",
+      "heal_dice": "1d8+3",
+      "damage_dice": "1d8+3",
+      "description": "Uma criatura tocada recupera 1d8 + modificador de habilidade de conjuração em Pontos de Vida."
+    },
+    "fire_bolt": {
+      "id": "s_fire_bolt",
+      "name": "Raio de Fogo",
+      "level": 0,
+      "casting_time": "1 action",
+      "range": 120,
+      "mechanical_action": "damage",
+      "target_type": "direct",
+      "damage_dice": "1d10",
+      "description": "Você arremessa um feixe ardente contra um alvo ao alcance, causando 1d10 de dano ígneo."
+    },
+    "sacred_flame": {
+      "id": "s_sacred_flame",
+      "name": "Chama Sagrada",
+      "level": 0,
+      "casting_time": "1 action",
+      "range": 60,
+      "mechanical_action": "damage",
+      "target_type": "direct",
+      "saving_throw": "DES",
+      "damage_dice": "1d8",
+      "description": "Radiação divina desce sobre o alvo, causando 1d8 de dano radiante se falhar na resistência de Destreza."
+    },
+    "guiding_bolt": {
+      "id": "s_guiding_bolt",
+      "name": "Raio Guiador",
+      "level": 1,
+      "casting_time": "1 action",
+      "range": 120,
+      "mechanical_action": "damage",
+      "target_type": "direct",
+      "damage_dice": "4d6",
+      "description": "Um raio de luz ofuscante atinge o inimigo causando 4d6 de dano radiante."
     }
   },
   "abjuration": {
@@ -32,7 +79,29 @@
       "level": 1,
       "casting_time": "1 reaction",
       "range": 0,
-      "description": "Você ganha +5 na sua CA até o início do seu próximo turno, o que pode fazer um ataque errar."
+      "mechanical_action": "buff",
+      "target_type": "self",
+      "description": "Você ergue uma barreira mágica instantânea, ganhando +5 na sua CA até o início do seu próximo turno."
+    },
+    "shield_of_faith": {
+      "id": "s_shield_of_faith",
+      "name": "Escudo da Fé",
+      "level": 1,
+      "casting_time": "1 bonus action",
+      "range": 60,
+      "mechanical_action": "buff",
+      "target_type": "single_ally",
+      "description": "Um campo cintilante envolve o alvo, concedendo um bônus de +2 na CA."
+    },
+    "mage_armor": {
+      "id": "s_mage_armor",
+      "name": "Armadura Arcana",
+      "level": 1,
+      "casting_time": "1 action",
+      "range": "touch",
+      "mechanical_action": "buff",
+      "target_type": "single_ally",
+      "description": "Envolve uma criatura desprotegida com energia protetora mágica, fixando a CA base em 13 + Modificador de Destreza."
     }
   }
 }

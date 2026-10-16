@@ -723,6 +723,28 @@ class CharacterCalculator:
 
         gender_info = get_protagonist_gender_info(race_name, class_name)
 
+        # Inicialização oficial 5e de unlocked_skills no Nível 1 por Classe
+        class_initial_skills_map = {
+            "Guerreiro": ["second_wind", "sk_warrior_1"],
+            "Clérigo": ["disciple_of_life", "sk_cleric_1"],
+            "Paladino": ["lay_on_hands", "sk_paladin_1"],
+            "Mago": ["arcane_recovery", "sk_mage_1"],
+            "Patrulheiro": ["favored_enemy", "sk_ranger_1"],
+            "Ladino": ["sneak_attack", "sk_rogue_1"],
+        }
+        initial_skills = list(class_initial_skills_map.get(class_name, []))
+
+        existing_unlocked = []
+        if is_char_dict_call and isinstance(char_ref, dict) and "unlocked_skills" in char_ref and char_ref["unlocked_skills"]:
+            existing_unlocked = list(char_ref.get("unlocked_skills") or [])
+        elif isinstance(base_attrs, dict) and "unlocked_skills" in base_attrs and base_attrs["unlocked_skills"]:
+            existing_unlocked = list(base_attrs.get("unlocked_skills") or [])
+
+        unlocked_skills = list(existing_unlocked)
+        for sk in initial_skills:
+            if sk not in unlocked_skills:
+                unlocked_skills.append(sk)
+
         result = {
             "attributes": final_attrs,
             "hp_max": max(1, hp_max),
@@ -737,6 +759,7 @@ class CharacterCalculator:
             "has_shield": has_shield,
             "abilities": abilities,
             "proficiencies": proficiencies,
+            "unlocked_skills": unlocked_skills,
             "level": 1,
             "xp": 0,
             "xp_to_next_level": 300,
@@ -756,6 +779,7 @@ class CharacterCalculator:
 
         if is_char_dict_call and isinstance(char_ref, dict):
             char_ref["attributes"] = final_attrs
+            char_ref["unlocked_skills"] = unlocked_skills
             for k in ["prot_id", "gender", "gender_symbol", "gender_label", "class_display", "sprite_filename", "sprite_path", "icon_path", "_racial_applied"]:
                 char_ref[k] = result[k]
             for k, v in result.items():

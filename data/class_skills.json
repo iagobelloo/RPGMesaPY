@@ -205,6 +205,7 @@
             "tier": 1,
             "level_req": 1,
             "type": "passiva",
+            "cost": "Passiva",
             "description": "Estudo letal da anatomia de monstros e dragões, concedendo +2 de dano em todos os ataques.",
             "effect": {
                 "damage_bonus": 2

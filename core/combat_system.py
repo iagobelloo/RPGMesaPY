@@ -212,6 +212,27 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
         slots["1"] = int(slots.get("1", 0)) + 1
         return f"✨ [HABILIDADE - ARCANO] Recuperação Arcana: +1 Espaço de Magia de Nível 1 restaurado (Total Nv 1: {slots['1']})!\n"
 
+    # 2.5 Marca do Caçador (Patrulheiro)
+    elif canonical_id in ["hunters_mark", "sk_ranger_2"] or "marca do caçador" in raw_low or "marca do cacador" in raw_low:
+        enemies = [t for t in (target_entities or []) if isinstance(t, dict) and t.get("status") != "morto" and t.get("pv_atual", 0) > 0]
+        if not enemies and active_combat_targets:
+            enemies = [
+                t for t in active_combat_targets.values()
+                if isinstance(t, dict) and t.get("faction", "enemy") == "enemy" and t.get("status") != "morto" and t.get("pv_atual", 0) > 0
+            ]
+        alvo_nome = "o alvo"
+        if enemies:
+            alvo = enemies[0]
+            alvo["_marked_by_hunters_mark"] = True
+            alvo_nome = alvo.get("name", "Inimigo")
+            player_sheet["_active_hunters_mark_target"] = alvo_nome
+        return f"🏹 [HABILIDADE] Marca do Caçador fixada em {alvo_nome}! (+1d6 de dano em ataques contra este alvo)\n"
+
+    # 2.6 Ataque Furtivo (Ladino)
+    elif canonical_id in ["sneak_attack", "sk_rogue_1"] or "ataque furtivo" in raw_low:
+        player_sheet["_sneak_attack_active"] = True
+        return f"🗡️ [HABILIDADE] Ataque Furtivo preparado! (+1d6 de dano de precisão no próximo ataque)\n"
+
     # 3. Habilidades Ofensivas (Surto de Ação, Arma Espiritual, Destruir Mortos-Vivos, Golpe Divino)
     elif canonical_id in ["action_surge", "spiritual_weapon", "destroy_undead", "divine_strike"] or any(
         k in raw_low for k in ["surto", "arma espiritual", "destruir mortos", "golpe divino"]
@@ -286,6 +307,12 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
         tipo_acao = "ataque"
     elif raw_tipo.upper() in ["MAGIA", "CONJURAR_MAGIA"]:
         tipo_acao = "magia"
+    elif raw_tipo.upper() in ["ESQUIVAR", "DODGE", "ESQUIVA"]:
+        tipo_acao = "esquivar"
+    elif raw_tipo.upper() in ["DESENGAJAR", "DISENGAGE", "RECUAR_SEGURO"]:
+        tipo_acao = "desengajar"
+    elif raw_tipo.upper() in ["MOVER", "MOVIMENTO", "DESLOCAR"]:
+        tipo_acao = "movimento"
     else:
         tipo_acao = raw_tipo
 
@@ -304,7 +331,7 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
     # Player init (suporta chaves PT e EN)
     mod_des_player = get_modifier(_get_player_attr_value(player_sheet, "DES", 10))
     init_player = DiceEngine.roll_d20() + mod_des_player
-    participants.append({"type": "player", "init": init_player})
+    participants.append({"type": "player", "init": init_player, "id": "player"})
     
     # Monsters and Allies init
     reacoes = parsed_json.get("reacao_inimigos", [])
@@ -339,6 +366,27 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
             participants.append({"type": "ally", "init": init_roll, "id": t_id, "data": t_data, "best_data": best_data})
             
     participants.sort(key=lambda x: x["init"], reverse=True)
+
+    # Ordem de Iniciativa explícita para retorno e exibição na UI
+    initiative_order = []
+    for pt in participants:
+        pt_name = player_sheet.get("name", "Herói") if pt["type"] == "player" else pt.get("data", {}).get("name", pt.get("id", "Alvo"))
+        pt_hp = player_sheet.get("hp_current", 10) if pt["type"] == "player" else pt.get("data", {}).get("pv_atual", 0)
+        pt_hp_max = player_sheet.get("hp_max", 10) if pt["type"] == "player" else pt.get("data", {}).get("pv_max", 0)
+        pt_ca = player_sheet.get("ac", player_sheet.get("ca", 10)) if pt["type"] == "player" else pt.get("data", {}).get("ca", 10)
+        initiative_order.append({
+            "id": "player" if pt["type"] == "player" else pt.get("id", "alvo"),
+            "name": pt_name,
+            "type": pt["type"],
+            "init": pt["init"],
+            "hp": pt_hp,
+            "hp_max": pt_hp_max,
+            "ca": pt_ca
+        })
+
+    if active_combat_targets:
+        order_str = " ➔ ".join([f"{item['name']} ({item['init']})" for item in initiative_order])
+        sys_log += f"📋 [INICIATIVA 5E] Ordem dos Turnos: {order_str}\n"
     
     for p in participants:
         # Pula se jogador morreu
@@ -371,8 +419,55 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
 
             elif tipo_acao == "habilidade":
                 sys_log += resolve_skill_effect(parsed_json, player_sheet, target_entities, active_combat_targets, game_state)
-                
-            elif tipo_acao in ["ataque", "magia"] and target_entities:
+
+            elif tipo_acao == "esquivar":
+                player_sheet["_tactical_dodge_active"] = True
+                player_sheet["_tactical_disengage_active"] = False
+                sys_log += "🛡️ [AÇÃO TÁTICA 5E - ESQUIVAR (DODGE)] O herói foca totalmente na defesa e evasão! Qualquer ataque inimigo nesta rodada será desferido com DESVANTAGEM.\n"
+
+            elif tipo_acao == "desengajar":
+                player_sheet["_tactical_disengage_active"] = True
+                player_sheet["_tactical_dodge_active"] = False
+                player_sheet["tactical_stance"] = "distancia"
+                sys_log += "🏃 [AÇÃO TÁTICA 5E - DESENGAJAR (DISENGAGE)] O herói executa um recuo tático cauteloso, rompendo o engajamento corpo a corpo sem abrir guarda para ataques de oportunidade!\n"
+
+            elif tipo_acao == "movimento":
+                sub_move = str(parsed_json.get("recurso_utilizado") or parsed_json.get("movimento_tipo") or parsed_json.get("intencao_cena") or "fechar_distancia").lower()
+                speed_str = str(player_sheet.get("speed", "9m")).replace("m", "").strip()
+                try:
+                    speed_m = float(speed_str)
+                except ValueError:
+                    speed_m = 9.0
+
+                if any(w in sub_move for w in ["distancia", "recuar", "afastar", "kiting"]):
+                    player_sheet["tactical_stance"] = "distancia"
+                    if speed_m >= 10.0:
+                        player_sheet["_tactical_kiting_active"] = True
+                        sys_log += f"🏹 [MOVIMENTO TÁTICO] Deslocamento élfico veloz ({speed_m}m): Você recua e mantém distância superior, impedindo que inimigos lentos no corpo a corpo o alcancem nesta rodada!\n"
+                    else:
+                        player_sheet["_tactical_kiting_active"] = False
+                        sys_log += f"🏹 [MOVIMENTO TÁTICO] Deslocamento utilizado ({speed_m}m): O herói se afasta para combate à distância, favorecendo arcos e magias.\n"
+                elif any(w in sub_move for w in ["cobertura", "proteger", "abrigo", "esconder"]):
+                    player_sheet["tactical_stance"] = "cobertura"
+                    player_sheet["_tactical_cover_active"] = True
+                    sys_log += f"🛡️ [MOVIMENTO TÁTICO] Deslocamento para Cobertura ({speed_m/2:.1f}m consumidos): O herói busca cobertura sólida (+2 CA contra ataques à distância nesta rodada)!\n"
+                else:
+                    player_sheet["tactical_stance"] = "melee"
+                    player_sheet["_tactical_kiting_active"] = False
+                    player_sheet["_tactical_cover_active"] = False
+                    sys_log += f"⚔️ [MOVIMENTO TÁTICO] Deslocamento utilizado ({speed_m}m): O herói avança com ímpeto, fechando a distância para combate corpo a corpo!\n"
+
+            elif tipo_acao == "magia" and not target_entities:
+                # Auto-alvo seguro para magias de cura/buff fora ou dentro de combate
+                spell_data = parsed_json.get("spell_data", {})
+                m_action = spell_data.get("mechanical_action", "damage")
+                if m_action in ["heal", "buff", "support", "revive"] or spell_data.get("target_type") in ["single_ally", "touch", "self"]:
+                    target_entities = [player_sheet]
+                elif active_combat_targets:
+                    living = [v for v in active_combat_targets.values() if v.get("faction") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0]
+                    if living: target_entities = [living[0]]
+
+            if tipo_acao in ["ataque", "magia"] and target_entities:
                 recurso = parsed_json.get("recurso_utilizado", "")
                 unlocked_skills = expand_unlocked_skills(player_sheet.get("unlocked_skills", []))
                 raw_unlocked = {str(s).lower().strip() for s in player_sheet.get("unlocked_skills", [])}
@@ -492,6 +587,15 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                             if "hunters_mark_passive" in raw_unlocked or "sk_ranger_2" in raw_unlocked:
                                 extra_dice_list.append("1d6")
                                 passive_tags.append("Marca do Caçador")
+                            if t_entity.get("_marked_by_hunters_mark") or player_sheet.get("_active_hunters_mark_target") == t_entity.get("name"):
+                                if "Marca do Caçador" not in passive_tags:
+                                    extra_dice_list.append("1d6")
+                                    passive_tags.append("Marca do Caçador")
+                            if player_sheet.get("_sneak_attack_active"):
+                                if "Ataque Furtivo" not in passive_tags:
+                                    extra_dice_list.append("1d6")
+                                    passive_tags.append("Ataque Furtivo")
+                                player_sheet["_sneak_attack_active"] = False
                             if any(ea in unlocked_skills for ea in ["extra_attack_fighter", "extra_attack_paladin", "extra_attack_ranger", "multiattack_volley"]):
                                 extra_dice_list.append("1d8")
                                 passive_tags.append("Ataque Extra")
@@ -523,9 +627,12 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                                     t_entity["status"] = "morto"
                             pv_max = t_entity.get("pv_max", 10)
                             passives_str = f" [{', '.join(passive_tags)}]" if (passive_tags and dano_total > 0) else ""
-                            sys_log += f"🎲 [DADO - ATAQUE] {arma_nome.title()}: d20 ({dado}) + Mod/Prof (+{total_hit_mod}) = {tot_atk} vs CA {ca_alvo} ➔ {res.upper()}!\n"
-                            if dano_total > 0:
-                                sys_log += f"🎲 [DADO - DANO]{passives_str} {dano_total} de dano em {alvo_nome.title()} (PV: {t_entity.get('pv_atual')}/{pv_max})!\n"
+                            hit_mod_str = f"+{total_hit_mod}" if total_hit_mod >= 0 else str(total_hit_mod)
+                            atk_roll_detail = f"{dado} ({hit_mod_str}) = {tot_atk}"
+                            if res in ["Acerto", "Acerto Crítico"]:
+                                sys_log += f"🎲 Ataque com {arma_nome.title()}: {atk_roll_detail} vs CA {ca_alvo} ➔ {res}! ({dano_total} de dano){passives_str}\n"
+                            else:
+                                sys_log += f"🎲 Ataque com {arma_nome.title()}: {atk_roll_detail} vs CA {ca_alvo} ➔ {res}!\n"
                         
                         elif tipo_acao == "magia":
                             spell_data = parsed_json.get("spell_data", {})
@@ -556,9 +663,18 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                                     cura = DiceEngine.parse_and_roll_dice(dice_val)
                                     if "disciple_of_life" in unlocked_skills:
                                         cura += 3
-                                    hp_max_p = player_sheet.get("hp_max", 10)
-                                    player_sheet["hp_current"] = min(hp_max_p, player_sheet.get("hp_current", hp_max_p) + cura)
-                                    sys_log += f"🎲 [DADO - MAGIA CURA] {magia.title()}: +{cura} PV restaurados (PV: {player_sheet['hp_current']}/{hp_max_p})!\n"
+                                    if t_entity.get("faction") == "ally" and t_entity is not player_sheet:
+                                        hp_max_t = t_entity.get("pv_max", t_entity.get("hp_max", 10))
+                                        cur_hp = t_entity.get("pv_atual", t_entity.get("hp_current", hp_max_t))
+                                        new_hp = min(hp_max_t, cur_hp + cura)
+                                        t_entity["pv_atual"] = new_hp
+                                        if "hp_current" in t_entity:
+                                            t_entity["hp_current"] = new_hp
+                                        sys_log += f"🎲 [DADO - MAGIA CURA] {magia.title()}: +{cura} PV restaurados em {alvo_nome.title()} (PV: {new_hp}/{hp_max_t})!\n"
+                                    else:
+                                        hp_max_p = player_sheet.get("hp_max", 10)
+                                        player_sheet["hp_current"] = min(hp_max_p, player_sheet.get("hp_current", hp_max_p) + cura)
+                                        sys_log += f"🎲 [DADO - MAGIA CURA] {magia.title()}: +{cura} PV restaurados (PV: {player_sheet['hp_current']}/{hp_max_p})!\n"
                                 elif m_action == "revive":
                                     if game_state and game_state.setdefault("meta", {}).get("revive_used", False):
                                         sys_log += f"[SISTEMA] Magia {magia.title()} falhou! Ressurreição só pode ser usada UMA vez por batalha.\n"
@@ -660,6 +776,7 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
     return {
         "sys_log": sys_log,
         "log_mecanico": sys_log,
+        "initiative_order": initiative_order,
         "status": "player_dead" if player_sheet.get("hp_current", 10) <= 0 or player_sheet.get("status") == "morto" else "alive"
     }
 
@@ -776,16 +893,39 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
             # Menor HP, empate vai pro player (is_player True fica primeiro na ordenação estável se negarmos)
             vivos.sort(key=lambda x: (x["hp"], not x["is_player"]))
             target = vivos[0]
-            
+
             ataques = t_data.get("actions", [])
             if not ataques:
                 ataques = [{"name": "Pancada", "hit_bonus": 2, "damage_dice": "1d4"}]
                 
             atk = random.choice(ataques)
-            
-            d20 = DiceEngine.roll_d20()
-            tot_atk = d20 + atk.get("hit_bonus", 2)
             ca_alvo = target["ca"]
+
+            # Verificações Táticas Oficiais D&D 5e quando o alvo é o Jogador
+            if target["is_player"]:
+                # 1. Kiting tático com velocidade superior (Elfo da Floresta 10.5m vs corpo-a-corpo)
+                if player_character.get("_tactical_kiting_active"):
+                    has_ranged = any(any(rw in str(a.get("name", "")).lower() for rw in ["arco", "flecha", "besta", "sopro", "magia", "dardo", "arremessar"]) for a in ataques)
+                    if not has_ranged:
+                        batch_log += f"💨 [MOVIMENTO TÁTICO] {t_id.title()} tenta alcançar {target['id'].title()}, mas o herói manteve distância com velocidade superior ({player_character.get('speed', '10.5m')}) e o inimigo não alcançou!\n"
+                        continue
+
+                # 2. Cobertura tática (+2 CA vs ataques à distância/projéteis)
+                is_ranged_attack = any(rw in str(atk.get("name", "")).lower() for rw in ["arco", "flecha", "besta", "sopro", "magia", "dardo", "arremessar"])
+                if player_character.get("_tactical_cover_active") and is_ranged_attack:
+                    ca_alvo += 2
+                    batch_log += f"🛡️ [COBERTURA TÁTICA] O herói está abrigado (+2 CA vs ataque à distância)!\n"
+
+                # 3. Esquivar (Dodge oficial D&D 5e: impõe desvantagem nos ataques inimigos)
+                if player_character.get("_tactical_dodge_active"):
+                    d20 = DiceEngine.roll_with_disadvantage()
+                    batch_log += f"🎲 [DADO - ESQUIVA (DODGE)] {t_id.title()} ataca com DESVANTAGEM devido à postura esquiva do Herói!\n"
+                else:
+                    d20 = DiceEngine.roll_d20()
+            else:
+                d20 = DiceEngine.roll_d20()
+            
+            tot_atk = d20 + atk.get("hit_bonus", 2)
             
             res = "Acerto Crítico" if d20 == 20 else "Falha Crítica" if d20 == 1 else "Acerto" if tot_atk >= ca_alvo else "Erro"
             
@@ -811,9 +951,40 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
                     target["ref"]["pv_atual"] = target["hp"]
                     if target["hp"] <= 0: target["ref"]["status"] = "morto" 
                     
-            batch_log += f"🎲 [DADO - INIMIGO] {t_id.title()} ataca {target['id'].title()} com {atk.get('name', 'Ataque')}: d20 ({d20}) + Mod (+{atk.get('hit_bonus', 2)}) = {tot_atk} vs CA {ca_alvo} ➔ {res.upper()}!\n"
-            if dano_inimigo > 0:
-                batch_log += f"🎲 [DADO - DANO] {dano_inimigo} de dano em {target['id'].title()} (PV: {target['hp']})!\n"
+            clean_name = t_data.get("name")
+            if not clean_name:
+                raw_n = re.sub(r'_[a-f0-9]{4}$', '', t_id).replace('_', ' ').strip()
+                if raw_n.lower().startswith("m "):
+                    raw_n = raw_n[2:].strip()
+                clean_name = raw_n.title()
+            else:
+                clean_name = clean_name.title()
+
+            e_low = f"{clean_name} {t_id}".lower()
+            if any(w in e_low for w in ["lobo", "wolf"]):
+                emoji = "🐺"
+            elif any(w in e_low for w in ["aranha", "spider"]):
+                emoji = "🕷️"
+            elif any(w in e_low for w in ["drag", "wyrm", "tirano"]):
+                emoji = "🐉"
+            elif any(w in e_low for w in ["esqueleto", "zumbi", "morto", "undead", "lich", "necro"]):
+                emoji = "💀"
+            elif any(w in e_low for w in ["goblin", "orc", "kobold"]):
+                emoji = "👺"
+            else:
+                emoji = "⚔️"
+
+            if res in ["Acerto", "Acerto Crítico"]:
+                crit_txt = " com CRÍTICO" if res == "Acerto Crítico" else ""
+                batch_log += f"{emoji} {clean_name} acerta o ataque{crit_txt} ({tot_atk} vs CA {ca_alvo}) ➔ {dano_inimigo} de dano!\n"
+            else:
+                batch_log += f"{emoji} {clean_name} erra o ataque ({tot_atk} vs CA {ca_alvo})!\n"
+
+    # Limpa estados táticos temporários da rodada
+    player_character["_tactical_dodge_active"] = False
+    player_character["_tactical_disengage_active"] = False
+    player_character["_tactical_kiting_active"] = False
+    player_character["_tactical_cover_active"] = False
 
     return batch_log
 
@@ -823,4 +994,44 @@ class CombatManager:
     resolve_action = staticmethod(resolve_action)
     resolve_skill_effect = staticmethod(resolve_skill_effect)
     process_enemies_turn_batch = staticmethod(process_enemies_turn_batch)
+
+    @staticmethod
+    def roll_initiative_order(player_sheet: dict, active_combat_targets: dict) -> list:
+        """Calcula e retorna a ordem de iniciativa completa para a UI sem executar ações."""
+        from core.dice_engine import DiceEngine
+        from core.dnd_rules import get_modifier, BESTIARIO_5E
+
+        participants = []
+        mod_des_player = get_modifier(_get_player_attr_value(player_sheet, "DES", 10))
+        init_player = DiceEngine.roll_d20() + mod_des_player
+        participants.append({
+            "id": "player",
+            "name": player_sheet.get("name", "Herói"),
+            "type": "player",
+            "init": init_player,
+            "hp": player_sheet.get("hp_current", 10),
+            "hp_max": player_sheet.get("hp_max", 10),
+            "ca": player_sheet.get("ac", player_sheet.get("ca", 10))
+        })
+
+        for t_id, t_data in (active_combat_targets or {}).items():
+            if t_data.get("status") == "morto": continue
+            tipo_best = t_data.get("tipo_bestiario", "goblin").lower().strip()
+            best_data = BESTIARIO_5E.get(tipo_best, {})
+            mod_des = best_data.get("mods", {}).get("DES", 0)
+            if not mod_des and isinstance(t_data.get("attributes"), dict):
+                mod_des = get_modifier(_get_player_attr_value(t_data, "DES", 10))
+            init_roll = DiceEngine.roll_d20() + mod_des
+            participants.append({
+                "id": t_id,
+                "name": t_data.get("name", t_id),
+                "type": t_data.get("faction", "enemy"),
+                "init": init_roll,
+                "hp": t_data.get("pv_atual", 10),
+                "hp_max": t_data.get("pv_max", 10),
+                "ca": t_data.get("ca", 10)
+            })
+
+        participants.sort(key=lambda x: x["init"], reverse=True)
+        return participants
 
