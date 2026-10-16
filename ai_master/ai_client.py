@@ -13,7 +13,7 @@ class AIGameMaster:
     O Cérebro do Jogo (Integração com a LLM).
     Atua como o Game Master de uma campanha de D&D 5e.
     """
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-3.5-flash-lite"):
         # Carrega variáveis de ambiente de .env local se existir
         if os.path.exists(".env"):
             try:
@@ -32,7 +32,11 @@ class AIGameMaster:
         else:
             self.client = genai.Client(api_key="AIzaSyDummyKeyForMockingTestingEnvironment")
 
-        self.model_name = os.environ.get("GEMINI_MODEL", model_name if model_name != "gemini-3.5-flash-lite" else "gemini-2.5-flash")
+        env_model = os.environ.get("GEMINI_MODEL")
+        if env_model == "gemini-2.5-flash":
+            env_model = "gemini-3.5-flash-lite"
+        self.model_name = env_model or model_name
+        self.fallback_models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest"]
         self.chat_history: List[Dict[str, str]] = []
         try:
             with open("docs/dm_guidelines.md", "r", encoding="utf-8") as f:
@@ -46,6 +50,13 @@ class AIGameMaster:
         self.system_instruction = (
             f"{guidelines}\n\n"
             "INSTRUÇÕES TÉCNICAS E DE COMBATE DE MAELOR:\n"
+            "- PERSONA E ESTILO: Você é Maelor das Cordas de Cinza, o Menestrel e cronista sombrio da saga (inspirado no cronista cínico de The Witcher, no Ancestor de Darkest Dungeon e na narradora de Baldur's Gate 3). Narre com prosa poética, afiada, cínica e visceral.\n"
+            "- NARRATIVA CONCISA E FLUIDA: Limite inegociável de 1 a 2 parágrafos curtos (máximo 60 a 90 palavras no total). Proibido textos prolixos ou blocos gigantes.\n"
+            "- PROIBIÇÃO DE CHAVÕES: Proibido repetir chavões estéreis como 'cheiro acre de fuligem', 'cordas de cinza' ou 'frio cortante'. Foque estritamente no que ACABOU de acontecer de fato na cena.\n"
+            "- MICRO-NARRATIVA DE COMBATE TÁTICO E FLUIDO: Descreva com impacto físico visceral o dano desferido (carapaça trincada, lâmina mordendo carne, urro de dor) e o dano absorvido (armadura amassada, ar roubado dos pulmões, corte ardente). Espelhe manobras táticas do jogador (Esquivar, Tomar Cobertura, Desengajar, Bloqueio Defensivo com Escudo) narrando a leitura cinética da ameaça, o desvio milimétrico ou o cascalho lascado sob impacto. Garanta transições fluidas entre os turnos sem pausas estáticas.\n"
+            "- COESÃO DE CAMPANHA (BEATS 1 AO 15): Reflita a progressão atmosférica implacável — das névoas baixas e saqueadores famintos do Vale da Fumaça (Ato I), passando pelas terras desoladas, criptas e montanhas glaciais (Ato II), até a fornalha ancestral de magma e o clímax contra o Tirano das Cinzas (Ato III). Nas Side Quests, conecte os despojos e relíquias à busca pelo Orbe Quebra-Chamas.\n"
+            "- DEVOLUÇÃO DE AGÊNCIA OBRIGATÓRIA: Toda narração deve terminar com 2 a 3 sugestões de ação naturais e contextuais, concluindo com a pergunta convocatória: 'O que você faz?'.\n"
+            "- SEPARAÇÃO ESTRITA DE VOZES: Quando o Taverneiro ou outro NPC falar, a fala direta deve vir atribuída exclusivamente ao NPC com 'npc_falando': 'Nome do NPC' (ex: 'Taverneiro'). Maelor narra a cena em 2ª pessoa ('Você...') como 'Mestre', e só usa a 1ª pessoa quando for abordado diretamente como o bardo Maelor na taverna.\n"
             "- CONCORDÂNCIA DE GÊNERO: Sempre identifique o gênero do personagem (masculino/feminino) e flexione gramaticalmente todas as descrições, títulos, pronomes e falas de NPCs com precisão absoluta.\n"
             "- MATEMÁTICA DE COMBATE E TESTES: Para ataques, compare o 'dice_roll_result' do jogador com a CA (Armor Class) do monstro/inimigo. Se o resultado >= CA, o jogador acerta (aplique dano ao inimigo via 'damage_applied'). Se o resultado < CA, a ação falha e você deve engatilhar um contra-ataque ou consequência (Fail Forward). Para testes de perícia, defina uma CD silenciosa na sua mente (ex: CD 15) e julgue o sucesso/falha.\n"
             "- REGRA DE OURO DOS ALIADOS: Nos Beats 1 a 14, o protagonista viaja e luta sozinho. Aliados encontrados selam juramentos e partem para se preparar; eles só lutam juntos no Beat 15 (Covil do Tirano).\n"
@@ -54,7 +65,7 @@ class AIGameMaster:
             "Sua resposta DEVE ser estritamente em formato JSON válido, sem NENHUMA marcação markdown externa.\n"
             "Estrutura JSON obrigatória (exata):\n"
             "{\n"
-            "    \"narrative\": \"Sua narrativa contendo Resolução, Reação e Gatilho com 2 a 3 opções de ação, e no final desta string adicione o Bloco [STATUS] OBRIGATÓRIO...\",\n"
+            "    \"narrative\": \"Sua narrativa contendo Resolução, Reação e Gatilho com 2 a 3 opções de ação terminando em 'O que você faz?', e no final desta string adicione o Bloco [STATUS] OBRIGATÓRIO...\",\n"
             "    \"dialogue\": {\"npc_name\": \"Fala do NPC caso exista\"},\n"
             "    \"environment_tag\": \"Palavra curta em inglês para gerar fundo. Ex: tavern, dungeon, forest, cave, snow\",\n"
             "    \"system_commands\": {\n"
@@ -85,31 +96,58 @@ class AIGameMaster:
         except (json.JSONDecodeError, Exception) as e:
             print(f"[ERRO] Falha ao extrair/decodificar JSON da IA: {e}\nTexto bruto recebido:\n{raw_text}")
             if is_narrative:
-                return {"texto": "A poeira levanta enquanto a ação se desenrola em silêncio...", "npc_falando": "nenhum"}
+                return {
+                    "texto": "A tensão do momento permanece suspensa no ar. O ambiente aguarda sua próxima decisão. Você pode avançar com cautela, buscar cobertura ou preparar sua arma. O que você faz?",
+                    "npc_falando": "nenhum"
+                }
             else:
                 return {"tipo_acao": "narrativa", "arma_usada": None, "intencao_cena": "avançar"}
 
-    def _generate_text_with_retry(self, prompt: str, system_instr: str, max_retries: int = 2, temperature: float = 0.8) -> str:
-        """Função genérica para invocar o LLM usando Chat session (evita avisos AFC) e Retries."""
-        for attempt in range(max_retries + 1):
-            try:
-                # Usamos um chat one-shot em vez de generate_content() direto para evitar o aviso
-                # "Direct use of automatic function calling..."
-                chat = self.client.chats.create(
-                    model=self.model_name,
-                    config=genai.types.GenerateContentConfig(
-                        system_instruction=system_instr,
-                        temperature=temperature
+    def _get_models_cascade(self) -> List[str]:
+        """
+        Retorna a lista ordenada de modelos para a cascata de fallback.
+        Prioriza self.model_name e em seguida tenta os modelos suportados ativos:
+        ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest'].
+        """
+        cascade = []
+        if self.model_name:
+            cascade.append(self.model_name)
+        for m in self.fallback_models:
+            if m not in cascade:
+                cascade.append(m)
+        return cascade
+
+    def _generate_text_with_retry(self, prompt: str, system_instr: str, max_retries: int = 1, temperature: float = 0.8) -> str:
+        """Função genérica para invocar o LLM usando Chat session (evita avisos AFC), cascata de modelos e Retries."""
+        models_to_try = self._get_models_cascade()
+        last_exception = None
+
+        for model in models_to_try:
+            for attempt in range(max_retries + 1):
+                try:
+                    chat = self.client.chats.create(
+                        model=model,
+                        config=genai.types.GenerateContentConfig(
+                            system_instruction=system_instr,
+                            temperature=temperature
+                        )
                     )
-                )
-                response = chat.send_message(prompt)
-                return response.text or ""
-            except Exception as e:
-                print(f"[Aviso] Falha na API Gemini (Tentativa {attempt+1}/{max_retries+1}): {e}")
-                if attempt < max_retries:
-                    time.sleep(3)
-                else:
-                    raise e
+                    response = chat.send_message(prompt)
+                    self.model_name = model
+                    return response.text or ""
+                except Exception as e:
+                    last_exception = e
+                    err_str = str(e).lower()
+                    print(f"[Aviso] Falha na API Gemini [{model}] (Tentativa {attempt+1}/{max_retries+1}): {e}")
+                    if any(c in err_str for c in ["404", "not_found", "not found", "503", "unavailable"]):
+                        break
+                    if attempt < max_retries:
+                        time.sleep(1)
+                    else:
+                        break
+
+        if last_exception:
+            raise last_exception
         return ""
 
     def generate_prologue_questions(self, char_data: Dict[str, Any]) -> List[str]:
@@ -302,6 +340,7 @@ class AIGameMaster:
             "- \"tipo_acao\": String ESTRITA dentre: [ATACAR, CONJURAR_MAGIA, USAR_HABILIDADE, USAR_ITEM, EQUIPAR_ITEM, MOVER, ACAO_TATICA_5E, DIALOGAR, INTERAGIR_AMBIENTE, DESCANSAR, INTERAGIR_CENARIO, AVANCAR_HISTORIA, SUBIR_NIVEL].\n"
             "  * DICA: Se o jogador estiver conversando, perguntando por missões, procurando trabalho/contratos, pedindo bebidas, ouvindo rumores ou falando com NPCs (ex: 'estava a procura de uma missão', 'procuro trabalho', 'quero um contrato', 'conversar com o taverneiro', 'pedir cerveja'), use 'DIALOGAR' ou 'INTERAGIR_CENARIO', NUNCA 'AVANCAR_HISTORIA'.\n"
             "  * DICA: Se o jogador quiser usar ou ativar uma habilidade de classe (ex: 'retomar o fôlego', 'second wind', 'surto de ação', 'action surge', 'cura pelas mãos', 'lay on hands', 'destruição divina', 'smite', 'marca do caçador', 'hunter\\'s mark', 'ataque furtivo', 'sneak attack', 'ação ardilosa', 'escudo arcano', 'preservar a vida', 'esquiva sobrenatural'), use 'USAR_HABILIDADE' e extraia o nome da habilidade em 'recurso_utilizado'.\n"
+            "  * DICA: Se o jogador optar por manobras táticas ou defensivas (ex: 'esquivar', 'esquiva', 'desviar', 'tomar cobertura', 'buscar cobertura', 'procurar abrigo', 'postura defensiva', 'bloquear com escudo', 'bloqueio', 'aparar golpe', 'desengajar', 'recuo tático'), use 'ACAO_TATICA_5E' e extraia o nome da manobra em 'recurso_utilizado' (ex: 'esquiva', 'cobertura', 'postura defensiva', 'desengajar').\n"
             "  * DICA: Se o jogador quiser equipar, empunhar, desembainhar, sacar ou trocar de arma/escudo (ex: 'equipar espada longa', 'empunhar arco curto', 'trocar para adaga', 'usar escudo'), use 'EQUIPAR_ITEM' e extraia o nome do equipamento em 'recurso_utilizado'.\n"
             "  * DICA: Se o jogador quiser subir de nível, upar ou evoluir atributos, use 'SUBIR_NIVEL'. Se o jogador quiser SAIR do local atual para a estrada, VIAJAR ou AVANCAR a campanha para o próximo Beat (ex: 'viajar pela estrada', 'partir da taverna', 'proximo beat', 'avançar na jornada'), extraia como 'AVANCAR_HISTORIA'. NÃO use AVANCAR_HISTORIA se ele estiver apenas procurando missões, pedindo contratos ou conversando na taverna.\n"
             "- \"recurso_utilizado\": String com o nome da arma, magia, habilidade ou item extraído. Se não houver, retorne null.\n"
@@ -380,7 +419,8 @@ class AIGameMaster:
         # 4. Conversas Cotidianas com o Taverneiro (Bebida, Pagar Conta, Clima, Reino)
         elif any(w in p_low for w in [
             "conversar com", "falar com", "perguntar ao", "perguntar para", "chamar o", "dialogar",
-            "taverneiro", "garcom", "garçom", "balconista",
+            "conversar", "falar", "dialogo", "diálogo",
+            "taverneiro", "garcom", "garçom", "balconista", "estalajadeiro",
             "pedir uma cerveja", "pedir cerveja", "pedir bebida", "pedir vinho", "pedir hidromel", "pedir guisado", "pedir comida",
             "comprar cerveja", "pagar uma caneca", "uma caneca de", "caneca de cerveja", "despeje um trago",
             "pagar a conta", "pagar conta", "quanto devo", "fechar a conta", "pagar o taverneiro", "aqui esta o ouro", "aqui está o ouro",
@@ -408,7 +448,11 @@ class AIGameMaster:
                 local_intencao = f"O herói inicia um diálogo com o taverneiro: {player_input}."
 
         # 5. Observação do Cenário
-        elif any(w in p_low for w in ["olhar ao redor", "observar taverna", "olhar taverna", "examinar taverna", "observar o local", "examinar o local", "vasculhar taverna"]):
+        elif any(w in p_low for w in [
+            "olhar ao redor", "observar taverna", "olhar taverna", "examinar taverna",
+            "observar o local", "examinar o local", "vasculhar taverna", "olhar o ambiente",
+            "observar o ambiente", "observar", "olhar", "examinar", "vasculhar", "inspecionar"
+        ]):
             local_tipo = "INTERAGIR_CENARIO"
             local_intencao = "O herói observa atentamente o movimento e as figuras presentes na taverna."
 
@@ -492,6 +536,29 @@ class AIGameMaster:
                         local_recurso = arma_padrao
                         break
             local_intencao = f"O herói desembainha e equipa {local_recurso if local_recurso else 'sua arma'} para combate."
+        elif any(w in p_low for w in [
+            "esquivar", "esquiva", "desviar", "desvio", "desengajar", "desengajamento",
+            "tomar cobertura", "buscar cobertura", "procurar cobertura", "procurar abrigo", "buscar abrigo", "atras da cobertura", "atrás da cobertura",
+            "postura defensiva", "modo defensivo", "defender com escudo", "bloquear com escudo", "bloquear", "bloqueio",
+            "aparar golpe", "aparar", "posicao defensiva", "posição defensiva", "guarda defensiva", "recuo tatico", "recuo tático"
+        ]):
+            local_tipo = "ACAO_TATICA_5E"
+            for ent in entidades_ativas:
+                if ent.lower() in p_low:
+                    local_alvo = [ent]
+                    break
+            if any(w in p_low for w in ["esquiv", "desvi"]):
+                local_recurso = "esquiva"
+                local_intencao = "O herói assume postura evasiva com reflexos aguçados para esquivar de ataques."
+            elif any(w in p_low for w in ["cobertura", "abrigo"]):
+                local_recurso = "cobertura"
+                local_intencao = "O herói busca cobertura sólida contra ataques e projéteis inimigos."
+            elif any(w in p_low for w in ["desengaj", "recuo"]):
+                local_recurso = "desengajar"
+                local_intencao = "O herói desengaja do combate corpo a corpo recuando sem oferecer brecha."
+            else:
+                local_recurso = "postura defensiva"
+                local_intencao = "O herói firma a guarda defensiva e prepara seu escudo ou arma para bloquear investidas."
         elif any(w in p_low for w in ["atacar", "golpear", "bater", "investir", "flechar"]):
             local_tipo = "ATACAR"
             for ent in entidades_ativas:
@@ -512,33 +579,39 @@ class AIGameMaster:
             "intencao_cena": local_intencao
         }
         
-        try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=genai.types.GenerateContentConfig(
-                    system_instruction=sys_instr,
-                    response_mime_type="application/json",
-                    temperature=0.0
+        models_to_try = self._get_models_cascade()
+        for model in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        system_instruction=sys_instr,
+                        response_mime_type="application/json",
+                        temperature=0.0
+                    )
                 )
-            )
-            raw_text = response.text or "{}"
-            parsed = self._extract_and_parse_json(raw_text, is_narrative=False)
-            if not isinstance(parsed, dict):
-                parsed = fallback.copy()
-            
-            # Validação rápida para garantir chaves do fallback
-            for k in fallback.keys():
-                if k not in parsed or parsed[k] is None and k == "tipo_acao":
-                    parsed[k] = fallback[k]
-                    
-            print("\n[AI_MASTER NLP] Intenção Extraída com Sucesso:")
-            print(json.dumps(parsed, indent=2, ensure_ascii=False))
-            return parsed
-            
-        except Exception as e:
-            print(f"[ERRO NLP] Falha ao extrair intenção via JSON nativo: {e}")
-            return fallback.copy()
+                raw_text = response.text or "{}"
+                parsed = self._extract_and_parse_json(raw_text, is_narrative=False)
+                if not isinstance(parsed, dict):
+                    parsed = fallback.copy()
+                
+                # Validação rápida para garantir chaves do fallback
+                for k in fallback.keys():
+                    if k not in parsed or (parsed[k] is None and k == "tipo_acao"):
+                        parsed[k] = fallback[k]
+                
+                self.model_name = model
+                print("\n[AI_MASTER NLP] Intenção Extraída com Sucesso:")
+                print(json.dumps(parsed, indent=2, ensure_ascii=False))
+                return parsed
+                
+            except Exception as e:
+                print(f"[Aviso NLP] Falha ao extrair intenção no modelo [{model}]: {e}")
+                continue
+
+        print("[ERRO NLP] Falha ao extrair intenção via JSON nativo em todos os modelos: ativando fallback heurístico offline.")
+        return fallback.copy()
 
     def generate_narrative_from_log(
         self, 
@@ -556,20 +629,24 @@ class AIGameMaster:
         """
         sys_instr_base = (
             "[O Código de Maelor das Cordas de Cinza - Menestrel e AI Game Master]\n"
-            "Você é Maelor das Cordas de Cinza, o cronista e bardo taciturno, cínico e poético do cataclismo de cinzas.\n"
-            "Dedilhando seu alaúde de cordas de cinza e tendões de wyrm ao canto da lareira ou na beira da estrada fustigada pelo vento, você narra os feitos com solenidade poética, realismo sombrio e rica evocação dos 5 sentidos (cheiro acre de fuligem, gosto ferroso de sangue, frio cortante, tinir de ferro fundido).\n"
+            "Você é Maelor das Cordas de Cinza, o Menestrel e cronista sombrio da saga.\n"
+            "Sua narrativa é inspirada nos maiores narradores: o cronista cínico de The Witcher, o Ancestor implacável de Darkest Dungeon e a narradora intimista de Baldur's Gate 3.\n"
+            "Você dita o destino do protagonista com prosa poética, afiada, cínica e envolvente.\n"
             "\nDIRETRIZES FUNDAMENTAIS DO MENESTREL:\n"
-            "1. INCORPORAÇÃO DA AÇÃO: Pegue exatamente o que o jogador digitou ou falou e insira organicamente na narrativa, respeitando o contexto da cena.\n"
-            "2. AMBIENTAÇÃO SENSORIAL DOS 5 SENTIDOS: Descreva o cenário com riqueza sensorial palpável (iluminação, sombras, texturas, cheiro de ferro/terra/fumaça, frio do vento, ruídos distantes) para que o jogador sinta onde pisa.\n"
-            "3. REAÇÃO DO MUNDO E ENTIDADES: Descreva o que os monstros, NPCs e o ambiente ao redor estão fazendo ou como reagem à presença e ações do herói.\n"
-            "4. A REGRA DE OURO DOS ALIADOS E DA JORNADA SOLITÁRIA: O protagonista viaja e combate ABSOLUTAMENTE SOZINHO do Beat 1 ao Beat 14. Quando um Herói Aliado (HERO-01 a HERO-42) for resgatado ou recrutado, narre a solenidade do juramento de sangue/honra selado para a batalha final na caldeira, e a partida imediata do aliado para reunir forças ou cuidar de sobreviventes. NUNCA narre aliados marchando ou lutando ao lado do herói nos Beats 1 a 14. Todos os aliados jurados só se reúnem na arena final do Beat 15 (Covil do Tirano).\n"
-            "5. FIDELIDADE MECÂNICA VISCERAL: Espelhe as consequências físicas exatas do Log de Máquina (acertos, erros, defesas, ferimentos). É ESTRITAMENTE PROIBIDO citar números ou dados na narrativa ('1d20', 'CA 15', '4 de dano'); traduza tudo em peso da lâmina, dor, estilhaços e sangue. Se o log contiver '[SISTEMA FATAL]', narre a queda definitiva.\n"
-            "6. ALTERNÂNCIA E REFLEXO DE EQUIPAMENTO: Sempre que o jogador equipar, empunhar ou trocar de arma (ou realizar um ataque após troca), reflita a arma equipada atual com peso sensorial palpável na prosa (o peso do aço forjado, a tensão da corda do arco, o estalar das flechas ou o equilíbrio da lâmina em guarda).\n"
-            "7. RESSONÂNCIA SENSORIAL DAS HABILIDADES DE CLASSE: Quando o log do sistema ou a ação do jogador indicar a ativação ou aquisição de habilidades icônicas (ex: o clarão ofuscante de um Smite divino consumindo a lâmina, o fôlego recuperado com dentes cerrados no Retomar o Fôlego/Second Wind, a flecha marcada sibilando nas sombras com a Marca do Caçador, o golpe furtivo abrindo a jugular no Ataque Furtivo, ou o hexágono cintilante de um Escudo Arcano), narre a manifestação física visceral dessa proeza sem metajogo de números.\n"
-            "8. ENQUADRAMENTO ESPACIAL E GANCHOS DE AÇÃO: Ao final da narração, sempre situe onde o herói se encontra e apresente de 2 a 3 possibilidades naturais de ação ou investigação para devolver a agência ao jogador.\n"
-            "9. VOCÊ DEVE RETORNAR ESTRITAMENTE UM JSON NO SEGUINTE FORMATO:\n"
-            "{\"texto\": \"Sua narrativa imersiva aqui\", \"npc_falando\": \"Nome do NPC ou null\"}\n"
-            "10. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável na prosa e nos diálogos de NPCs (ex: se o herói for feminino, use 'uma guerreira', 'ela avança', 'curada', 'ferida', 'atenta', 'sozinha').\n"
+            "1. CONCISÃO E FLUIDEZ ESTRITA (1 a 2 Parágrafos / Máximo de 60 a 90 palavras no total): Nunca escreva blocos gigantes de texto. A narrativa deve ser rápida de ler e devolver o protagonismo ao jogador.\n"
+            "2. PROIBIÇÃO DE CHAVÕES: Proibido repetir clichês como 'cheiro acre de fuligem', 'cordas de cinza' ou 'frio cortante'. Foque estritamente no que ACABOU de acontecer de fato (a reação ao golpe, a madeira que range, o aço que vibra na mão, o silêncio após o impacto).\n"
+            "3. INCORPORAÇÃO DA AÇÃO: Pegue exatamente o que o jogador fez ou declarou e resolva as consequências imediatas na cena.\n"
+            "4. MICRO-NARRATIVA DE COMBATE TÁTICO E RESOLUÇÃO CINÉTICA: Descreva a física dos impactos — o dano desferido que racha carapaças e arranca uivos de dor, e o dano absorvido que amassa armaduras e queima a carne. Quando o jogador usar ações táticas (Esquivar, Tomar Cobertura, Desengajar, Bloqueio Defensivo), narre a agilidade afiada, o desvio milimétrico sob saraivada ou a barreira sólida contra o choque. Crie transições fluidas entre turnos.\n"
+            "5. COESÃO DE CAMPANHA (BEATS 1 AO 15): Reflita a progressão atmosférica — da fumaça cinzenta do Vale (Ato I) ao frio desolado das Terras Arrasadas (Ato II) e ao calor infernal da caldeira do Tirano (Ato III). Nas Side Quests, evoque a caçada por recursos e pelo Orbe Quebra-Chamas.\n"
+            "6. SEPARAÇÃO ESTRITA DE VOZES E NPCS: Quando um NPC falar (como o Taverneiro), o diálogo deve ser na voz rústica e prática daquele NPC, e 'npc_falando' deve ser o nome exato dele (ex: 'Taverneiro'). Maelor narra a cena em 2ª pessoa ('Você...') com 'npc_falando': 'Mestre', e só fala em 1ª pessoa quando for abordado diretamente como o bardo Maelor ('npc_falando': 'Maelor').\n"
+            "7. A REGRA DE OURO DOS ALIADOS E DA JORNADA SOLITÁRIA: O protagonista viaja e combate ABSOLUTAMENTE SOZINHO do Beat 1 ao Beat 14. Quando um Herói Aliado (HERO-01 a HERO-42) for resgatado ou recrutado, narre a solenidade do juramento de sangue/honra selado para a batalha final na caldeira, e a partida imediata do aliado para reunir forças ou cuidar de sobreviventes. NUNCA narre aliados marchando ou lutando ao lado do herói nos Beats 1 a 14. Todos os aliados jurados só se reúnem na arena final do Beat 15 (Covil do Tirano).\n"
+            "8. FIDELIDADE MECÂNICA VISCERAL: Espelhe as consequências físicas exatas do Log de Máquina (acertos, erros, defesas, ferimentos). É ESTRITAMENTE PROIBIDO citar números ou dados na narrativa ('1d20', 'CA 15', '4 de dano'); traduza tudo em peso da lâmina, dor, estilhaços e sangue. Se o log contiver '[SISTEMA FATAL]', narre a queda definitiva.\n"
+            "9. ALTERNÂNCIA E REFLEXO DE EQUIPAMENTO: Sempre que o jogador equipar, empunhar ou trocar de arma (ou realizar um ataque após troca), reflita a arma equipada atual com peso sensorial palpável na prosa.\n"
+            "10. RESSONÂNCIA SENSORIAL DAS HABILIDADES DE CLASSE: Quando o log do sistema ou a ação indicar ativação de habilidades de classe (Smite, Retomar o Fôlego, Marca do Caçador, Ataque Furtivo, Escudo Arcano), narre a manifestação física visceral dessa proeza.\n"
+            "11. ENQUADRAMENTO ESPACIAL E DEVOLUÇÃO DE AGÊNCIA: Toda narração deve obrigatoriamente concluir situando o herói e sugerindo de 2 a 3 possibilidades naturais e contextuais de ação, finalizando com: 'O que você faz?'.\n"
+            "12. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável na prosa e nos diálogos de NPCs.\n"
+            "13. FORMATO DE SAÍDA ESTRITO: Retorne APENAS um JSON válido no seguinte formato:\n"
+            "{\"texto\": \"Sua narrativa concisa aqui terminando com 2 a 3 opções de ação. O que você faz?\", \"npc_falando\": \"Nome do NPC ou Mestre\"}\n"
         )
         
         # Tratamento da injeção do Lore caso venha vazio nas primeiras rodadas
@@ -620,7 +697,15 @@ class AIGameMaster:
             return parsed_json
         except Exception as e:
             print(f"[ERRO] Falha ao gerar narrativa na Fase 2: {e}")
-            return self._extract_and_parse_json("ERRO", is_narrative=True)
+            fb_text = self._create_visceral_fallback(system_log, player_action)
+            combined_low = (player_action or "").lower() + " " + (system_log or "").lower()
+            if any(w in combined_low for w in ["taverneiro", "balconista", "cerveja", "caneca", "trago", "estrada", "enforcados", "mural", "clima", "reino"]):
+                falante = "Taverneiro"
+            elif any(w in combined_low for w in ["maelor", "menestrel", "bardo", "balada", "alaude", "alaúde"]):
+                falante = "Maelor"
+            else:
+                falante = "Mestre"
+            return {"texto": fb_text, "npc_falando": falante}
 
     def generate_narrative_from_math(self, combat_log: str, intencao_cena: str, ui_queue: Optional[Any] = None) -> str:
         """
@@ -629,24 +714,26 @@ class AIGameMaster:
         """
         sys_instr = (
             "[O Código de Maelor das Cordas de Cinza - Menestrel e AI Game Master]\n"
-            "Você é Maelor das Cordas de Cinza, o cronista e bardo taciturno, cínico e poético do cataclismo de cinzas.\n"
-            "Dedilhando seu alaúde de cordas de cinzas e tendões ao canto da lareira ou na beira da estrada, você traduz o LOG MECÂNICO ou CENÁRIO em uma narrativa visceral, sensorial e cinematográfica (1 a 2 parágrafos).\n"
+            "Você é Maelor das Cordas de Cinza, o Menestrel e cronista sombrio da saga.\n"
+            "Sua prosa é inspirada no cronista cínico de The Witcher, no Ancestor implacável de Darkest Dungeon e na narradora íntima de Baldur's Gate 3.\n"
+            "Você dita o destino do protagonista com prosa poética, afiada, cínica e visceral (limite estrito de 1 a 2 parágrafos curtos, 60 a 90 palavras no total).\n"
             "\nDIRETRIZES FUNDAMENTAIS DO MENESTREL:\n"
-            "1. INCORPORAÇÃO DA AÇÃO DO JOGADOR: Pegue exatamente o que o jogador tentou fazer ou falar (da INTENÇÃO DO JOGADOR) e teça isso diretamente na narrativa dentro do contexto atual.\n"
-            "2. ENQUADRAMENTO SENSORIAL DOS 5 SENTIDOS: Introduza e descreva o ambiente para que o jogador 'enxergue' e 'sinta' tudo ao redor — texturas de aço e pedra, cheiro acre de fuligem e sangue, frio do vento, eco de lâminas e a reação dos inimigos e NPCs no local.\n"
-            "3. FIDELIDADE AOS FATOS E À MECÂNICA: Espelhe a matemática e o estado do jogo. Se o ataque acertou ou errou, se curou ou se moveu, reflita com impacto físico real. É ESTRITAMENTE PROIBIDO citar números ou fórmulas de dados (ex: '1d20', 'CA 15', '12 de dano'); traduza tudo em peso da lâmina, dor, estilhaços e sangue.\n"
-            "4. A REGRA DE OURO DOS ALIADOS E DA JORNADA SOLITÁRIA: O protagonista viaja e combate ABSOLUTAMENTE SOZINHO do Beat 1 ao Beat 14. Quando um Herói Aliado (HERO-01 a HERO-42) for resgatado ou recrutado, narre a solenidade do juramento de sangue/honra selado para a batalha final na caldeira, e a partida imediata do aliado para reunir forças ou cuidar de sobreviventes. NUNCA narre aliados marchando ou lutando ao lado do herói nos Beats 1 a 14. Todos os aliados jurados só se reúnem na arena final do Beat 15 (Covil do Tirano).\n"
-            "5. ALTERNÂNCIA E REFLEXO DE EQUIPAMENTO: Reflita com exatidão a arma ou equipamento atualmente em punho nos ataques e ações (o equilíbrio da espada longa, a empunhadura gasta da adaga, a vibração do arco), dando textura física a cada golpe ou troca de postura.\n"
-            "6. RESSONÂNCIA SENSORIAL DAS HABILIDADES DE CLASSE: Quando o log do sistema ou a intenção indicar ativação ou aprendizado de habilidades de classe icônicas (o clarão ofuscante de um Smite divino, o fôlego recuperado com dentes cerrados no Retomar o Fôlego/Second Wind, a flecha marcada sibilando nas sombras com a Marca do Caçador, o golpe furtivo abrindo a jugular no Ataque Furtivo, ou o escudo arcano desviando o aço), traduza em impacto sensorial potente e épico.\n"
-            "7. ENQUADRAMENTO ESPACIAL E GANCHOS SITUACIONAIS: Conclua a narração situando o herói na cena e apresentando sutilmente de 2 a 3 possibilidades naturais de ação ou ganchos para onde ele pode olhar, interagir ou se mover (ex: 'Diante de você, o taverneiro limpa o balcão desconfiado, enquanto risadas ecoam ao fundo. Você pode puxar conversa, observar as redondezas ou pedir uma caneca.'). Dê agência ao jogador!\n"
-            "8. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável na prosa e nos diálogos de NPCs (ex: 'ela desfere o golpe', 'atenta às sombras', 'uma clériga destemida', 'sozinha na estrada').\n"
+            "1. CONCISÃO E VELOCIDADE: Limite inegociável de 1 a 2 parágrafos curtos (máximo de 60 a 90 palavras). Proibido textos prolixos.\n"
+            "2. PROIBIÇÃO DE CHAVÕES: Proibido repetir chavões estéreis como 'cheiro acre de fuligem', 'dedilha suas cordas de cinza' ou 'frio cortante'. Foque no que ACABOU de acontecer de fato (reação ao golpe, tensão da porta, silêncio da estrada).\n"
+            "3. INCORPORAÇÃO DA AÇÃO: Teça organicamente a intenção e a ação do jogador na resolução da cena.\n"
+            "4. MICRO-NARRATIVA DE COMBATE TÁTICO: Descreva a física cinética do combate — lâminas mordendo carne, carapaças partindo e o impacto surdo nos músculos. Se o jogador utilizou manobras táticas (Esquiva, Tomar Cobertura, Desengajar, Bloqueio Defensivo), evidencie os reflexos ágeis, o mergulho rasteiro ou o travamento inquebrável do broquel. Garanta transições fluidas entre os turnos sem estagnação.\n"
+            "5. COESÃO DE CAMPANHA (BEATS 1 AO 15): Conecte cada cena ao peso dramático da marcha rumo à fornalha do Tirano das Cinzas, seja nas planícies uivantes, criptas profanadas ou cavernas de magma vivo.\n"
+            "6. FIDELIDADE MECÂNICA: Espelhe a matemática do log com impacto físico real. É ESTRITAMENTE PROIBIDO citar números ou dados ('1d20', 'CA 15', '12 de dano'); traduza tudo em peso da lâmina, dor, estilhaços e sangue.\n"
+            "7. A REGRA DE OURO DOS ALIADOS E DA JORNADA SOLITÁRIA: O protagonista viaja e combate ABSOLUTAMENTE SOZINHO do Beat 1 ao Beat 14. Aliados juramentados só se reúnem na arena final do Beat 15 (Covil do Tirano).\n"
+            "8. EQUIPAMENTO E HABILIDADES: Reflita com exatidão a arma em punho e o impacto sensorial de habilidades ativadas (Smite, Retomar o Fôlego, Marca do Caçador, Ataque Furtivo, Escudo Arcano).\n"
+            "9. ENQUADRAMENTO ESPACIAL E DEVOLUÇÃO DE AGÊNCIA: Toda narração DEVE terminar com 2 a 3 sugestões de ação naturais e contextuais, seguidas por: 'O que você faz?'.\n"
+            "10. CONCORDÂNCIA E GÊNERO GRAMATICAL PERFEITO: Respeite rigorosamente o gênero declarado do personagem (masculino/feminino) e flexione adjetivos, particípios, artigos e pronomes de forma impecável.\n"
             "\nREGRAS DE CONTEXTO ESPECÍFICO:\n"
-            "- Interação/Exploração/Hub: Aja como Maelor observando a cena. Incorpore falas de NPCs, rumores da taverna ou perigos do ambiente.\n"
-            "- Itens e Cura: Narre o frasco se partindo, o líquido amargo queimando na garganta e o fechamento doloroso da carne ferida.\n"
-            "- Magia e Habilidades: Descreva energia ancestral, cheiro de ozônio, calor sagrado ou precisão marcial brutal, sem clichês infantis.\n"
-            "- Descanso: No refúgio da taverna, descreva o alívio temporário do calor da lareira; no acampamento selvagem, o descanso tenso sob vigília solitária.\n"
-            "- Clímax e Déjà Vu (Beat 15): Se o herói sucumbir ao fogo do Dragão Supremo, narre a torrente colossal e o retorno súbito do tempo para a taverna (Loop 1), mantendo a memória indelével da dor e da experiência.\n"
-            "- Morte: Descreva a queda definitiva na lama e o frio da escuridão eterna.\n"
+            "- Taverna e Hub: Se for diálogo com o Taverneiro, use tom rústico e prático de taverneiro. Se Maelor falar pessoalmente, use o tom de menestrel sombrio.\n"
+            "- Itens e Cura: Narre o frasco se partindo, o líquido amargo e o fechamento doloroso da carne ferida.\n"
+            "- Magia e Combate: Descreva o arco de energia, faíscas no aço, o recuo do impacto e o ardor muscular.\n"
+            "- Clímax e Déjà Vu (Beat 15): Se o herói sucumbir ao fogo do Dragão Supremo, narre a torrente colossal e o retorno súbito do tempo para a taverna (Loop 1), mantendo a lembrança indelével da dor e da experiência.\n"
+            "- Morte: Descreva a queda definitiva na terra fria e o silêncio da escuridão eterna.\n"
         )
         
         prompt = (
@@ -655,71 +742,164 @@ class AIGameMaster:
             "Narre o resultado como Mestre de RPG situando o herói e sugerindo opções de ação (APENAS O TEXTO DA NARRAÇÃO, SEM JSON E SEM MARKDOWN):"
         )
         
-        try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=genai.types.GenerateContentConfig(
-                    system_instruction=sys_instr,
-                    temperature=0.6,
+        narrative = ""
+        models_to_try = self._get_models_cascade()
+        for model in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        system_instruction=sys_instr,
+                        temperature=0.6,
+                    )
                 )
-            )
-            narrative = response.text.strip() if response.text else self._create_visceral_fallback(combat_log, intencao_cena)
-        except Exception as e:
-            print(f"[ERRO] Falha ao gerar narrativa visceral (ativando fallback seguro): {e}")
+                if response.text and response.text.strip():
+                    narrative = response.text.strip()
+                    self.model_name = model
+                    break
+            except Exception as e:
+                print(f"[Aviso Narrador] Falha no modelo [{model}]: {e}")
+                continue
+
+        if not narrative:
+            print("[ERRO] Falha ao gerar narrativa visceral (ativando fallback seguro)")
             narrative = self._create_visceral_fallback(combat_log, intencao_cena)
 
         if ui_queue is not None:
             try:
-                ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
+                falante = "Mestre"
+                t_check = (intencao_cena + " " + combat_log).lower()
+                if any(w in t_check for w in ["taverneiro", "balconista", "cerveja", "caneca", "trago", "estrada", "enforcados", "mural", "clima", "reino"]):
+                    falante = "Taverneiro"
+                elif any(w in t_check for w in ["maelor", "menestrel", "bardo", "balada", "alaude", "alaúde"]):
+                    falante = "Maelor"
+                ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": falante})
             except Exception:
                 pass
         return narrative
 
     def _create_visceral_fallback(self, combat_log: str, intencao_cena: str) -> str:
-        """Fallback narrativo imersivo na voz de Maelor das Cordas de Cinza."""
+        """Fallback narrativo imersivo na voz de Maelor das Cordas de Cinza (conciso, dinâmico e situacional)."""
         log_lower = (combat_log or "").lower()
         intencao_lower = (intencao_cena or "").lower()
 
         # 1. Déjà Vu / Loop Temporal do Clímax (Prioridade sobre morte simples, pois sopro fatal aciona Déjà Vu)
         if any(w in intencao_lower or w in log_lower for w in ["deja vu", "déjà vu", "loop", "deja_vu"]):
-            return "Uma vertigem de chamas brancas estilhaça a realidade. O som do trovão ecoa como uma lembrança já vivida — o ciclo de déjà vu recomeça na taverna e a lembrança do fogo do dragão queima na mente."
+            return (
+                "O fogo colossal do Tirano devora sua visão e o mundo desaba em vertigem incandescente. "
+                "De repente, o baque surdo de uma caneca no carvalho quebra o silêncio: você puxa o ar e desperta no banco da taverna. "
+                "O tempo dobrou-se sobre si mesmo em um ciclo de déjà vu assombroso; a memória do fogo ainda queima em sua carne.\n\n"
+                "Você pode avaliar seus equipamentos, interrogar o taverneiro sobre os acontecimentos ou consultar o mural de contratos. O que você faz?"
+            )
 
         # 2. Morte Definitiva / 0 HP (quando não é loop)
         if "morreu" in log_lower or "fatal" in log_lower or "game over" in log_lower or "morte" in intencao_lower or "letal" in log_lower or "0 hp" in log_lower:
-            return "O golpe final silencia a respiração e estilhaça a guarda. O corpo cede sob o peso inevitável da terra fria e a escuridão da morte o consome por inteiro."
+            return (
+                "O impacto final parte sua guarda e silencia a respiração. A lâmina escorrega de dedos dormentes "
+                "enquanto a terra fria acolhe seu corpo tombado. A escuridão da morte reivindica seus olhos e o silêncio consome sua saga.\n\n"
+                "Seu destino chegou ao fim nesta trilha desolada."
+            )
 
         # 3. Premonição / Despertar / Ressurreição
         if any(w in intencao_lower or w in log_lower for w in ["acordar", "despertar", "premoni", "ressurrei"]):
-            return "Você desperta com o coração disparado e o suor frio escorrendo pela pele. O ar entra cortando os pulmões como vidro moído enquanto a memória do fogo do dragão queima a mente."
+            return (
+                "Você desperta sobressaltado, sentindo o peito latejar com a força do pulso recente. "
+                "A memória dos perigos iminentes ainda queima na mente enquanto os sentidos voltam à realidade da penumbra.\n\n"
+                "Você pode empunhar sua arma em prontidão, examinar os arredores com cautela ou buscar a saída mais próxima. O que você faz?"
+            )
 
         # 4. Habilidades de Classe Icônicas (Smite, Second Wind, Marca do Caçador, Sneak Attack, etc.)
         if any(w in intencao_lower or w in log_lower for w in ["smite", "destruicao divina", "destruição divina", "divine smite"]):
-            return "Um clarão ofuscante de chamas celestes irrompe ao longo da lâmina no instante do impacto. O estrondo radiante estilhaça a penumbra com calor sagrado, purificando a carne corrompida em fúria divina!"
+            return (
+                "Um clarão ofuscante de chamas celestes irrompe ao longo do fio da arma no instante exato do impacto. "
+                "O estrondo radiante estilhaça a penumbra e purifica a carne do adversário em fúria divina.\n\n"
+                "Você pode emendar um golpe de misericórdia, reposicionar-se em guarda firme ou conjurar nova prece. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["retomar o folego", "retomar o fôlego", "second wind"]):
-            return "Com dentes cerrados e respiração entrecortada, seus pulmões puxam o ar cortante das cinzas. A dor latejante recua sob pura disciplina marcial enquanto o vigor retorna aos músculos retesados."
+            return (
+                "Com dentes cerrados, seus pulmões puxam o ar cortante e estancam o sangramento sob pura disciplina marcial. "
+                "A dor latejante recua e o calor do vigor renovado volta a correr pelos músculos retesados.\n\n"
+                "Você pode avançar imediatamente contra o oponente, assumir postura defensiva ou avaliar a distância tática. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["marca do cacador", "marca do caçador", "hunter's mark", "hunters mark"]):
-            return "Seus olhos estreitam na penumbra enquanto uma runa espectral esmeralda fixa a presa. A flecha marcada sibila nas sombras, atraída inexoravelmente pelo ponto vital da criatura."
+            return (
+                "Seus olhos estreitam-se fixando a presa. Uma runa espectral esmeralda sibila nas sombras sobre o peito da criatura, "
+                "atraindo inexoravelmente a flecha marcada direto ao ponto vital do alvo.\n\n"
+                "Você pode puxar a corda do arco e disparar, buscar cobertura vantajosa ou flanquear pelas sombras. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["ataque furtivo", "sneak attack", "emboscada mortal"]):
-            return "Movendo-se como fumaça gélida pelo ângulo morto do inimigo, o golpe furtivo encontra a brecha da armadura e abre a jugular com precisão cirúrgica antes que qualquer grito ecoe."
+            return (
+                "Movendo-se como fumaça gélida pelo ângulo morto do inimigo, o golpe furtivo encontra a brecha da armadura "
+                "e abre a jugular com precisão cirúrgica antes que qualquer grito ecoe.\n\n"
+                "Você pode saltar para trás nas sombras, desferir uma punhalada secundária ou saquear os pertences do caído. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["surto de acao", "surto de ação", "action surge"]):
-            return "Um estalo violento de adrenalina rompe os limites da carne. O tempo parece desacelerar na bruma enquanto seus braços ignoram o cansaço, desferindo uma nova sequência fulminante de aço!"
+            return (
+                "Um estalo violento de adrenalina rompe os limites da carne. O tempo parece desacelerar na bruma "
+                "enquanto seus braços ignoram o cansaço, desferindo uma nova sequência fulminante de aço!\n\n"
+                "Você pode quebrar a linha defensiva inimiga, manobrar pelo flanco ou manter uma sequência avassaladora. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["cura pelas maos", "cura pelas mãos", "lay on hands", "preservar a vida", "bencao da cura", "bênção da cura"]):
-            return "A mão repousa sobre as feridas abertas irradiando um calor dourado e solene. O sangue estanca sob a graça divina e a carne dilacerada se fecha, afastando a sombra da morte."
+            return (
+                "A mão repousa sobre as feridas abertas irradiando um calor dourado e solene. "
+                "O sangue estanca sob a graça divina e a carne dilacerada se fecha, afastando a sombra da morte.\n\n"
+                "Você pode firmar os pés para combate, empunhar seu escudo ou avançar para a linha de frente. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["escudo arcano", "shield spell", "recuperacao arcana", "recuperação arcana", "evocacao potente", "evocação potente"]):
-            return "Runas em ciano etéreo cintilam no ar com estalo de ozônio. A barreira geométrica de força arcana se ergue no milissegundo exato, desviando o impacto letal em uma chuva de fagulhas místicas!"
+            return (
+                "Runas em ciano etéreo cintilam no ar com estalo de ozônio. A barreira geométrica de força arcana "
+                "se ergue no milissegundo exato, desviando o impacto letal em uma chuva de fagulhas místicas!\n\n"
+                "Você pode contra-atacar com magia de energia, manter distância segura ou recuar para cobertura. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["acao ardilosa", "ação ardilosa", "cunning action", "esquiva sobrenatural", "uncanny dodge"]):
-            return "Com reflexos felinos forjados nos becos escuros, seu corpo se esgueira como vapor no último instante. A lâmina inimiga corta apenas o vazio e farrapos de capa enquanto você se reposiciona nas sombras."
+            return (
+                "Com reflexos felinos forjados nos becos escuros, seu corpo se esgueira como vapor no último instante. "
+                "A lâmina inimiga corta apenas o vazio e farrapos de capa enquanto você se reposiciona nas sombras.\n\n"
+                "Você pode esgueirar-se para trás de cobertura, preparar um ataque pelas costas ou recuar silenciosamente. O que você faz?"
+            )
+
+        if any(w in intencao_lower or w in log_lower for w in ["esquivar", "postura evasiva", "esquiva tática", "esquiva tatica", "desviar do golpe", "esquiva"]):
+            return (
+                "Com respiração compassada e olhar focado, você lê a trajetória do golpe no instante em que ele parte. "
+                "Seu corpo esquiva em um desvio milimétrico; a arma oponente corta apenas o ar viciado enquanto você se recompõe em equilíbrio perfeito.\n\n"
+                "Você pode desferir um contra-ataque rápido, recuar meio passo para manter a distância ou preparar nova manobra evasiva. O que você faz?"
+            )
+
+        if any(w in intencao_lower or w in log_lower for w in ["tomar cobertura", "buscar cobertura", "procurar abrigo", "atras da cobertura", "atrás da cobertura", "procurar cobertura"]):
+            return (
+                "Você mergulha com agilidade para trás de blocos de rocha sólida. Projéteis e estilhaços lascam contra a pedra "
+                "a centímetros de sua cabeça, mantendo seus flancos protegidos do fogo cruzado.\n\n"
+                "Você pode espiar pela fresta para mirar um disparo, avançar rastejando para novo ângulo ou aguardar a brecha do oponente. O que você faz?"
+            )
+
+        if any(w in intencao_lower or w in log_lower for w in ["postura defensiva", "bloquear com escudo", "bloqueio defensivo", "defender com escudo", "bloquear"]):
+            return (
+                "Você firma a base no cascalho úmido e ergue a guarda em ângulo oblíquo. O impacto do ataque inimigo explode em um estrondo metálico "
+                "que faz os ossos do antebraço vibrarem, mas sua linha de defesa permanece impenetrável.\n\n"
+                "Você pode empurrar com o broquel para desequilibrar o rival, contra-atacar por baixo da guarda ou manter o bloqueio firme. O que você faz?"
+            )
+
+        if any(w in intencao_lower or w in log_lower for w in ["desengajar", "desengajamento"]) and not any(w in intencao_lower or w in log_lower for w in ["retorno ao hub", "taverna"]):
+            return (
+                "Com passos medidos e lâmina em guarda alta, você desengaja do combate corpo a corpo sem abrir qualquer brecha defensiva. "
+                "O adversário hesita diante do seu recuo lúcido e controlado.\n\n"
+                "Você pode preparar uma arma de longo alcance, buscar terreno elevado ou reposicionar-se para nova investida. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["desbloqueou habilidade", "nova habilidade", "habilidade adquirida", "arvore de habilidades", "árvore de habilidades"]):
-            return "O sangue ferve com a sabedoria forjada no aço e nas cinzas. Uma nova técnica ancestral desperta em sua memória muscular, gravada no Grimório como trunfo para a provação vindoura."
+            return (
+                "O sangue ferve com a sabedoria forjada no aço e nas provações. Uma nova técnica ancestral "
+                "desperta em sua memória muscular, gravada no Grimório como trunfo para a provação vindoura.\n\n"
+                "Você pode praticar a postura da nova técnica, reorganizar seus pertences ou seguir adiante na jornada. O que você faz?"
+            )
 
         # 5. Alternância e Equipamento de Arma (Item 4.2)
         if any(w in intencao_lower or w in log_lower for w in ["equipar", "empunhar", "desembainhar", "trocar de arma", "trocar para", "troca de arma", "usar arma", "sacar"]):
@@ -728,23 +908,60 @@ class AIGameMaster:
                 if arma in intencao_lower or arma in log_lower:
                     recurso_citado = f"da {arma}" if arma.endswith("a") else f"do {arma}"
                     break
-            return f"O aço ressoa ao ser desembainhado na névoa; seus dedos ajustam o aperto firme no cabo {recurso_citado}, sentindo o peso e o equilíbrio mortal do equipamento sob as cinzas."
+            return (
+                f"O aço ressoa ao ser desembainhado na névoa; seus dedos ajustam o aperto firme no cabo {recurso_citado}, "
+                f"sentindo o peso e o equilíbrio mortal do equipamento sob as cinzas.\n\n"
+                "Você pode assumir guarda ofensiva imediata, manter distância tática ou aguardar a brecha do adversário. O que você faz?"
+            )
 
         # 6. Juramento de Herói Aliado
         if any(w in intencao_lower or w in log_lower for w in ["juramento", "aliado", "recrut", "pacto", "honra", "jurou"]):
-            return "O aço toca o peito em solene promessa. O aliado sela o juramento de honra e sangue: ele recolhe seus pertences e parte para aguardar o chamado da marcha para a batalha final contra o Tirano."
+            return (
+                "O aço toca o peito em solene promessa. O aliado sela o juramento de honra e sangue: ele recolhe seus pertences e parte para aguardar o chamado da marcha para a batalha final contra o Tirano.\n\n"
+                "Você pode retomar sua marcha solitária pela trilha, examinar os arredores do encontro ou revisar seus suprimentos. O que você faz?"
+            )
 
         # 7. Viagem para Side Quest / Covil / Altar
-        if any(w in intencao_lower or w in log_lower for w in ["covil", "altar"]) or (any(w in intencao_lower or w in log_lower for w in ["viagem", "partindo", "trilha"]) and any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "missao", "missão"])):
-            return "A trilha cinzenta se estende sob um céu sufocado por fuligem. Seus passos solitários quebram o silêncio da terra desolada enquanto a aproximação cautelosa revela os perigos e provisões do covil."
+        is_dialogue_or_inquiry = any(w in intencao_lower for w in [
+            "dialog", "convers", "falar", "pergunt", "observ", "olhar", "ouvir", "examinar",
+            "taverneiro", "balconista", "cerveja", "bebida", "pedir", "mural", "quadro"
+        ])
+        if not is_dialogue_or_inquiry and (
+            any(w in intencao_lower or w in log_lower for w in ["viajar para o covil", "indo ao covil", "partir para o covil", "entrar no covil", "chegar ao covil", "viajar para o altar", "chegar ao altar"])
+            or (any(w in intencao_lower or w in log_lower for w in ["viagem", "partindo", "a caminho"]) and any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "missao", "missão"]))
+        ):
+            return (
+                "A trilha pedregosa serpenteia sob a névoa baixa. Seus passos solitários quebram o silêncio da terra desolada enquanto a aproximação cautelosa revela os perigos e provisões do covil.\n\n"
+                "Você pode avançar furtivamente pelas sombras, empunhar sua arma em guarda ou inspecionar vestígios na entrada. O que você faz?"
+            )
 
         # 8. Conclusão de Side Quest / Contrato
-        if any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "contrato", "resgate"]):
-            return "O contrato sangrento chega ao fim. As cinzas assentam e a justa recompensa é tomada, enquanto os ecos da missão se dissipam na bruma da terra desolada."
+        # CORREÇÃO CRÍTICA: Só dispara se houver intenção explícita de conclusão/entrega de contrato ou se o log indicar conclusão de missão/recompensa.
+        # NUNCA dispara se for diálogo, conversa, observação ou pergunta na taverna (mesmo com Beat 1 mencionando contratos no mural).
+        is_contract_completion = (
+            any(w in intencao_lower or w in log_lower for w in [
+                "concluir missao", "concluir missão", "concluir contrato",
+                "missao concluida", "missão concluída", "contrato concluido", "contrato concluído",
+                "entregar contrato", "entrega de contrato", "recompensa do contrato",
+                "coletar recompensa", "receber recompensa", "resgate concluido", "resgate concluído"
+            ])
+            or (
+                any(w in intencao_lower or w in log_lower for w in ["side_quest", "side quest", "contrato", "resgate"])
+                and any(w in intencao_lower or w in log_lower for w in ["conclu", "cumprid", "finaliz", "entreg", "recompensa recebida"])
+            )
+        )
+        if is_contract_completion and not is_dialogue_or_inquiry:
+            return (
+                "O contrato sangrento chega ao fim. As cinzas assentam e a justa recompensa é tomada, enquanto os ecos da missão se dissipam na bruma da terra desolada.\n\n"
+                "Você pode retornar à Taverna para descansar, examinar os despojos com calma ou planejar o próximo objetivo. O que você faz?"
+            )
 
         # 9. Reatividade de Aliados e Rumores no Hub da Taverna (Item 4.1)
         if "[rumores da taverna]" in log_lower or "[rumor" in log_lower or (any(w in intencao_lower or w in log_lower for w in ["taverna", "rumor", "conversa", "balcão"]) and any(w in log_lower for w in ["juramento", "aliado", "guerreiro", "leal"])):
-            return "Maelor das Cordas de Cinza dedilha uma melodia solene no alaúde carcomido ao canto da lareira. Entre goles de cerveja amarga, sussurros confirmam a vigília leal dos guerreiros juramentados nos contrafortes da montanha e passos escuros, aguardando em silêncio o seu chamado para a batalha final do Clímax contra o Tirano."
+            return (
+                "Ao som dos acordes de Maelor em seu alaúde e entre goles de cerveja amarga, mercenários cochicham sobre a vigília leal dos guerreiros juramentados nos contrafortes da montanha e passos escuros, aguardando em silêncio o seu chamado para a batalha final do Clímax contra o Tirano.\n\n"
+                "Você pode aproximar-se da mesa dos mercenários para saber mais, pedir outra caneca ao balcão ou consultar o mural de avisos. O que você faz?"
+            )
 
         # 10. Diálogos com o Menestrel Maelor (Canções, Tirano das Cinzas, Orbe Quebra-Chamas)
         if any(w in intencao_lower or w in log_lower for w in [
@@ -752,28 +969,43 @@ class AIGameMaster:
             "tocar uma musica", "tocar uma música", "tocar uma cancao", "tocar uma canção",
             "toque seu alaude", "toque seu alaúde", "cantar uma balada", "pedir musica", "pedir música"
         ]) or (any(w in intencao_lower or w in log_lower for w in ["maelor", "menestrel", "bardo"]) and any(w in intencao_lower or w in log_lower for w in ["cancao", "canção", "musica", "música", "tocar", "cantar", "balada", "alaude", "alaúde"])):
-            return "Maelor ergue os olhos cansados sob o capuz cinzento e dedilha seu alaúde de cordas de cinzas e tendões. Um acorde lúgubre preenche a taverna: 'Você pede uma canção em tempos de cinzas? Pois escute a Balada dos Caídos de Cinzas... Aqueles que marcharam cantando vitória e retornaram como espectros calcinados sob o sopro do dragão.' A melodia arrepiante silencia os murmúrios ao redor e faz as brasas da lareira tremerem."
+            return (
+                "Maelor ergue os olhos cansados sob o capuz cinzento e ajusta as cravelhas de seu alaúde de tendões: 'Você pede uma canção em tempos de ruína? Pois escute a Balada dos Caídos de Cinzas... Aqueles que marcharam cantando vitória e retornaram como espectros calcinados sob o sopro do dragão.' O acorde solene silencia os murmúrios ao redor e faz as brasas tremerem.\n\n"
+                "Você pode perguntar sobre as fraquezas conhecidas da besta, indagar sobre heróis que enfrentaram o monstro ou voltar ao balcão. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "tirano das cinzas", "o tirano", "sobre o tirano", "quem e o tirano", "quem é o tirano",
             "como derrotar o tirano", "lenda do dragao", "lenda do dragão", "historia do dragao",
             "história do dragão", "dragao supremo", "dragão supremo"
         ]):
-            return "Maelor interrompe o dedilhar do alaúde; o silêncio que se instala é pesado como chumbo. 'O Tirano das Cinzas não é uma simples fera alada, mas a própria fornalha primordial do mundo. Suas escamas de obsidiana repelem o aço comum e seu sopro transforma exércitos em carvão. Ninguém sobrevive ao Beat 15 lutando sozinho — você precisará de juramentos inquebráveis e do artefato sagrado para quebrar sua invulnerabilidade.'"
+            return (
+                "Maelor fixa um olhar firme e austero em você: 'O Tirano das Cinzas não é uma simples fera alada, mas a própria fornalha primordial do mundo. Suas escamas de obsidiana repelem o aço comum e seu sopro transforma exércitos em carvão. Ninguém sobrevive ao Beat 15 lutando sozinho — você precisará de juramentos inquebráveis e do artefato sagrado na caldeira para quebrar sua invulnerabilidade.'\n\n"
+                "Você pode perguntar sobre como obter o artefato sagrado, questionar onde encontrar aliados juramentados ou avaliar suas provisões. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "orbe quebra-chamas", "orbe quebra chamas", "perguntar sobre o orbe", "o que e o orbe",
             "o que é o orbe", "onde esta o orbe", "onde está o orbe", "orbe sagrado", "anular o sopro",
             "invulnerabilidade do dragao", "invulnerabilidade do dragão"
         ]) or (any(w in intencao_lower or w in log_lower for w in ["orbe", "relicario", "relicário"]) and any(w in intencao_lower or w in log_lower for w in ["maelor", "taverna", "bardo", "perguntar", "saber", "falar"])):
-            return "Os olhos de Maelor cintilam sob as sobrancelhas espessas: 'O Orbe Quebra-Chamas... Então os rumores chegaram aos seus ouvidos. Uma relíquia ancestral esquecida em um altar corrompido. Dizem que somente o poder contido no Orbe é capaz de anular a muralha de fogo do Tirano e tornar sua carne mortal. Mantenha seus olhos abertos nas trilhas secretas do vale.'"
+            return (
+                "Os olhos de Maelor cintilam sob as sobrancelhas espessas: 'O Orbe Quebra-Chamas... Então os rumores chegaram aos seus ouvidos. Uma relíquia ancestral esquecida em um altar corrompido. Dizem que somente o poder contido no Orbe é capaz de anular a muralha de fogo do Tirano e tornar sua carne mortal. Mantenha seus olhos abertos nas trilhas secretas do vale.'\n\n"
+                "Você pode perguntar qual trilha conduz ao altar, conferir suas anotações no Grimório ou retornar para junto do fogo. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["falar com maelor", "conversar com maelor", "ouvir maelor", "perguntar ao bardo", "falar com o bardo", "conversar com o menestrel", "ouvir bardo", "falar com bardo"]):
-            return "Maelor dedilha um acorde sombrio no alaúde de cordas de cinzas e ergue o olhar cansado: 'Cada canção que entoo é o epitáfio de quem ousou desafiar o Tirano sem aliados. Se quer sobreviver ao clímax, procure os guerreiros perdidos nas terras baixas.'"
+            return (
+                "Maelor pousa a mão sobre seu alaúde e ergue o olhar cansado e cortante: 'Cada canção que entoo é o epitáfio de quem ousou desafiar o Tirano sem aliados. Se quer sobreviver ao clímax, procure os guerreiros perdidos nas terras baixas.'\n\n"
+                "Você pode pedir conselhos sobre os perigos da montanha, perguntar sobre o paradeiro desses guerreiros ou retirar-se para sua mesa. O que você faz?"
+            )
 
         # 11. O que o espera lá fora / Perigos da estrada / Trilha dos Enforcados
         if any(w in intencao_lower or w in log_lower for w in ["trilha dos enforcados", "enforcados"]):
-            return "O taverneiro apoia os punhos pesados sobre a madeira ensebada e baixa a voz: 'A Trilha dos Enforcados não tem esse nome à toa, forasteiro. Goblins saqueadores montam emboscadas nas ravinas e mercenários desertores degolam quem viaja desprevenido. Os galhos retorcidos não sustentam apenas corvos. Se vai pegar aquela estrada, mantenha a mão firme no cabo da arma.'"
+            return (
+                "O taverneiro apoia os punhos na madeira ensebada e baixa a voz: 'A Trilha dos Enforcados não perdoa os descuidados, forasteiro. Goblins saqueadores espreitam nas ravinas e carcaças balançam nos galhos retorcidos. Se vai pegar aquela estrada, mantenha o aço pronto.'\n\n"
+                "Você pode pedir conselhos sobre rotas alternativas, conferir seus suprimentos ou partir em direção à trilha. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "o que me espera", "o que tem la fora", "o que tem lá fora", "o que ha la fora", "o que há lá fora",
@@ -781,7 +1013,10 @@ class AIGameMaster:
             "o que esperar lá fora", "como e la fora", "como é lá fora", "o que me aguarda",
             "perigos do lado de fora", "monstros la fora", "monstros lá fora"
         ]):
-            return "O taverneiro aponta uma faca encardida em direção à pesada porta trancada: 'Lá fora? Cinzas, frio cortante e morte à espreita. Criaturas ferozes rondam a neblina e patrulhas caídas atacam qualquer viajante desavisado. Ninguém cruza as planícies sem provisões e aço afiado. Se quer um conselho, converse com os mercenários ou confira os avisos antes de colocar os pés na lama.'"
+            return (
+                "O taverneiro aponta uma faca encardida para as portas trancadas: 'Lá fora? Cinzas, frio e presas famintas na névoa. Patrulhas caídas massacram quem viaja sem vigília. Ninguém cruza as planícies sem provisões e lâmina afiada.'\n\n"
+                "Você pode consultar o mural de contratos, pedir uma ração de viagem ao taverneiro ou cruzar a porta imediatamente. O que você faz?"
+            )
 
         # 12. Como aceitar missões / Trabalhos disponíveis / Quadro de avisos / Contratos
         if any(w in intencao_lower or w in log_lower for w in [
@@ -790,7 +1025,10 @@ class AIGameMaster:
             "como funciona o mural", "onde pego missao", "onde pego missão", "onde pego trabalho",
             "onde pegar missao", "onde pegar missão", "onde pegar trabalho", "como aceitar"
         ]):
-            return "O taverneiro aponta o polegar para a tábua de carvalho cravada de adagas: 'Basta inspecionar as missões no mural ou consultar suas anotações de viagem no Grimório. Escolha o contrato, aceite a incumbência e traga os despojos como prova. Quem cumpre a missão recebe a recompensa combinada em ouro sonante e suprimentos.'"
+            return (
+                "O taverneiro gesticula em direção à tábua cravada de adagas: 'Examine os avisos no mural ou consulte o seu Grimório. Escolha o contrato, aceite a incumbência e retorne com os despojos. Quem cumpre a caçada recebe moedas e suprimentos.'\n\n"
+                "Você pode examinar os contratos fixados, inspecionar o seu grimório de missões ou pedir recomendações ao taverneiro. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "procura de missao", "procura de missão", "procurando missao", "procurando missão",
@@ -801,7 +1039,10 @@ class AIGameMaster:
             "trabalhos e missoes", "trabalhos disponíveis", "trabalhos disponiveis",
             "missões disponíveis", "missoes disponiveis", "contratos disponíveis", "contratos disponiveis"
         ]) or (any(w in intencao_lower or w in log_lower for w in ["missao", "missão", "trabalho", "contrato"]) and any(w in intencao_lower or w in log_lower for w in ["taverna", "balcao", "balcão", "taverneiro", "procura", "procurando", "busco", "quero", "disponivel", "disponível"]) and not any(w in intencao_lower or w in log_lower for w in ["conclu", "cumprid", "fim", "recompensa"])):
-            return "O taverneiro aponta uma caneca úmida em direção ao canto do balcão onde pergaminhos amarelados estão afixados: 'Se procura trabalho com recompensa em ouro, a Trilha dos Enforcados está infestada de feras e mercenários saqueadores. Você pode inspecionar os contratos no seu Diário ou perguntar aos mercenários ao redor.'"
+            return (
+                "O taverneiro bate uma caneca no balcão e aponta para pergaminhos pregados à viga: 'Se busca trabalho com recompensa honesta, a Trilha dos Enforcados está infestada. Inspecione os contratos ou ouça o que os mercenários têm a dizer.'\n\n"
+                "Você pode ler os pergaminhos do mural, puxar conversa com os mercenários à mesa ou pedir uma bebida. O que você faz?"
+            )
 
         # 13. Conversas cotidianas com o Taverneiro (Pagar conta, Clima, Reino, Bebida/Comida)
         if any(w in intencao_lower or w in log_lower for w in [
@@ -809,59 +1050,132 @@ class AIGameMaster:
             "aqui esta o ouro", "aqui está o ouro", "quanto custa a cerveja", "quanto custa",
             "pagar a caneca", "pagar caneca", "acertar as contas", "acertar a conta"
         ]):
-            return "O taverneiro bate a palma aberta no balcão e dá um meio sorriso cínico: 'São algumas peças de cobre pela cerveja e pelo fogo da lareira, amigo. Aqui a moeda de ferro vale tanto quanto a honra, mas se mantiver sua lâmina limpa de problemas dentro do meu teto, estamos quites.' Ele recolhe o trocado e tranca o gaveteiro de mogno."
+            return (
+                "O taverneiro recolhe o cobre sobre o balcão com um estalo de dedos: 'São algumas moedas pelo trago e pelo fogo, viajante. Mantendo sua lâmina na bainha debaixo do meu teto, estamos quites.'\n\n"
+                "Você pode pedir informações sobre as rotas locais, alugar um quarto para repousar ou dirigir-se à saída. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "falar sobre o clima", "falar do clima", "como esta o tempo", "como está o tempo",
             "clima la fora", "clima lá fora", "tempo la fora", "tempo lá fora", "chuva de cinzas", "falar sobre o tempo",
             "o clima", "o tempo"
         ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
-            return "O taverneiro cospe no piso de terra batida e olha para as frestas vedadas: 'O clima? Fuligem e vento podre, como sempre. Desde que a montanha cuspiu chamas, o sol é só uma mancha amarelada no céu morto. O ar arde na garganta e a geada ácida corrói ferro exposto. Se for viajar, aperte o capuz ou engolirá carvão até sufocar.'"
+            return (
+                "O taverneiro olha de soslaio para a fresta vedada da janela: 'Fuligem pesada e vento cortante. As cinzas do vulcão cobrem a estrada e devoram o fôlego de quem viaja sem proteção no rosto.'\n\n"
+                "Você pode ajustar seu capuz para enfrentar a tempestade, pedir abrigo junto à lareira ou conferir o mapa. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in [
             "falar sobre o reino", "falar do reino", "como esta o reino", "como está o reino",
             "o que aconteceu com o reino", "situacao do reino", "situação do reino", "noticias do reino",
             "notícias do reino", "falar sobre o rei", "falar do rei", "o reino", "a corte", "corte real", "sobre o reino"
         ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
-            return "O taverneiro enxuga a bancada com força, franzindo a testa: 'O reino? Não sobrou rei nem corte que mande em um palmo de terra. Quando o Tirano desceu do vulcão e incendiou a vanguarda real, os nobres se trancaram nas masmorras e abandonaram o povo à própria sorte. Hoje manda quem tem lâmina afiada e estômago para mastigar cinzas.'"
+            return (
+                "O taverneiro limpa a bancada com um riso seco: 'O reino ruiu quando as cinzas subiram. A corte e os nobres se trancaram em fortalezas distantes, abandonando a vanguarda e o povo à própria sorte.'\n\n"
+                "Você pode questionar sobre líderes de resistência, perguntar sobre o Tirano ou focar na sua próxima caçada. O que você faz?"
+            )
 
         # 14. Descanso / Repouso (Precedência sobre diálogos casuais de comida/bebida)
         if any(w in intencao_lower or w in log_lower for w in ["descanso", "repouso", "descansar", "dormir"]):
             if any(w in log_lower for w in ["[rumores da taverna]", "aliado jurado", "juramento", "vigília leal", "vigilia leal"]):
-                return "Maelor das Cordas de Cinza dedilha uma melodia suave ao canto do fogo. O calor crepitante da lareira restaura suas forças enquanto ecos na taverna lembram da vigília leal de seus aliados juramentados nos contrafortes, aguardando o chamado para o Clímax."
-            return "O calor crepitante da lareira e a caneca fumegante trazem um alívio temporário às dores do corpo. O descanso restaura as forças para a marcha solitária."
+                return (
+                    "O descanso junto ao fogo restaura suas forças enquanto a lareira crepita. Os murmúrios na taverna ecoam a vigília leal dos seus aliados juramentados nos contrafortes, aguardando o chamado para o clímax.\n\n"
+                    "Você pode planejar a marcha com o grupo, conferir o mapa no Grimório ou descansar mais um momento. O que você faz?"
+                )
+            return (
+                "O calor crepitante da lareira traz alívio às dores do corpo. O descanso restaura suas forças para a marcha solitária além das vigas seguras.\n\n"
+                "Você pode inspecionar o mural de contratos, puxar conversa com o taverneiro ou preparar suas armas para partir. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["acampamento", "vigilia", "vigília"]):
-            return "O vento sopra gélido entre as pedras calcinadas. Em vigília tensa e solitária, o repouso sob a capa puída é o suficiente para estancar as feridas da jornada."
+            return (
+                "O vento uiva gélido entre as pedras calcinadas. Em vigília tensa e solitária, o repouso sob a capa puída é o suficiente para estancar as feridas da jornada.\n\n"
+                "Você pode apagar as brasas e retomar a trilha, vasculhar o perímetro imediato ou preparar suas poções. O que você faz?"
+            )
 
-        # 15. Conversas gerais com o Taverneiro / Pedido de Bebida / Comida
+        # 15. Conversas com o Taverneiro / Balconista / Pedidos de Bebida e Comida
+        if any(w in intencao_lower or w in log_lower for w in [
+            "falar com taverneiro", "conversar com taverneiro", "falar com o taverneiro", "conversar com o taverneiro",
+            "falar com balconista", "conversar com balconista", "falar com o balconista", "conversar com o balconista",
+            "dialogar com o taverneiro", "dialogar com taverneiro", "chamar o taverneiro", "chamar taverneiro",
+            "falar com o balconista", "dialogar", "conversar na taverna", "puxar conversa",
+            "estalajadeiro", "balconista", "taverneiro"
+        ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte", "cerveja", "bebida", "vinho", "hidromel", "guisado", "comida", "trago"]):
+            return (
+                "O taverneiro apoia os antebraços pesados sobre a tábua marcada de cortes, fixando seu único olho bom em você: 'Não costumo perder tempo com conversa fiada, forasteiro. Se quer saber sobre a estrada, trabalho no mural ou se aquecer do frio lá fora, fale logo.'\n\n"
+                "Você pode perguntar sobre perigos da região, pedir uma caneca cheia ou inspecionar o mural de avisos. O que você faz?"
+            )
+
         if any(w in intencao_lower or w in log_lower for w in ["cerveja", "bebida", "vinho", "caneca", "taverneiro", "pedir bebida", "pedir cerveja", "comprar cerveja", "balconista", "garcom", "garçom", "guisado", "hidromel", "despeje um trago"]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
-            return "O taverneiro enxuga a madeira carcomida com um trapo velho e serve uma caneca de cerveja escura e amarga: 'Beba enquanto há teto sobre sua cabeça, forasteiro. Lá fora, as cinzas não perdoam os descuidados.'"
+            return (
+                "O taverneiro enxuga a madeira carcomida com um trapo velho e serve uma caneca de cerveja escura e amarga: 'Beba enquanto há teto sobre sua cabeça, forasteiro. Lá fora, as cinzas não perdoam os descuidados.'\n\n"
+                "Você pode pagar a caneca com algumas moedas, puxar conversa com os mercenários ao redor ou beber em silêncio. O que você faz?"
+            )
 
         # 16. Observação do Cenário / Rumores e Boatos
-        if any(w in intencao_lower or w in log_lower for w in ["rumores", "rumor", "boatos", "boato", "olhar ao redor", "observar taverna", "olhar taverna", "examinar taverna", "vasculhar taverna", "ouvir conversas"]):
-            return "Seus olhos vasculham a taverna sombria. Mercenários cochicham sobre criaturas emboscando carroças na estrada norte e sussurros de um lobo atroz rondando as colinas."
+        if any(w in intencao_lower or w in log_lower for w in [
+            "observar", "olhar", "examinar", "vasculhar", "inspecionar", "ao redor",
+            "rumores", "rumor", "boatos", "boato", "olhar ao redor",
+            "observar taverna", "olhar taverna", "examinar taverna", "vasculhar taverna", "ouvir conversas"
+        ]) and not any(w in intencao_lower or w in log_lower for w in ["combate", "atacar", "dano", "morte"]):
+            return (
+                "Seus olhos vasculham a taverna sombria. Entre o crepitar da lareira e o cheiro de cerveja azeda, mercenários de rostos marcados cochicham sobre criaturas emboscando carroças na estrada norte, enquanto vultos encapuzados vigiam os cantos em silêncio tenso.\n\n"
+                "Você pode se aproximar da mesa dos mercenários, inspecionar o mural de contratos ou dirigir-se ao balcão. O que você faz?"
+            )
 
         # 17. Recuo Tático e Fuga
         if any(w in intencao_lower or w in log_lower for w in ["recuo", "retorno ao hub", "retorno", "fuga", "fugir", "recuar"]):
-            return "Com fôlego curto e passos firmes nas sombras, você recua em fuga pelas cinzas da estrada. O calor crepitante da lareira da Taverna do Dragão Acordado surge na bruma, oferecendo abrigo seguro para recompor o aço e o ânimo."
+            return (
+                "Com passos firmes nas sombras e fôlego curto, você recua em fuga pelas cinzas da estrada. O calor crepitante da lareira da Taverna do Dragão Acordado surge na bruma, oferecendo abrigo seguro para recompor o aço e o ânimo.\n\n"
+                "Você pode trancar a porta e recuperar o fôlego, beber uma poção para fechar feridas ou planejar um novo avanço. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["emboscada", "selvagem"]):
-            return "Um estalo repentino quebra o silêncio da bruma. Vultos saltam das sombras com lâminas oxidadas em riste antes que qualquer palavra seja dita!"
+            return (
+                "Um estalo repentino rompe o silêncio da bruma. Lâminas oxidadas reluzem na penumbra quando silhuetas hostis saltam das sombras bloqueando sua passagem antes de qualquer palavra!\n\n"
+                "Você pode desembainhar sua arma para o contra-ataque, erguer sua guarda defensiva ou buscar cobertura atrás dos escombros. O que você faz?"
+            )
 
         if "recuperou" in log_lower or "cura" in log_lower or "pocao" in intencao_lower or "poção" in intencao_lower or ("hp" in log_lower and ("+" in log_lower or "recupera" in log_lower)):
-            return "A poção desce queimando amarga como fel pela garganta. O sangue estanca e as dores diminuem enquanto as feridas se fecham sob ardor pungente."
+            return (
+                "O líquido da poção queima amargo pela garganta como seiva cáustica. O sangue estanca nas feridas e o vigor da cura retorna aos músculos doloridos sob um pulsar pungente.\n\n"
+                "Você pode firmar a empunhadura da sua arma, avaliar os movimentos do inimigo ou mudar de postura tática. O que você faz?"
+            )
 
         if any(w in log_lower for w in ["dano", "sofreu", "acerto", "acertou"]) or any(w in intencao_lower for w in ["ataque", "atacar", "combate", "golpe"]):
-            return "O choque das lâminas ressoa pelo ambiente com estalo brutal de ferro. O impacto arranca um chiado de esforço e sangue enquanto o combate avança sem hesitação."
+            return (
+                "O choque do aço corta o ar com impacto brutal de ferro e faíscas. A lâmina morde com precisão feroz, arrancando um arquejo de esforço enquanto o confronto avança sem trégua.\n\n"
+                "Você pode desferir um golpe rápido de seguimento, preparar um bloqueio imediato ou recuar meio passo para manter a distância. O que você faz?"
+            )
 
         if "orbe" in intencao_lower or "relicario" in intencao_lower:
-            return "A poeira dos séculos se desprende da pedra fria. Seus dedos encontram o artefato esculpido, cujo peso ressoa com energia ancestral na penumbra."
+            return (
+                "A poeira de eras escorre da pedra fria. Seus dedos encontram o artefato esculpido, cujo peso ressoa com energia ancestral contida na penumbra.\n\n"
+                "Você pode guardar a relíquia com segurança na mochila, examinar as runas gravadas em sua face ou averiguar o altar corrompido. O que você faz?"
+            )
 
         if any(w in intencao_lower or w in log_lower for w in ["transi", "jornada", "avan", "viagem", "estrada", "partir"]):
-            return "Os passos firmes ecoam pela terra desolada. O cenário cinzento fica para trás enquanto uma nova trilha solitária se abre diante de você."
+            return (
+                "Seus passos firmes ecoam pela terra desolada. O cenário anterior fica para trás enquanto uma nova trilha solitária se estende diante dos seus olhos.\n\n"
+                "Você pode avançar com arma empunhada, apressar o passo contra o vento ou parar para avaliar pegadas no solo. O que você faz?"
+            )
 
-        return "O dedilhar melancólico das cordas de cinza ecoa no ar. A tensão permanece suspensa na penumbra enquanto seus olhos buscam a próxima ameaça."
+        if any(w in intencao_lower for w in ["olhar", "ver", "procurar", "investigar", "buscar"]):
+            return (
+                "A penumbra oculta os detalhes mais sutis, mas seus olhos atentos captam contornos e sombras que denunciam a presença do desconhecido adiante.\n\n"
+                "Você pode se aproximar cautelosamente para investigar, manter vigilância a distância segura ou empunhar sua arma. O que você faz?"
+            )
+
+        if any(w in intencao_lower for w in ["falar", "perguntar", "dizer", "responder"]):
+            return (
+                "Suas palavras ressoam com firmeza no ambiente tenso. O interlocutor ergue o olhar, avaliando o peso e o perigo de cada silaba trocada.\n\n"
+                "Você pode insistir na sua indagação, mudar para uma abordagem mais incisiva ou aguardar em silêncio pela resposta. O que você faz?"
+            )
+
+        return (
+            "A névoa cinzenta paira pesada sobre a cena. A tensão permanece suspensa enquanto o destino aguarda o estalo do seu próximo passo no aço ou na astúcia.\n\n"
+            "Você pode avançar com cautela, examinar os arredores imediatos ou preparar seu equipamento para o perigo iminente. O que você faz?"
+        )
 
     def _format_gender_race(self, race: str, is_female: bool) -> str:
         if not is_female:
@@ -974,12 +1288,15 @@ class AIGameMaster:
 
         if not prologue_lines:
             return (
-                f"O vento cinzento sopra uivos pela soleira quando {nome} empurra a pesada porta de carvalho da taverna.\n\n"
-                f"Ao canto escuro da lareira, Maelor das Cordas de Cinza dedilha uma nota áspera em seu alaúde de tendões, "
-                f"observando a silhueta de {artigo} {raca} {classe} {forjado_str} nas agruras de {antecedente}, {detalhe_heranca}.\n\n"
-                f"Com postura {tendencia}, você sabe que neste vale devastado pela fumaça o aço fala mais alto que preces vãs. "
-                f"O olhar cansado do taverneiro de um olho só se ergue na penumbra: a estrada para a montanha não perdoa os fracos, "
-                f"e a canção do Tirano das Cinzas já começou a ser escrita."
+                f"A noite é um manto de cinzas frias sobre o vale quando {nome} empurra a pesada porta da Taverna do Dragão Acordado. "
+                f"O sopro cortante do vento norte agita as vestes que marcam a linhagem de {raca}, enquanto o silêncio tenso do salão reconhece, "
+                f"no modo como sua mão descansa perto da arma, a prontidão de quem vive como {classe}.\n\n"
+                f"Nas sombras, mercenários e viajantes desviam o olhar, farejando os rastros que a vivência de {antecedente} gravou em seu semblante. "
+                f"Não há espaço para hesitação neste refúgio decadente: cada escolha sua é sustentada pela firmeza moral de sua índole ({tendencia}), "
+                f"onde apenas o aço e a cautela garantem o próximo amanhecer.\n\n"
+                f"No balcão de carvalho entalhado, o taverneiro de olhar severo interrompe o trabalho na penumbra. Sem proferir uma única palavra, "
+                f"seus dedos calejados deslizam sobre a madeira um pergaminho grosso selado com cera negra inviolada. O silêncio que se instala é solene: "
+                f"o destino destas terras devastadas aguarda apenas o romper deste lacre."
             )
 
         raw_text = "\n\n".join(prologue_lines)
@@ -999,7 +1316,6 @@ class AIGameMaster:
                 .replace(f"Como um {raca} {classe} moldado", f"Como uma {raca} {classe} moldada")
                 .replace(f"Como um {raca_raw} {classe_raw} moldado", f"Como uma {raca} {classe} moldada")
                 .replace("Como um ", "Como uma ")
-                .replace("moldado pela dureza", "moldada pela dureza")
                 .replace("moldado", "moldada")
                 .replace("forjado", "forjada")
                 .replace("cansado", "cansada")
@@ -1008,8 +1324,16 @@ class AIGameMaster:
                 .replace("forasteiro", "forasteira")
             )
 
-        if reliquia_racial not in formatted:
-            formatted += f"\n\nJunto ao seu equipamento de viagem, o peso ancestral de sua herança — {reliquia_racial} ({detalhe_heranca}) — lembra quem você é diante das cinzas."
+        # Sanitização anti-tofu para fontes pygame (evita glifos '[]' por travessões e aspas tipográficas)
+        formatted = (
+            formatted
+            .replace("—", "-")
+            .replace("–", "-")
+            .replace("“", '"')
+            .replace("”", '"')
+            .replace("‘", "'")
+            .replace("’", "'")
+        )
 
         return formatted
 

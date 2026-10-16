@@ -1,13 +1,8 @@
 {
     "beat_1_prologue": [
-        "A chuva fria escorre pelo capuz de {nome} quando a pesada porta de madeira da taverna range sob seu empurrão. Como um {raca} {classe} moldado pela dureza de {antecedente}, seus sentidos captam o calor sufocante com cheiro de cerveja choca, suor velho e lenha úmida.",
-        "Mercenários embriagados disputam dados viciados enquanto um bardo desafinado dedilha cordas gastas. Os olhares correm pela sua silhueta de postura {tendencia} e desviam rápido. Aqui, estranhos morrem antes do amanhecer.",
-        "No balcão de carvalho entalhado, o taverneiro de um olho só interrompe a limpeza de uma caneca com um trapo ensebado. Seus olhos fitam você em silêncio antes de deslizar sobre a mesa um pergaminho lacrado com cera negra.",
-        "A mensagem é direta e implacável: o Tirano das Cinzas despertou no coração do Vulcão. Aldeias inteiras foram reduzidas a pó, e o vento que sopra do norte carrega a cinza densa de carne queimada.",
-        "A recompensa prometida seria suficiente para comprar um feudo inteiro, ou para bancar seu próprio enterro nas profundezas da montanha. Quem redigiu o pacto não espera sobreviventes. Ninguém jamais retornou.",
-        "- Os últimos que aceitaram esse selo beberam exatamente nesse banco - murmura o taverneiro em voz rouca. - Deixaram dívidas, sangue e nomes esquecidos. Mais nada.",
-        "Agora os olhares na penumbra pesam sobre você. Alguns com piedade velada, outros medindo seu aço com cálculo frio. Há espadas mercenárias e almas desesperadas na taverna dispostas a marchar até a fornalha.",
-        "Escolha com sabedoria quem dividirá o caminho com você, {nome}. No fim da estrada do Tirano, restam apenas cinzas."
+        "A noite é um manto de cinzas frias sobre o vale quando {nome} empurra a pesada porta da Taverna do Dragão Acordado. O sopro cortante do vento norte agita as vestes que marcam a linhagem de {raca}, enquanto o silêncio tenso do salão reconhece, no modo como sua mão descansa perto da arma, a prontidão de quem vive como {classe}.",
+        "Nas sombras, mercenários e viajantes desviam o olhar, farejando os rastros que a vivência de {antecedente} gravou em seu semblante. Não há espaço para hesitação neste refúgio decadente: cada escolha sua é sustentada pela firmeza moral de sua índole ({tendencia}), onde apenas o aço e a cautela garantem o próximo amanhecer.",
+        "No balcão de carvalho entalhado, o taverneiro de olhar severo interrompe o trabalho na penumbra. Sem proferir uma única palavra, seus dedos calejados deslizam sobre a madeira um pergaminho grosso selado com cera negra inviolada. O silêncio que se instala é solene: o destino destas terras devastadas aguarda apenas o romper deste lacre."
     ],
     "beat_15_loop_0_death": [
         "O calor do covil bate como uma parede. O ar queima seus pulmões a cada respiração, e o suor evapora antes de escorrer. Sobre um trono de rocha derretida, algo enorme se move.",
