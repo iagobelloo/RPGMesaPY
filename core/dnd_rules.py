@@ -749,6 +749,7 @@ class CharacterCalculator:
             "attributes": final_attrs,
             "hp_max": max(1, hp_max),
             "ac": ac,
+            "ca": ac,
             "initiative": initiative,
             "speed": speed,
             "speed_m": float(str(speed).replace("m", "")),
@@ -785,6 +786,8 @@ class CharacterCalculator:
             for k, v in result.items():
                 if k not in char_ref:
                     char_ref[k] = v
+            char_ref["ca"] = char_ref.get("ac", ac)
+            char_ref["ac"] = char_ref["ca"]
             return char_ref
 
         return result

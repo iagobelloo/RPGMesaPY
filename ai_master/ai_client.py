@@ -36,7 +36,13 @@ class AIGameMaster:
         if env_model == "gemini-2.5-flash":
             env_model = "gemini-3.5-flash-lite"
         self.model_name = env_model or model_name
-        self.fallback_models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest"]
+        self.fallback_models = [
+            "gemini-3.5-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-flash-lite-latest",
+            "gemini-flash-latest"
+        ]
         self.chat_history: List[Dict[str, str]] = []
         try:
             with open("docs/dm_guidelines.md", "r", encoding="utf-8") as f:
@@ -107,7 +113,7 @@ class AIGameMaster:
         """
         Retorna a lista ordenada de modelos para a cascata de fallback.
         Prioriza self.model_name e em seguida tenta os modelos suportados ativos:
-        ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest'].
+        ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-lite-latest', 'gemini-flash-latest'].
         """
         cascade = []
         if self.model_name:
@@ -582,15 +588,15 @@ class AIGameMaster:
         models_to_try = self._get_models_cascade()
         for model in models_to_try:
             try:
-                response = self.client.models.generate_content(
+                chat = self.client.chats.create(
                     model=model,
-                    contents=prompt,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=sys_instr,
                         response_mime_type="application/json",
                         temperature=0.0
                     )
                 )
+                response = chat.send_message(prompt)
                 raw_text = response.text or "{}"
                 parsed = self._extract_and_parse_json(raw_text, is_narrative=False)
                 if not isinstance(parsed, dict):
@@ -746,14 +752,14 @@ class AIGameMaster:
         models_to_try = self._get_models_cascade()
         for model in models_to_try:
             try:
-                response = self.client.models.generate_content(
+                chat = self.client.chats.create(
                     model=model,
-                    contents=prompt,
                     config=genai.types.GenerateContentConfig(
                         system_instruction=sys_instr,
-                        temperature=0.6,
+                        temperature=0.6
                     )
                 )
+                response = chat.send_message(prompt)
                 if response.text and response.text.strip():
                     narrative = response.text.strip()
                     self.model_name = model
@@ -1142,7 +1148,30 @@ class AIGameMaster:
                 "Você pode firmar a empunhadura da sua arma, avaliar os movimentos do inimigo ou mudar de postura tática. O que você faz?"
             )
 
-        if any(w in log_lower for w in ["dano", "sofreu", "acerto", "acertou"]) or any(w in intencao_lower for w in ["ataque", "atacar", "combate", "golpe"]):
+        # Contra-ataque de Inimigos / Turno das Ameaças
+        if any(w in log_lower for w in ["acerta o ataque", "erra o ataque", "contra-atacam", "tenta alcançar", "desferiu contra você", "acerta com crítico", "⚔️ ["]) or "contra-ataque" in intencao_lower:
+            is_miss = any(w in log_lower for w in ["erra o ataque", "➔ erro", "➔ falha", "(0 dano)", "(0 de dano)"])
+            if not is_miss and any(w in log_lower for w in ["acerta", "acerto", "dano", "ferido"]):
+                return (
+                    "As lâminas e presas inimigas rompem o espaço em um contragolpe feroz! "
+                    "O aço adversário morde sua guarda e a dor arde nos músculos, exigindo recuperação imediata sob o impacto brutal.\n\n"
+                    "Você pode devolver um golpe rápido de represália, fechar a postura defensiva com escudo ou recuar para manter a distância. O que você faz?"
+                )
+            else:
+                return (
+                    "O contra-ataque inimigo sibila a centímetros de sua carne, fendendo apenas o ar viciado e a poeira das cinzas. "
+                    "O adversário cambaleia levemente, frustrado pelo desvio no instante crucial.\n\n"
+                    "Você pode aproveitar a brecha aberta pelo erro dele, desferir um golpe punitivo ou reposicionar seus passos. O que você faz?"
+                )
+
+        if any(w in log_lower for w in ["[ataque]", "dano", "sofreu", "acerto", "acertou"]) or any(w in intencao_lower for w in ["ataque", "atacar", "combate", "golpe"]):
+            is_hero_miss = any(w in log_lower for w in ["➔ erro", "➔ falha", "(0 dano)", "(0 de dano)"]) and "acerto" not in log_lower
+            if is_hero_miss:
+                return (
+                    "O golpe corta o ar pesado, mas desvia na guarda adversária com um estalo seco de faíscas sem encontrar a carne. "
+                    "Você recobra o equilíbrio de imediato sob a tensão do embate.\n\n"
+                    "Você pode ajustar a empunhadura para um novo ataque, fechar a postura defensiva ou recuar meio passo. O que você faz?"
+                )
             return (
                 "O choque do aço corta o ar com impacto brutal de ferro e faíscas. A lâmina morde com precisão feroz, arrancando um arquejo de esforço enquanto o confronto avança sem trégua.\n\n"
                 "Você pode desferir um golpe rápido de seguimento, preparar um bloqueio imediato ou recuar meio passo para manter a distância. O que você faz?"

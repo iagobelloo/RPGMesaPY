@@ -363,10 +363,15 @@ class StoryManager:
         return ""
 
     def is_climax(self) -> bool:
-        """Verifica se o beat atual possui a flag 'is_climax' no JSON."""
+        """Verifica se o beat atual é estritamente o Clímax (Beat 15) e possui a flag 'is_climax' no JSON."""
+        try:
+            if int(self.current_beat) != 15:
+                return False
+        except (ValueError, TypeError):
+            return False
         beat_str = str(self.current_beat)
         if beat_str in self.campaign_data:
-            return self.campaign_data[beat_str].get("is_climax", False)
+            return bool(self.campaign_data[beat_str].get("is_climax", False))
         return False
 
     def advance_beat(self) -> None:
@@ -553,7 +558,6 @@ class StoryManager:
         """Instancia e popula alvos de combate e sprites a partir de uma lista de IDs de inimigos."""
         import json
         import copy
-        import uuid
 
         bestiary = {}
         try:
@@ -562,6 +566,7 @@ class StoryManager:
         except Exception as e:
             print(f"[StoryEngine] Erro ao carregar bestiary.json: {e}")
 
+        monster_counts: Dict[str, int] = {}
         for enemy_id in enemies_to_spawn:
             monster_data = bestiary.get(enemy_id)
 
@@ -578,7 +583,11 @@ class StoryManager:
                 }
 
             monster_instance = copy.deepcopy(monster_data)
-            narrative_id = f"{monster_instance['name']} {str(uuid.uuid4())[:4]}"
+            base_name = monster_instance.get("name", "Criatura")
+            monster_counts[base_name] = monster_counts.get(base_name, 0) + 1
+            while f"{base_name} {monster_counts[base_name]}" in active_combat_targets:
+                monster_counts[base_name] += 1
+            narrative_id = f"{base_name} {monster_counts[base_name]}"
 
             active_combat_targets[narrative_id] = {
                 "name": narrative_id,

@@ -12,9 +12,9 @@
         "id": "beat_2_planicie",
         "name": "Planície dos Uivos",
         "type": "combat",
-        "environment_prompt": "Uma planície vasta e varrida pelo vento, com grama alta escondendo perigos.",
+        "environment_prompt": "Uma planície vasta e varrida pelo vento, onde a grama alta esconde foras-da-lei em emboscada.",
         "enemies": [
-            "m_dire_wolf",
+            "m_bandit",
             "m_bandit"
         ],
         "bg_image": "dirt_road_plains_variant_bg.jpg"

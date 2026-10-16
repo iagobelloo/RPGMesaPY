@@ -190,12 +190,12 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
     if canonical_id == "second_wind" or "retomar" in raw_low:
         cura = DiceEngine.parse_and_roll_dice("1d10") + level
         player_sheet["hp_current"] = min(hp_max, player_sheet.get("hp_current", hp_max) + cura)
-        return f"🎲 [HABILIDADE - CURA] Retomar o Fôlego: recuperou +{cura} PV (1d10 + Nv {level}) ➔ PV: {player_sheet['hp_current']}/{hp_max}!\n"
+        return f"✨ [Cura] Retomar o Fôlego: +{cura} PV recuperados (PV: {player_sheet['hp_current']}/{hp_max})\n"
 
     elif canonical_id == "lay_on_hands" or "cura pelas m" in raw_low:
         cura = level * 5
         player_sheet["hp_current"] = min(hp_max, player_sheet.get("hp_current", hp_max) + cura)
-        return f"🎲 [HABILIDADE - CURA] Cura pelas Mãos: restaurou +{cura} PV (5x Nv {level}) ➔ PV: {player_sheet['hp_current']}/{hp_max}!\n"
+        return f"✨ [Cura] Cura pelas Mãos: +{cura} PV recuperados (PV: {player_sheet['hp_current']}/{hp_max})\n"
 
     elif canonical_id == "channel_divinity_preserve_life" or "preservar a vida" in raw_low or "canalizar divindade" in raw_low:
         cura = level * 5
@@ -204,7 +204,7 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
             if t_data.get("faction") == "ally" and t_data.get("status") != "morto" and t_data.get("pv_atual", 0) > 0:
                 t_max = t_data.get("pv_max", 10)
                 t_data["pv_atual"] = min(t_max, t_data.get("pv_atual", t_max) + cura)
-        return f"🎲 [HABILIDADE - CURA] Canalizar Divindade (Preservar a Vida): restaurou +{cura} PV (5x Nv {level}) ➔ PV: {player_sheet['hp_current']}/{hp_max}!\n"
+        return f"✨ [Cura] Canalizar Divindade (Preservar a Vida): +{cura} PV recuperados (PV: {player_sheet['hp_current']}/{hp_max})\n"
 
     # 2. Recuperação Arcana (Restaura 1 slot de magia Nv 1)
     elif canonical_id == "arcane_recovery" or "recupera" in raw_low:
@@ -276,12 +276,16 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
         k in raw_low for k in ["ardilosa", "astuta", "esquiva sobrenatural"]
     ):
         hab_nome = "Esquiva Sobrenatural" if (canonical_id == "uncanny_dodge" or "esquiva" in raw_low) else "Ação Ardilosa"
-        cur_ac = int(player_sheet.get("ac", player_sheet.get("ca", 14)))
+        cur_ac = int(player_sheet.get("ca", player_sheet.get("ac", 14)))
         if not player_sheet.get("_tactical_ac_applied"):
-            player_sheet["ac"] = cur_ac + 2
-            player_sheet["ca"] = player_sheet["ac"]
+            novo_valor_ca = cur_ac + 2
+            player_sheet["ac"] = novo_valor_ca
+            player_sheet["ca"] = novo_valor_ca
             player_sheet["_tactical_ac_applied"] = True
-        return f"🛡️ [HABILIDADE - {hab_nome}] Postura evasiva ativada (+2 CA tática, CA Atual: {player_sheet.get('ac', cur_ac)})!\n"
+        else:
+            player_sheet["ac"] = cur_ac
+            player_sheet["ca"] = cur_ac
+        return f"🛡️ [HABILIDADE - {hab_nome}] Postura evasiva ativada (+2 CA tática, CA Atual: {player_sheet.get('ca', cur_ac)})!\n"
 
     return f"⚡ [HABILIDADE] Técnica '{raw_ref or canonical_id}' ativada com sucesso!\n"
 
@@ -289,6 +293,12 @@ def resolve_skill_effect(parsed_json: dict, player_sheet: dict, target_entities:
 def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list = None, active_combat_targets: dict = None, game_state: dict = None) -> dict:
     if player_sheet is None or not isinstance(player_sheet, dict):
         player_sheet = {}
+    else:
+        ca_val = player_sheet.get("ca", player_sheet.get("ac", 10))
+        if "ca" in player_sheet and "ac" in player_sheet and player_sheet["ca"] != player_sheet["ac"]:
+            ca_val = player_sheet["ac"] if player_sheet["ca"] == 10 else player_sheet["ca"]
+        player_sheet["ac"] = ca_val
+        player_sheet["ca"] = ca_val
     if active_combat_targets is None or not isinstance(active_combat_targets, dict):
         active_combat_targets = {}
     if target_entities is None or not isinstance(target_entities, list):
@@ -373,7 +383,7 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
         pt_name = player_sheet.get("name", "Herói") if pt["type"] == "player" else pt.get("data", {}).get("name", pt.get("id", "Alvo"))
         pt_hp = player_sheet.get("hp_current", 10) if pt["type"] == "player" else pt.get("data", {}).get("pv_atual", 0)
         pt_hp_max = player_sheet.get("hp_max", 10) if pt["type"] == "player" else pt.get("data", {}).get("pv_max", 0)
-        pt_ca = player_sheet.get("ac", player_sheet.get("ca", 10)) if pt["type"] == "player" else pt.get("data", {}).get("ca", 10)
+        pt_ca = player_sheet.get("ca", player_sheet.get("ac", 10)) if pt["type"] == "player" else pt.get("data", {}).get("ca", 10)
         initiative_order.append({
             "id": "player" if pt["type"] == "player" else pt.get("id", "alvo"),
             "name": pt_name,
@@ -410,9 +420,10 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                 if attr_key != "nenhum" and ("attributes" in player_sheet or "atributos" in player_sheet):
                     val_attr = _get_player_attr_value(player_sheet, attr_key, 10)
                     mod = get_modifier(val_attr)
-                tot = dado + mod + prof
-                resultado_str = "SUCESSO" if tot >= cd else "FALHA"
-                sys_log += f"🎲 [DADO - TESTE] {str(pericia).title()}: d20 ({dado}) + Mod (+{mod}) + Prof (+{prof}) [+{mod+prof}] = {tot} vs CD {cd} ➔ {resultado_str}!\n"
+                total_mod = mod + prof
+                tot = dado + total_mod
+                resultado_str = "Sucesso" if tot >= cd else "Falha"
+                sys_log += f"🎲 [Perícia] {str(pericia).title()} CD {cd}: d20 ({dado}) + {total_mod} = {tot} ➔ {resultado_str}!\n"
                 
             elif tipo_acao == "uso_item":
                 sys_log += f"{parsed_json.get('log_precalculado', f'[SISTEMA] Iniciativa {init_player} | Item utilizado.')}\n"
@@ -603,7 +614,7 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                             total_hit_mod = mod + prof_bonus + weapon_bonus_hit + skill_bonus_hit
                             tot_atk = dado + total_hit_mod
                             ca_alvo = t_entity.get("ca", 10)
-                            res = "Acerto Crítico" if dado >= crit_threshold else "Falha Crítica" if dado == 1 else "Acerto" if tot_atk >= ca_alvo else "Erro"
+                            res = "Acerto Crítico" if dado >= crit_threshold else "Erro (Falha Crítica)" if dado == 1 else "Acerto" if tot_atk >= ca_alvo else "Erro"
                             
                             dano_total = 0
                             if res in ["Acerto", "Acerto Crítico"]:
@@ -627,12 +638,7 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                                     t_entity["status"] = "morto"
                             pv_max = t_entity.get("pv_max", 10)
                             passives_str = f" [{', '.join(passive_tags)}]" if (passive_tags and dano_total > 0) else ""
-                            hit_mod_str = f"+{total_hit_mod}" if total_hit_mod >= 0 else str(total_hit_mod)
-                            atk_roll_detail = f"{dado} ({hit_mod_str}) = {tot_atk}"
-                            if res in ["Acerto", "Acerto Crítico"]:
-                                sys_log += f"🎲 Ataque com {arma_nome.title()}: {atk_roll_detail} vs CA {ca_alvo} ➔ {res}! ({dano_total} de dano){passives_str}\n"
-                            else:
-                                sys_log += f"🎲 Ataque com {arma_nome.title()}: {atk_roll_detail} vs CA {ca_alvo} ➔ {res}!\n"
+                            sys_log += f"🎲 [Ataque] {arma_nome.title()}: d20 ({dado}) + {total_hit_mod} = {tot_atk} vs CA {ca_alvo} ➔ {res}! ({dano_total} dano){passives_str}\n"
                         
                         elif tipo_acao == "magia":
                             spell_data = parsed_json.get("spell_data", {})
@@ -670,11 +676,11 @@ def resolve_action(parsed_json: dict, player_sheet: dict, target_entities: list 
                                         t_entity["pv_atual"] = new_hp
                                         if "hp_current" in t_entity:
                                             t_entity["hp_current"] = new_hp
-                                        sys_log += f"🎲 [DADO - MAGIA CURA] {magia.title()}: +{cura} PV restaurados em {alvo_nome.title()} (PV: {new_hp}/{hp_max_t})!\n"
+                                        sys_log += f"✨ [Cura] {magia.title()} ({alvo_nome.title()}): +{cura} PV recuperados (PV: {new_hp}/{hp_max_t})\n"
                                     else:
                                         hp_max_p = player_sheet.get("hp_max", 10)
                                         player_sheet["hp_current"] = min(hp_max_p, player_sheet.get("hp_current", hp_max_p) + cura)
-                                        sys_log += f"🎲 [DADO - MAGIA CURA] {magia.title()}: +{cura} PV restaurados (PV: {player_sheet['hp_current']}/{hp_max_p})!\n"
+                                        sys_log += f"✨ [Cura] {magia.title()}: +{cura} PV recuperados (PV: {player_sheet['hp_current']}/{hp_max_p})\n"
                                 elif m_action == "revive":
                                     if game_state and game_state.setdefault("meta", {}).get("revive_used", False):
                                         sys_log += f"[SISTEMA] Magia {magia.title()} falhou! Ressurreição só pode ser usada UMA vez por batalha.\n"
@@ -820,6 +826,12 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
     """
     if player_character is None or not isinstance(player_character, dict):
         player_character = {}
+    else:
+        ca_val = player_character.get("ca", player_character.get("ac", 10))
+        if "ca" in player_character and "ac" in player_character and player_character["ca"] != player_character["ac"]:
+            ca_val = player_character["ac"] if player_character["ca"] == 10 else player_character["ca"]
+        player_character["ac"] = ca_val
+        player_character["ca"] = ca_val
     if active_combat_targets is None or not isinstance(active_combat_targets, dict):
         active_combat_targets = {}
     from core.dice_engine import DiceEngine
@@ -838,7 +850,7 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
             "is_player": True,
             "ref": player_character,
             "hp": player_character.get("hp_current", 10),
-            "ca": player_character.get("ca", 10)
+            "ca": player_character.get("ca", player_character.get("ac", 10))
         })
         
     for t_id, t_data in active_combat_targets.items():
@@ -925,9 +937,10 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
             else:
                 d20 = DiceEngine.roll_d20()
             
-            tot_atk = d20 + atk.get("hit_bonus", 2)
+            hit_mod = atk.get("hit_bonus", 2)
+            tot_atk = d20 + hit_mod
             
-            res = "Acerto Crítico" if d20 == 20 else "Falha Crítica" if d20 == 1 else "Acerto" if tot_atk >= ca_alvo else "Erro"
+            res = "Acerto Crítico" if d20 == 20 else "Erro (Falha Crítica)" if d20 == 1 else "Acerto" if tot_atk >= ca_alvo else "Erro"
             
             dano_inimigo = 0
             if res in ["Acerto", "Acerto Crítico"]:
@@ -960,25 +973,7 @@ def process_enemies_turn_batch(active_combat_targets: dict, player_character: di
             else:
                 clean_name = clean_name.title()
 
-            e_low = f"{clean_name} {t_id}".lower()
-            if any(w in e_low for w in ["lobo", "wolf"]):
-                emoji = "🐺"
-            elif any(w in e_low for w in ["aranha", "spider"]):
-                emoji = "🕷️"
-            elif any(w in e_low for w in ["drag", "wyrm", "tirano"]):
-                emoji = "🐉"
-            elif any(w in e_low for w in ["esqueleto", "zumbi", "morto", "undead", "lich", "necro"]):
-                emoji = "💀"
-            elif any(w in e_low for w in ["goblin", "orc", "kobold"]):
-                emoji = "👺"
-            else:
-                emoji = "⚔️"
-
-            if res in ["Acerto", "Acerto Crítico"]:
-                crit_txt = " com CRÍTICO" if res == "Acerto Crítico" else ""
-                batch_log += f"{emoji} {clean_name} acerta o ataque{crit_txt} ({tot_atk} vs CA {ca_alvo}) ➔ {dano_inimigo} de dano!\n"
-            else:
-                batch_log += f"{emoji} {clean_name} erra o ataque ({tot_atk} vs CA {ca_alvo})!\n"
+            batch_log += f"⚔️ [{clean_name}]: d20 ({d20}) + {hit_mod} = {tot_atk} vs CA {ca_alvo} ➔ {res}! ({dano_inimigo} dano)\n"
 
     # Limpa estados táticos temporários da rodada
     player_character["_tactical_dodge_active"] = False
@@ -1001,6 +996,13 @@ class CombatManager:
         from core.dice_engine import DiceEngine
         from core.dnd_rules import get_modifier, BESTIARIO_5E
 
+        if isinstance(player_sheet, dict):
+            ca_val = player_sheet.get("ca", player_sheet.get("ac", 10))
+            if "ca" in player_sheet and "ac" in player_sheet and player_sheet["ca"] != player_sheet["ac"]:
+                ca_val = player_sheet["ac"] if player_sheet["ca"] == 10 else player_sheet["ca"]
+            player_sheet["ac"] = ca_val
+            player_sheet["ca"] = ca_val
+
         participants = []
         mod_des_player = get_modifier(_get_player_attr_value(player_sheet, "DES", 10))
         init_player = DiceEngine.roll_d20() + mod_des_player
@@ -1011,7 +1013,7 @@ class CombatManager:
             "init": init_player,
             "hp": player_sheet.get("hp_current", 10),
             "hp_max": player_sheet.get("hp_max", 10),
-            "ca": player_sheet.get("ac", player_sheet.get("ca", 10))
+            "ca": player_sheet.get("ca", player_sheet.get("ac", 10))
         })
 
         for t_id, t_data in (active_combat_targets or {}).items():

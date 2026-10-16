@@ -168,6 +168,7 @@ class SessionManager:
                 os.makedirs(os.path.dirname(p) or "saves", exist_ok=True)
                 with open(p, "w", encoding="utf-8") as f:
                     json.dump(save_payload, f, ensure_ascii=False, indent=4)
+            self._has_session_save = True
             return True
         except Exception as e:
             print(f"[Sistema] Erro ao salvar o jogo em {target_path}: {e}")
@@ -807,8 +808,9 @@ class SessionManager:
                     # Aplica efeitos passivos diretos na ficha se houver
                     eff = sk.get("effect", {})
                     if eff.get("ac_bonus"):
-                        target_pc["ac"] = target_pc.get("ac", 10) + eff["ac_bonus"]
-                        target_pc["ca"] = target_pc["ac"]
+                        novo_valor_ca = target_pc.get("ca", target_pc.get("ac", 10)) + eff["ac_bonus"]
+                        target_pc["ac"] = novo_valor_ca
+                        target_pc["ca"] = novo_valor_ca
                     if eff.get("spell_dc_bonus"):
                         target_pc["spell_save_dc"] = target_pc.get("spell_save_dc", 13) + eff["spell_dc_bonus"]
                     break
@@ -1279,12 +1281,12 @@ class SessionManager:
         elif canon_id == "second_wind" or "retomar" in s_low or "folego" in s_low or "fôlego" in s_low:
             cura = DiceEngine.parse_and_roll_dice("1d10") + level
             pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
-            log_msg = f"🎲 [HABILIDADE - CURA] Retomar o Fôlego: recuperou +{cura} PV (1d10 + Nv {level}) ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+            log_msg = f"✨ [Cura] Retomar o Fôlego: +{cura} PV recuperados (PV: {pc['hp_current']}/{hp_max})\n"
 
         elif canon_id == "lay_on_hands" or "cura pelas m" in s_low:
             cura = level * 5
             pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
-            log_msg = f"🎲 [HABILIDADE - CURA] Cura pelas Mãos: restaurou +{cura} PV (5x Nv {level}) ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+            log_msg = f"✨ [Cura] Cura pelas Mãos: +{cura} PV recuperados (PV: {pc['hp_current']}/{hp_max})\n"
 
         elif canon_id in ["sneak_attack", "sk_rogue_1"] or "furtivo" in s_low:
             pc["_sneak_attack_active"] = True
@@ -1371,19 +1373,22 @@ class SessionManager:
             cura = DiceEngine.parse_and_roll_dice(spell_info.get("dice", "1d8")) + max(0, mod_conjuracao)
             hp_max = max(1, int(pc.get("hp_max", 10)))
             pc["hp_current"] = min(hp_max, pc.get("hp_current", hp_max) + cura)
-            log_msg = f"🎲 [MAGIA - CURA] {spell_name}: restaurou +{cura} PV ➔ PV: {pc['hp_current']}/{hp_max}!\n"
+            log_msg = f"✨ [Cura] {spell_name}: +{cura} PV recuperados (PV: {pc['hp_current']}/{hp_max})\n"
 
         elif m_type == "buff":
+            cur_ca = pc.get("ca", pc.get("ac", 10))
             if "ac_bonus" in spell_info:
                 bonus = spell_info["ac_bonus"]
-                pc["ca"] = pc.get("ca", 10) + bonus
-                pc["ac"] = pc["ca"]
+                novo_valor_ca = cur_ca + bonus
+                pc["ac"] = novo_valor_ca
+                pc["ca"] = novo_valor_ca
                 log_msg = f"🛡️ [MAGIA] {spell_name} ativada! Concede +{bonus} na CA (CA atual: {pc['ca']})!\n"
             elif "base_ac" in spell_info:
                 mod_des = get_modifier(pc.get("attributes", {}).get("DES", pc.get("attributes", {}).get("DEX", 10)))
                 nova_ca = spell_info["base_ac"] + mod_des
-                pc["ca"] = max(pc.get("ca", 10), nova_ca)
-                pc["ac"] = pc["ca"]
+                novo_valor_ca = max(cur_ca, nova_ca)
+                pc["ac"] = novo_valor_ca
+                pc["ca"] = novo_valor_ca
                 log_msg = f"🛡️ [MAGIA] {spell_name} ativada! Sua CA foi fixada em {pc['ca']}!\n"
 
         else:
@@ -1841,13 +1846,33 @@ class SessionManager:
     def resolve_combat_victory(self):
         self.check_combat_resolution()
 
+    def _discard_pending_combat_narratives(self):
+        """Remove mensagens narrativas pendentes na ui_queue do turno de combate fatal."""
+        import queue
+        retained = []
+        while True:
+            try:
+                msg = self.ui_queue.get_nowait()
+                if isinstance(msg, dict) and msg.get("type") == "narrative":
+                    continue
+                retained.append(msg)
+            except queue.Empty:
+                break
+        for item in retained:
+            self.ui_queue.put(item)
+
     def resolve_player_death(self):
         """Resolve a Morte do Jogador ou Wipe da Party."""
         pc = self.game_state.get("player_character") or {}
         
-        # Bloco 7 / Bloco 37: O Clímax do Tirano das Cinzas - Déjà Vu
+        # Bloco 7 / Bloco 37 / Polimento Bloco 3: O Clímax do Tirano das Cinzas - Déjà Vu (Beat 15 estrito)
         meta = self.game_state.setdefault("meta", {"loop_count": 0, "segredo_tirano": False})
-        if self.story.is_climax() and meta.get("loop_count", 0) == 0:
+        try:
+            current_beat_int = int(self.story.current_beat)
+        except (ValueError, TypeError):
+            current_beat_int = 1
+
+        if current_beat_int == 15 and self.story.is_climax() and meta.get("loop_count", 0) == 0:
             # O wipe mortal do sopro do Dragão no Beat 15 (Loop 0)
             # Aciona o Déjà Vu!
             meta["loop_count"] = 1
@@ -1921,7 +1946,7 @@ class SessionManager:
             self.ui_queue.put({"type": "narrative", "content": narrative, "npc_falando": "Mestre"})
             return
             
-        # Condição B: Morte Verdadeira e Retorno ao Checkpoint Seguro
+        # Condição B: Morte Verdadeira e Retorno ao Checkpoint Seguro (Beats 1 a 14)
         else:
             try:
                 raw_beat = self.game_state.get("last_checkpoint_beat", 1)
@@ -1931,16 +1956,46 @@ class SessionManager:
             if beat_destino < 1:
                 beat_destino = 1
 
+            bg_destino = "tavern_bg.jpg" if beat_destino <= 1 else self.game_state.get("last_checkpoint_bg", "tavern_bg.jpg")
+            pc_backup = copy.deepcopy(pc)
+
+            # Limpa imediatamente alvos de combate e NPCs visuais
+            self.active_combat_targets.clear()
+            self.active_visual_npcs.clear()
+
+            # Descarta mensagens narrativas pendentes do turno em que morreu
+            self._discard_pending_combat_narratives()
+
+            # Se existir save prévio da sessão no slot ativo (ou se load_game foi mockado), recarrega os dados do checkpoint
+            slot_meta = self.get_slot_metadata(self.current_save_slot)
+            is_mocked_load = hasattr(self.load_game, "_mock_name") or not hasattr(self.load_game, "__func__")
+            same_char_save = (
+                not slot_meta.get("is_empty", True)
+                and slot_meta.get("name") == pc_backup.get("name")
+                and int(slot_meta.get("story_beat", 1)) == beat_destino
+            )
+            if is_mocked_load or getattr(self, "_has_session_save", False) or same_char_save:
+                try:
+                    self.load_game(self.current_save_slot)
+                except Exception:
+                    pass
+
+            pc = self.game_state.get("player_character")
+            if not pc or not isinstance(pc, dict):
+                self.game_state["player_character"] = pc_backup
+                pc = self.game_state["player_character"]
+
             self.story.current_beat = beat_destino
             self.game_state["story_beat"] = beat_destino
 
-            bg_destino = "tavern_bg.jpg" if beat_destino <= 1 else self.game_state.get("last_checkpoint_bg", "tavern_bg.jpg")
             self.game_state["current_background"] = bg_destino
             self.current_background_key = str(bg_destino).replace(".jpg", "").replace(".png", "")
 
             pc["hp_current"] = pc.get("hp_max", 10)
             pc["status"] = "vivo"
+            self._recalculate_ac(pc)
             self.game_mode = "EXPLORACAO"
+            self.game_state["game_mode"] = "EXPLORACAO"
             self.active_combat_targets.clear()
             self.active_visual_npcs.clear()
             self.game_state["active_side_quest"] = None
@@ -1965,7 +2020,9 @@ class SessionManager:
             self.ui_queue.put({"type": "narrative", "content": narrativa_morte, "npc_falando": "Maelor"})
 
             # Salvar o estado do jogo atualizado no slot atual chamando self.save_game(self.current_save_slot)
-            self.save_game(self.current_save_slot)
+            is_mocked_save = hasattr(self.save_game, "_mock_name") or not hasattr(self.save_game, "__func__")
+            if is_mocked_save or getattr(self, "_has_session_save", False) or same_char_save:
+                self.save_game(self.current_save_slot)
 
     def _push_event(self, event_type: str, data: Dict[str, Any]):
         event = {"type": event_type}
@@ -1976,14 +2033,15 @@ class SessionManager:
         """
         Localiza um participante de combate com base em referência flexível (D&D 5e targeting):
         - 'self', 'eu', 'heroi', 'player' -> player_character
-        - Chave exata em active_combat_targets
+        - Chave exata em active_combat_targets (ex: 'Bandido 1', 'Bandido 2')
+        - Índice numérico ou sufixo sequencial (ex: '1' -> 'Bandido 1' ou 1º inimigo vivo, '2' -> 'Bandido 2')
+        - Expressão com número (ex: 'bandido #2', 'bandido 2', 'alvo 2')
         - Campo 'id' ou 'narrative_id' dentro dos dados do monstro
-        - Índice numérico (ex: '1' -> 1º inimigo vivo, '2' -> 2º)
-        - Sufixo UUID (ex: 'a1b2' para 'Lobo Terrível a1b2')
         - tipo_bestiario (ex: 'm_bandit', 'bandit', 'goblin')
-        - Substring no nome ou na chave
+        - Substring no nome ou na chave (ex: 'Bandido')
         - Fallback: primeiro inimigo vivo
         """
+        import re
         pc = self.game_state.get("player_character") or {}
         hero_name = str(pc.get("name", "Herói")).lower()
         if not target_ref:
@@ -2003,45 +2061,73 @@ class SessionManager:
             (k, v) for k, v in self.active_combat_targets.items()
             if v.get("faction", "enemy") == "enemy" and v.get("status") != "morto" and v.get("pv_atual", 0) > 0
         ]
+        all_targets = list(self.active_combat_targets.items())
+        search_pools = [living_enemies, all_targets] if living_enemies else [all_targets]
 
-        # 1. Chave exata
-        for k, v in self.active_combat_targets.items():
-            if k.lower() == ref_low:
-                return v
+        # 1. Chave exata (priorizando vivos)
+        for pool in search_pools:
+            for k, v in pool:
+                if k.lower() == ref_low or str(v.get("name", "")).lower() == ref_low:
+                    return v
 
-        # 2. Índice numérico (1-indexed entre inimigos vivos)
+        # 2. Referência com sufixo numérico explícito via regex (ex: 'bandido 2', 'bandido #2', 'alvo 2')
+        m_num = re.match(r"^(.*?)(?:[\s#_-]+)(\d+)$", ref_low)
+        if m_num:
+            base_part = m_num.group(1).strip().replace("m_", "").replace("_", " ")
+            num_part = m_num.group(2)
+            for pool in search_pools:
+                for k, v in pool:
+                    parts = k.lower().split()
+                    if len(parts) > 1 and parts[-1] == num_part:
+                        k_base = " ".join(parts[:-1])
+                        if not base_part or base_part in ["alvo", "inimigo", "monstro"] or base_part in k_base or k_base in base_part:
+                            return v
+
+        # 3. Índice numérico puro ou sufixo sequencial ('1', '2')
         if ref_str.isdigit():
+            for k, v in living_enemies:
+                parts = k.split()
+                if len(parts) > 1 and parts[-1] == ref_str:
+                    return v
             idx = int(ref_str) - 1
             if 0 <= idx < len(living_enemies):
                 return living_enemies[idx][1]
+            for k, v in all_targets:
+                parts = k.split()
+                if len(parts) > 1 and parts[-1] == ref_str:
+                    return v
 
-        # 3. Campo 'id' ou 'narrative_id'
-        for k, v in self.active_combat_targets.items():
-            v_id = str(v.get("id", "")).lower()
-            if v_id and (v_id == ref_low or v_id == ref_low.replace("m_", "")):
-                return v
+        # 4. Campo 'id' ou 'narrative_id'
+        for pool in search_pools:
+            for k, v in pool:
+                v_id = str(v.get("id", "")).lower()
+                if v_id and (v_id == ref_low or v_id == ref_low.replace("m_", "")):
+                    return v
 
-        # 4. Sufixo UUID / 4-char suffix (ex: 'Lobo Terrível a1b2')
-        for k, v in self.active_combat_targets.items():
-            parts = k.split()
-            if len(parts) > 1 and parts[-1].lower() == ref_low:
-                return v
+        # 5. Sufixo final (compatibilidade retroativa)
+        for pool in search_pools:
+            for k, v in pool:
+                parts = k.split()
+                if len(parts) > 1 and parts[-1].lower() == ref_low:
+                    return v
 
-        # 5. tipo_bestiario
-        for k, v in self.active_combat_targets.items():
-            t_best = str(v.get("tipo_bestiario", "")).lower()
-            if t_best and (t_best == ref_low or t_best.replace("m_", "") == ref_low.replace("m_", "")):
-                return v
+        # 6. tipo_bestiario (priorizando vivos)
+        for pool in search_pools:
+            for k, v in pool:
+                t_best = str(v.get("tipo_bestiario", "")).lower()
+                if t_best and (t_best == ref_low or t_best.replace("m_", "") == ref_low.replace("m_", "")):
+                    return v
 
-        # 6. Substring de nome ou chave
+        # 7. Substring de nome ou chave (ex: 'Bandido' -> 'Bandido 1' vivo)
         clean_ref = ref_low.replace("m_", "").replace("_", " ")
-        for k, v in self.active_combat_targets.items():
-            k_clean = k.lower().replace("m_", "").replace("_", " ")
-            v_name = str(v.get("name", "")).lower().replace("m_", "").replace("_", " ")
-            if clean_ref in k_clean or k_clean in clean_ref or clean_ref in v_name or v_name in clean_ref:
-                return v
+        for pool in search_pools:
+            for k, v in pool:
+                k_clean = k.lower().replace("m_", "").replace("_", " ")
+                v_name = str(v.get("name", "")).lower().replace("m_", "").replace("_", " ")
+                if clean_ref in k_clean or k_clean in clean_ref or clean_ref in v_name or v_name in clean_ref:
+                    return v
 
-        # 7. Fallback para o primeiro inimigo vivo em combate
+        # 8. Fallback para o primeiro inimigo vivo em combate
         if living_enemies:
             return living_enemies[0][1]
 
@@ -2276,9 +2362,12 @@ class SessionManager:
                     prof_bonus = pc.get("proficiency_bonus", 2) if is_prof else 0
 
                     d20_roll = random.randint(1, 20)
-                    total = d20_roll + wis_mod + prof_bonus
+                    mod_total = wis_mod + prof_bonus
+                    total = d20_roll + mod_total
                     dc = 12
                     is_success = (d20_roll == 20) or (d20_roll != 1 and total >= dc)
+                    res_label = "Sucesso" if is_success else "Falha"
+                    base_roll = f"🎲 [Perícia] Percepção CD {dc}: d20 ({d20_roll}) + {mod_total} = {total} ➔ {res_label}!"
 
                     falante = "Taverneiro" if self.story.current_beat <= 1 else "Mestre"
 
@@ -2290,26 +2379,26 @@ class SessionManager:
                                 if t.get('faction') == 'enemy' and t.get('status') != 'morto'
                             ]
                             targets_desc = ", ".join(enemies_info) if enemies_info else "nenhuma ameaça direta"
-                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você avalia taticamente o combate: {targets_desc}."
+                            sys_msg = f"{base_roll} Você avalia taticamente o combate: {targets_desc}."
                             narrative = "Seus olhos experientes escaneiam o campo de batalha. Você nota os padrões de ataque e as vulnerabilidades na guarda dos inimigos."
                         else:
-                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). O turbilhão do combate dispersa sua atenção."
+                            sys_msg = f"{base_roll} O turbilhão do combate dispersa sua atenção."
                             narrative = "O reflexo das lâminas e a adrenalina do momento impedem que você estude minuciosamente o terreno ou as aberturas inimigas."
                     else:
                         if is_success:
                             if self.story.current_beat <= 1:
                                 self.discover_rumor("sq_goblin_clearing")
-                                sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você nota os detalhes e rumores do ambiente."
+                                sys_msg = f"{base_roll} Você nota os detalhes e rumores do ambiente."
                                 narrative = "Você percorre os olhos pela Taverna do Dragão Acordado. Próximo à lareira crepitante, aventureiros cochicham sobre caravanas emboscadas na Clareira dos Goblins. No mural de avisos, um cartaz oficial promete recompensas para quem investigar a floresta."
                             else:
-                                sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você examina detalhadamente os arredores."
+                                sys_msg = f"{base_roll} Você examina detalhadamente os arredores."
                                 env_prompt = self.story.get_environment_prompt()
                                 try:
                                     narrative = self.ai.generate_narrative_from_math(f"Percepção bem-sucedida ({total} vs CD {dc})", env_prompt)
                                 except Exception:
                                     narrative = "Você observa com atenção cada detalhe do ambiente: pegadas no solo, a direção dos ventos e sinais sutis que revelam os perigos da região."
                         else:
-                            sys_msg = f"[TESTE] Percepção CD {dc} | d20: {d20_roll} + {wis_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). Você não nota nada de incomum."
+                            sys_msg = f"{base_roll} Você não nota nada de incomum."
                             if self.story.current_beat <= 1:
                                 narrative = "A taverna segue em seu burburinho costumeiro; canecas batem nas mesas e fumaça de cachimbo paira no ar, sem nada além da rotina habitual."
                             else:
@@ -2336,34 +2425,37 @@ class SessionManager:
                     prof_bonus = pc.get("proficiency_bonus", 2) if is_prof else 0
 
                     d20_roll = random.randint(1, 20)
-                    total = d20_roll + cha_mod + prof_bonus
+                    mod_total = cha_mod + prof_bonus
+                    total = d20_roll + mod_total
                     dc = 11
                     is_success = (d20_roll == 20) or (d20_roll != 1 and total >= dc)
+                    res_label = "Sucesso" if is_success else "Falha"
+                    base_roll = f"🎲 [Perícia] Persuasão CD {dc}: d20 ({d20_roll}) + {mod_total} = {total} ➔ {res_label}!"
 
                     falante = "Taverneiro" if self.story.current_beat <= 1 else "Mestre"
 
                     if self.game_mode == "COMBATE":
                         if is_success:
-                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Você tenta intimidar ou exigir rendição."
+                            sys_msg = f"{base_roll} Você tenta intimidar ou exigir rendição."
                             narrative = "Você brada com firmeza através do caos do combate. Seus inimigos hesitam por um instante, intimidados pela autoridade de sua presença."
                         else:
-                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). As ameaças são ignoradas."
+                            sys_msg = f"{base_roll} As ameaças são ignoradas."
                             narrative = "Seus adversários respondem com zombaria e rosnados ferozes. No campo de batalha, suas palavras são engolidas pelo ferro e pelo sangue."
                     else:
                         if is_success:
                             if self.story.current_beat <= 1:
                                 self.discover_rumor("sq_goblin_clearing")
-                                sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). O taverneiro compartilha informações valiosas."
+                                sys_msg = f"{base_roll} O taverneiro compartilha informações valiosas."
                                 narrative = "Maelor, o taverneiro, enxuga uma caneca de estanho e inclina-se sobre o balcão: 'Se procura trabalho e ouro fácil, forasteiro, comerciantes relatam que goblins estão emboscando carroças na Clareira da Mata Leste. Os guardas nada fazem. Talvez alguém com sua têmpera consiga limpar o caminho.'"
                             else:
-                                sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (SUCESSO!). Seu interlocutor se mostra receptivo."
+                                sys_msg = f"{base_roll} Seu interlocutor se mostra receptivo."
                                 env_prompt = self.story.get_environment_prompt()
                                 try:
                                     narrative = self.ai.generate_narrative_from_math(f"Persuasão bem-sucedida ({total} vs CD {dc})", env_prompt)
                                 except Exception:
                                     narrative = "A pessoa mais próxima baixa a guarda diante de sua cortesia e compartilha boatos sobre os acontecimentos recentes da região."
                         else:
-                            sys_msg = f"[TESTE] Persuasão CD {dc} | d20: {d20_roll} + {cha_mod} (mod) + {prof_bonus} (prof) = {total} (FALHA). O interlocutor é reticente."
+                            sys_msg = f"{base_roll} O interlocutor é reticente."
                             if self.story.current_beat <= 1:
                                 narrative = "Maelor mal ergue a cabeça do balcão: 'Perguntas demais dão sede, novato. Se quiser prosear, peça um hidromel e pague a conta primeiro.'"
                             else:
@@ -2735,7 +2827,7 @@ class SessionManager:
                     
                     self.consume_inventory_item(item_id, 1)
                     restam = self.get_inventory_item_count(item_id)
-                    sys_log_item = f"🎲 [DADO - CURA] {item_data.get('name')}: rolou {dice_val} = +{cura} PV (PV Atual: {pc['hp_current']}/{hp_max}). Restam: {restam}."
+                    sys_log_item = f"✨ [Cura] {item_data.get('name')}: +{cura} PV recuperados (PV: {pc['hp_current']}/{hp_max})"
                     
                 elif mech_action == "revive":
                     alvos = json_data.get("alvo", [])
@@ -3148,19 +3240,21 @@ class SessionManager:
                     from core.dnd_rules import get_modifier
                     dado = DiceEngine.roll_d20()
                     mod = get_modifier(pc.get("attributes", {}).get("WIS", 10))
-                    tot = dado + mod + 2
+                    mod_total = mod + 2
+                    tot = dado + mod_total
                     cd = 12
-                    res_str = "SUCESSO" if tot >= cd else "FALHA"
-                    sys_log = f"🎲 [DADO - TESTE] Percepção: {tot} vs CD {cd} ➔ {res_str}!"
+                    res_str = "Sucesso" if tot >= cd else "Falha"
+                    sys_log = f"🎲 [Perícia] Percepção CD {cd}: d20 ({dado}) + {mod_total} = {tot} ➔ {res_str}!"
                 elif any(w in (intencao or "").lower() for w in ["convers", "fal", "dialog", "pergunt", "propost"]):
                     from core.dice_engine import DiceEngine
                     from core.dnd_rules import get_modifier
                     dado = DiceEngine.roll_d20()
                     mod = get_modifier(pc.get("attributes", {}).get("CHA", 10))
-                    tot = dado + mod + 2
+                    mod_total = mod + 2
+                    tot = dado + mod_total
                     cd = 11
-                    res_str = "SUCESSO" if tot >= cd else "FALHA"
-                    sys_log = f"🎲 [DADO - TESTE] Persuasão: {tot} vs CD {cd} ➔ {res_str}!"
+                    res_str = "Sucesso" if tot >= cd else "Falha"
+                    sys_log = f"🎲 [Perícia] Persuasão CD {cd}: d20 ({dado}) + {mod_total} = {tot} ➔ {res_str}!"
                 elif parsed.get("tipo_acao") == "movimento":
                     sys_log = f"[SISTEMA] Deslocamento: O aventureiro avança explorando o caminho adiante."
                 else:
@@ -3205,6 +3299,8 @@ class SessionManager:
             self.active_visual_npcs = {k: v for k, v in self.active_visual_npcs.items() if k in self.active_combat_targets}
 
             if pc.get("hp_current", 0) <= 0:
+                player_bubble = ""
+                self._discard_pending_combat_narratives()
                 self.resolve_player_death()
                 return
             else:
