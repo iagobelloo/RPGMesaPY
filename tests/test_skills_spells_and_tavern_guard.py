@@ -211,11 +211,11 @@ class TestSkillsSpellsAndTavernGuard(unittest.TestCase):
         }
         action = {"tipo_acao": "ataque", "recurso_utilizado": "Arco Curto"}
         res = resolve_action(action, pc, [target], {"Lobo Atroz": target})
-        # Verifica formato sintético do ataque do jogador
-        self.assertIn("🎲 Ataque com Arco Curto:", res["sys_log"])
+        # Verifica formato sintético do ataque do jogador (Bloco 6)
+        self.assertIn("🎲 [Ataque] Arco Curto:", res["sys_log"])
         self.assertIn("vs CA 12 ➔", res["sys_log"])
 
-        # Ataque inimigo em lote
+        # Ataque inimigo em lote (Bloco 6)
         enemy_targets = {
             "m_dire_wolf_01": {
                 "name": "Lobo Atroz",
@@ -227,9 +227,9 @@ class TestSkillsSpellsAndTavernGuard(unittest.TestCase):
             }
         }
         enemy_log = process_enemies_turn_batch(enemy_targets, pc)
-        self.assertTrue("🐺" in enemy_log)
-        self.assertTrue("Lobo" in enemy_log)
-        self.assertTrue("o ataque (" in enemy_log)
+        self.assertTrue("⚔️ [Lobo Atroz]: d20 (" in enemy_log)
+        self.assertTrue("vs CA" in enemy_log)
+        self.assertTrue("dano)" in enemy_log)
 
 
 if __name__ == "__main__":

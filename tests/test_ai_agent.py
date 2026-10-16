@@ -14,7 +14,8 @@ class TestAIAgent(unittest.TestCase):
 
     def setUp(self):
         self.ai = AIGameMaster()
-        self.ai.client.models.generate_content = MagicMock(side_effect=Exception("Offline"))
+        self.ai.client = MagicMock()
+        self.ai.client.chats.create = MagicMock(side_effect=Exception("Offline"))
 
     # 1. Eliminação de duplicidade no log / fila
     def test_01_no_duplicate_narrative_in_chat_history(self):
@@ -269,22 +270,24 @@ class TestAIAgent(unittest.TestCase):
         self.assertIn("gemini-flash-lite-latest", cascade)
         self.assertIn("gemini-flash-latest", cascade)
 
-        # Simula falha 404 no primeiro modelo e sucesso no segundo
+        # Simula falha 404 no primeiro modelo e sucesso no segundo (via chats.create)
         call_models = []
-        def mock_generate_content(model, contents, config):
+        def mock_chats_create(model, config=None, **kwargs):
             call_models.append(model)
             if model == "gemini-3.5-flash-lite":
                 raise Exception("404 NOT_FOUND: Model not found")
+            mock_chat = MagicMock()
             mock_res = MagicMock()
             mock_res.text = '{"tipo_acao": "DIALOGAR", "alvo": ["Taverneiro"], "recurso_utilizado": null, "intencao_cena": "Diálogo com taverneiro."}'
-            return mock_res
+            mock_chat.send_message.return_value = mock_res
+            return mock_chat
 
-        self.ai.client.models.generate_content = MagicMock(side_effect=mock_generate_content)
+        self.ai.client.chats.create = MagicMock(side_effect=mock_chats_create)
         res = self.ai.parse_player_intent("conversar com o taverneiro", {})
         self.assertEqual(res["tipo_acao"], "DIALOGAR")
         self.assertEqual(call_models[0], "gemini-3.5-flash-lite")
-        self.assertEqual(call_models[1], "gemini-flash-lite-latest")
-        self.assertEqual(self.ai.model_name, "gemini-flash-lite-latest")
+        self.assertEqual(call_models[1], "gemini-2.5-flash")
+        self.assertEqual(self.ai.model_name, "gemini-2.5-flash")
 
 
 if __name__ == "__main__":

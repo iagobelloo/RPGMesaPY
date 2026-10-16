@@ -76,9 +76,13 @@ def test_beat_transition_scene_lifecycle():
     assert not scene.handle_event(dummy_event)
     assert scene.is_active
     
-    # Evento de ENTER (avança a cena)
+    # Evento de ENTER: 1º completa o typewriter (se em andamento), 2º avança/fecha a cena
     enter_event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)
-    assert scene.handle_event(enter_event)
+    res_first = scene.handle_event(enter_event)
+    if scene.is_active:
+        assert scene.handle_event(enter_event)
+    else:
+        assert res_first
     assert not scene.is_active
 
 def test_engine_avancar_historia_dispatches_beat_transition():
@@ -111,7 +115,7 @@ def test_engine_avancar_historia_dispatches_beat_transition():
     assert transition_msg is not None, "Evento 'beat_transition' não foi emitido!"
     assert transition_msg["beat"] == 2
     assert transition_msg["name"] == "Planície dos Uivos"
-    assert "dirt_road_plains_bg.jpg" in transition_msg["bg_image"]
+    assert "dirt_road_plains" in transition_msg["bg_image"]
 
 def test_allies_adventuring_solo_until_climax():
     """

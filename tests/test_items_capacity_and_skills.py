@@ -211,7 +211,7 @@ class TestItemsCapacityAndSkills(unittest.TestCase):
         # DES 14 (+2) + Prof (+2) + Archery (+2) = +6 total de modificador
         with patch("core.dice_engine.DiceEngine.roll_d20", return_value=10):
             out_bow = resolve_action(parsed_bow, self.pc, [target], active_targets, self.session.game_state)
-            self.assertIn("(+6) = 16", out_bow["log_mecanico"])
+            self.assertIn("+ 6 = 16", out_bow["log_mecanico"])
 
     # ==========================================================
     # 4. STANDARD ARRAY, ITENS RACIAIS, GÊNERO E ACENTUAÇÃO

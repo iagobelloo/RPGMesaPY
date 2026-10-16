@@ -304,7 +304,7 @@ class TestBackendEngineFixes(unittest.TestCase):
 
         self.assertTrue(len(sys_msgs) >= 1)
         self.assertTrue(any("Percepção CD 12" in m.get("content", "") for m in sys_msgs))
-        self.assertTrue(any("d20:" in m.get("content", "") for m in sys_msgs))
+        self.assertTrue(any("d20 (" in m.get("content", "") for m in sys_msgs))
         self.assertEqual(len(narrative_msgs), 1)
         self.assertEqual(narrative_msgs[0].get("npc_falando"), "Taverneiro")
 
@@ -339,7 +339,7 @@ class TestBackendEngineFixes(unittest.TestCase):
 
         self.assertTrue(len(sys_msgs) >= 1)
         self.assertTrue(any("Persuasão CD 11" in m.get("content", "") for m in sys_msgs))
-        self.assertTrue(any("d20:" in m.get("content", "") for m in sys_msgs))
+        self.assertTrue(any("d20 (" in m.get("content", "") for m in sys_msgs))
         self.assertEqual(len(narrative_msgs), 1)
         self.assertEqual(narrative_msgs[0].get("npc_falando"), "Taverneiro")
 

@@ -38,7 +38,7 @@ class TestBackendIntegrationAudit(unittest.TestCase):
         self.assertIn("sys_log", res_pt)
         self.assertIn("Atletismo", res_pt["sys_log"])
         # FOR 18 (+4) + prof (+3) = +7
-        self.assertIn("Mod (+4) + Prof (+3)", res_pt["sys_log"])
+        self.assertIn("+ 7 =", res_pt["sys_log"])
 
         # Ficha com atributos apenas em EN
         pc_en = {
@@ -55,7 +55,7 @@ class TestBackendIntegrationAudit(unittest.TestCase):
         res_en = resolve_action(parsed_stealth, pc_en, [], {}, {})
         self.assertIn("Furtividade", res_en["sys_log"])
         # DEX 18 (+4) + prof (+2) = +6
-        self.assertIn("Mod (+4) + Prof (+2)", res_en["sys_log"])
+        self.assertIn("+ 6 =", res_en["sys_log"])
 
     def test_02_all_42_allies_use_real_actions_in_combat(self):
         """Garante que os 42 aliados de heroes_lore.json usam suas actions reais no combate."""

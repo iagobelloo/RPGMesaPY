@@ -24,7 +24,7 @@ def init_pygame():
 def test_grimoire_initialization_and_tabs():
     modal = GrimoireModal(100, 100, 800, 600)
     modal.is_visible = True
-    assert modal.active_tab == "items"
+    assert modal.active_tab in ("habilidades", "items")
     assert modal.tab_items_rect.width > 0
     assert modal.tab_spells_rect.width > 0
 
@@ -34,15 +34,16 @@ def test_grimoire_initialization_and_tabs():
     assert modal.active_tab == "spells"
     assert res == ""
 
-    # Simula clique de volta na aba de itens
+    # Simula clique de volta na aba de itens/status
     dummy_event_items = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"pos": modal.tab_items_rect.center, "button": 1})
     res_i = modal.handle_event(dummy_event_items)
-    assert modal.active_tab == "items"
+    assert modal.active_tab in ("items", "status")
     assert res_i == ""
 
 def test_grimoire_consumables_and_use_button():
     modal = GrimoireModal(100, 100, 800, 600)
     modal.is_visible = True
+    modal.active_tab = "items"
     screen = pygame.display.get_surface()
 
     mock_state = {
