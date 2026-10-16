@@ -5,15 +5,15 @@ from ai_master.ai_client import AIGameMaster
 
 class TestAIPromptFixes(unittest.TestCase):
     def test_model_name_calibration(self):
-        """Garante que o modelo oficial seja gemini-2.5-flash e respeite a variável de ambiente GEMINI_MODEL."""
+        """Garante que o modelo oficial seja gemini-3.5-flash-lite e respeite a variável de ambiente GEMINI_MODEL."""
         ai = AIGameMaster()
-        self.assertEqual(ai.model_name, "gemini-2.5-flash")
-        self.assertNotIn("gemini-3.5", ai.model_name)
+        self.assertEqual(ai.model_name, "gemini-3.5-flash-lite")
+        self.assertIn("gemini-3.5", ai.model_name)
 
         # Teste de override via variável de ambiente
-        os.environ["GEMINI_MODEL"] = "gemini-2.5-pro"
+        os.environ["GEMINI_MODEL"] = "gemini-flash-lite-latest"
         ai_custom = AIGameMaster()
-        self.assertEqual(ai_custom.model_name, "gemini-2.5-pro")
+        self.assertEqual(ai_custom.model_name, "gemini-flash-lite-latest")
         del os.environ["GEMINI_MODEL"]
 
     def test_parse_player_intent_tavern_dialogue_and_missions(self):
@@ -79,6 +79,49 @@ class TestAIPromptFixes(unittest.TestCase):
         fb_rumors = ai._create_visceral_fallback("Ouvindo murmúrios.", "ouvir rumores e boatos da taverna")
         self.assertTrue("mercenários" in fb_rumors.lower() or "estrada" in fb_rumors.lower() or "cochicham" in fb_rumors.lower())
 
+    def test_tactical_5e_actions_intent_and_fallbacks(self):
+        """Valida a extração de ACAO_TATICA_5E e seus fallbacks viscerais dedicados."""
+        ai = AIGameMaster()
+        ai.client.models.generate_content = MagicMock(side_effect=Exception("Simulação de fallback heurístico offline"))
+
+        # 1. Esquiva
+        intent_dodge = ai.parse_player_intent("esquivar do golpe do inimigo", {})
+        self.assertEqual(intent_dodge["tipo_acao"], "ACAO_TATICA_5E")
+        self.assertEqual(intent_dodge["recurso_utilizado"], "esquiva")
+        fb_dodge = ai._create_visceral_fallback("Inimigo desfere golpe.", "esquivar com reflexos aguçados")
+        self.assertTrue("esquiva" in fb_dodge.lower() or "desvio" in fb_dodge.lower())
+
+        # 2. Cobertura
+        intent_cover = ai.parse_player_intent("tomar cobertura atrás das pedras", {})
+        self.assertEqual(intent_cover["tipo_acao"], "ACAO_TATICA_5E")
+        self.assertEqual(intent_cover["recurso_utilizado"], "cobertura")
+        fb_cover = ai._create_visceral_fallback("Chuva de flechas.", "tomar cobertura atrás da rocha")
+        self.assertTrue("cobertura" in fb_cover.lower() or "rocha" in fb_cover.lower())
+
+        # 3. Postura Defensiva / Bloqueio
+        intent_block = ai.parse_player_intent("bloquear com escudo e postura defensiva", {})
+        self.assertEqual(intent_block["tipo_acao"], "ACAO_TATICA_5E")
+        self.assertEqual(intent_block["recurso_utilizado"], "postura defensiva")
+        fb_block = ai._create_visceral_fallback("Golpe violento do monstro.", "bloquear com escudo")
+        self.assertTrue("guarda" in fb_block.lower() or "broquel" in fb_block.lower() or "bloqueio" in fb_block.lower())
+
+        # 4. Desengajar
+        intent_disengage = ai.parse_player_intent("desengajar da luta corpo a corpo", {})
+        self.assertEqual(intent_disengage["tipo_acao"], "ACAO_TATICA_5E")
+        self.assertEqual(intent_disengage["recurso_utilizado"], "desengajar")
+        fb_disengage = ai._create_visceral_fallback("Combate cerrado.", "desengajar com cuidado")
+        self.assertTrue("desengaja" in fb_disengage.lower() or "guarda alta" in fb_disengage.lower())
+
+    def test_campaign_beats_and_tactical_micro_narrative_guidelines(self):
+        """Valida que o system_instruction contém as diretrizes canônicas de micro-narrativa tática e coesão de Beats."""
+        ai = AIGameMaster()
+        sys = ai.system_instruction
+        self.assertIn("MICRO-NARRATIVA DE COMBATE TÁTICO", sys)
+        self.assertIn("Esquivar", sys)
+        self.assertIn("Tomar Cobertura", sys)
+        self.assertIn("COESÃO DE CAMPANHA (BEATS 1 AO 15)", sys)
+        self.assertIn("Orbe Quebra-Chamas", sys)
+
 # Standalone functions for pytest compatibility
 def test_model_name_calibration():
     TestAIPromptFixes().test_model_name_calibration()
@@ -88,6 +131,12 @@ def test_parse_player_intent_tavern_dialogue_and_missions():
 
 def test_visceral_fallback_tavern_missions_and_dialogues():
     TestAIPromptFixes().test_visceral_fallback_tavern_missions_and_dialogues()
+
+def test_tactical_5e_actions_intent_and_fallbacks():
+    TestAIPromptFixes().test_tactical_5e_actions_intent_and_fallbacks()
+
+def test_campaign_beats_and_tactical_micro_narrative_guidelines():
+    TestAIPromptFixes().test_campaign_beats_and_tactical_micro_narrative_guidelines()
 
 if __name__ == "__main__":
     unittest.main()

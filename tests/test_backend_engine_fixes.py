@@ -43,6 +43,35 @@ class MockAI:
 
 
 class TestBackendEngineFixes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.backup_files = {}
+        for p in [
+            "saves/save_slot_1.json", "saves/slot1.json",
+            "saves/save_slot_2.json", "saves/slot2.json",
+            "saves/save_slot_3.json", "saves/slot3.json"
+        ]:
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    cls.backup_files[p] = f.read()
+
+    @classmethod
+    def tearDownClass(cls):
+        slots = [
+            "saves/save_slot_1.json", "saves/slot1.json",
+            "saves/save_slot_2.json", "saves/slot2.json",
+            "saves/save_slot_3.json", "saves/slot3.json"
+        ]
+        for p in slots:
+            if p in cls.backup_files:
+                with open(p, "wb") as f:
+                    f.write(cls.backup_files[p])
+            elif os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+
     def setUp(self):
         self.session = SessionManager()
         self.session.ai = MockAI()
@@ -224,6 +253,146 @@ class TestBackendEngineFixes(unittest.TestCase):
         # 3. Ataque genérico sem alvo especificado ("atacar")
         self.session._async_turn_processor("atacar", [], [])
         self.assertNotIn("Inimigo", self.session.active_combat_targets)
+
+    def test_08_chat_save_command_slots(self):
+        """Valida comandos de salvamento via chat nos 3 slots com metadados completos."""
+        # Limpa fila
+        while not self.session.ui_queue.empty():
+            self.session.ui_queue.get_nowait()
+        self.session.ui_event_queue.clear()
+
+        # Salva no Slot 2 via comando em linguagem natural
+        self.session._async_turn_processor("salvar no slot 2", [], [])
+        self.assertEqual(self.session.current_save_slot, 2)
+        self.assertTrue(os.path.exists("saves/save_slot_2.json"))
+        self.assertTrue(os.path.exists("saves/slot2.json"))
+
+        meta2 = SessionManager.get_slot_metadata(2)
+        self.assertFalse(meta2.get("is_empty"))
+        self.assertEqual(meta2.get("name"), "Valerius")
+        self.assertEqual(meta2.get("slot"), 2)
+
+        # Salva no Slot 3 via comando de atalho
+        self.session._async_turn_processor("save_slot:3", [], [])
+        self.assertEqual(self.session.current_save_slot, 3)
+        self.assertTrue(os.path.exists("saves/save_slot_3.json"))
+        self.assertTrue(os.path.exists("saves/slot3.json"))
+
+        # Mensagens na fila UI
+        messages = []
+        while not self.session.ui_queue.empty():
+            messages.append(self.session.ui_queue.get_nowait())
+        self.assertTrue(any("Slot 3" in m.get("content", "") for m in messages if m.get("type") == "system_message"))
+        self.assertTrue(any(m.get("type") == "narrative" for m in messages))
+
+    def test_09_quick_action_observation(self):
+        """Valida Ação Rápida de Observação com rolagem de Percepção (CD 12) e dual-channel."""
+        # 1. Modo Exploração na Taverna (Beat 1)
+        self.session.game_mode = "EXPLORACAO"
+        self.session.story.current_beat = 1
+        self.session.game_state["discovered_rumors"] = []
+
+        obs_text = "Observo atentamente o cenário ao redor, procurando detalhes, pistas e perigos."
+        self.session._async_turn_processor(obs_text, [], [])
+
+        messages = []
+        while not self.session.ui_queue.empty():
+            messages.append(self.session.ui_queue.get_nowait())
+
+        sys_msgs = [m for m in messages if m.get("type") == "system_message"]
+        narrative_msgs = [m for m in messages if m.get("type") == "narrative"]
+
+        self.assertTrue(len(sys_msgs) >= 1)
+        self.assertTrue(any("Percepção CD 12" in m.get("content", "") for m in sys_msgs))
+        self.assertTrue(any("d20:" in m.get("content", "") for m in sys_msgs))
+        self.assertEqual(len(narrative_msgs), 1)
+        self.assertEqual(narrative_msgs[0].get("npc_falando"), "Taverneiro")
+
+        # 2. Modo Combate (não deve quebrar)
+        self.session.game_mode = "COMBATE"
+        self.session.active_combat_targets = {
+            "Lobo Atroz (1)": {"name": "Lobo Atroz (1)", "pv_atual": 15, "pv_max": 30, "status": "vivo", "faction": "enemy"}
+        }
+        self.session._async_turn_processor(obs_text, [], [])
+
+        c_messages = []
+        while not self.session.ui_queue.empty():
+            c_messages.append(self.session.ui_queue.get_nowait())
+        self.assertTrue(any("Percepção CD 12" in m.get("content", "") for m in c_messages if m.get("type") == "system_message"))
+
+    def test_10_quick_action_dialogue(self):
+        """Valida Ação Rápida de Diálogo com rolagem de Persuasão (CD 11) e dual-channel."""
+        # 1. Modo Exploração na Taverna (Beat 1)
+        self.session.game_mode = "EXPLORACAO"
+        self.session.story.current_beat = 1
+        self.session.game_state["discovered_rumors"] = []
+
+        talk_text = "Aproximo-me e tento conversar com quem estiver por perto para obter informações."
+        self.session._async_turn_processor(talk_text, [], [])
+
+        messages = []
+        while not self.session.ui_queue.empty():
+            messages.append(self.session.ui_queue.get_nowait())
+
+        sys_msgs = [m for m in messages if m.get("type") == "system_message"]
+        narrative_msgs = [m for m in messages if m.get("type") == "narrative"]
+
+        self.assertTrue(len(sys_msgs) >= 1)
+        self.assertTrue(any("Persuasão CD 11" in m.get("content", "") for m in sys_msgs))
+        self.assertTrue(any("d20:" in m.get("content", "") for m in sys_msgs))
+        self.assertEqual(len(narrative_msgs), 1)
+        self.assertEqual(narrative_msgs[0].get("npc_falando"), "Taverneiro")
+
+        # 2. Modo Combate (parley / intimidação sem quebras)
+        self.session.game_mode = "COMBATE"
+        self.session.active_combat_targets = {
+            "Lobo Atroz (1)": {"name": "Lobo Atroz (1)", "pv_atual": 20, "pv_max": 30, "status": "vivo", "faction": "enemy"}
+        }
+        self.session._async_turn_processor(talk_text, [], [])
+
+        c_messages = []
+        while not self.session.ui_queue.empty():
+            c_messages.append(self.session.ui_queue.get_nowait())
+        self.assertTrue(any("Persuasão CD 11" in m.get("content", "") for m in c_messages if m.get("type") == "system_message"))
+
+    def test_11_clean_start_bestiary_and_rumors(self):
+        """Garante que Bestiário e Rumores iniciam totalmente vazios no Beat 1."""
+        fresh_session = SessionManager()
+        self.assertEqual(fresh_session.game_state.get("discovered_monsters"), [])
+        self.assertEqual(fresh_session.game_state.get("discovered_rumors"), [])
+        self.assertEqual(fresh_session.get_discovered_monsters(), [])
+        self.assertEqual(fresh_session.get_discovered_rumors(), [])
+
+    def test_12_racial_speed_travel_mechanics(self):
+        """Valida custos de marcha e suprimentos com base no deslocamento racial oficial D&D 5e."""
+        # 1. Anão (Speed 7.5m): 3 dias, 3 suprimentos
+        pc_dwarf = {"race": "Anão", "speed_m": 7.5, "equipment": [], "attributes": {"FOR": 10}}
+        days, sup, spd, enc = self.session.calculate_travel_cost(pc_dwarf)
+        self.assertEqual(days, 3)
+        self.assertEqual(sup, 3)
+        self.assertEqual(spd, 7.5)
+        self.assertFalse(enc)
+
+        # 2. Humano (Speed 9.0m): 2 dias, 2 suprimentos
+        pc_human = {"race": "Humano", "speed_m": 9.0, "equipment": [], "attributes": {"FOR": 10}}
+        days, sup, spd, enc = self.session.calculate_travel_cost(pc_human)
+        self.assertEqual(days, 2)
+        self.assertEqual(sup, 2)
+        self.assertEqual(spd, 9.0)
+
+        # 3. Elfo da Floresta (Speed 10.5m): 1 dia, 1 suprimento
+        pc_elf = {"race": "Elfo dos Bosques", "speed_m": 10.5, "equipment": [], "attributes": {"FOR": 10}}
+        days, sup, spd, enc = self.session.calculate_travel_cost(pc_elf)
+        self.assertEqual(days, 1)
+        self.assertEqual(sup, 1)
+        self.assertEqual(spd, 10.5)
+
+    def test_13_manual_do_jogador_content(self):
+        """Valida que o Manual do Jogador D&D 5e está integrado e acessível estruturadamente."""
+        from core.dnd_rules import get_manual_do_jogador
+        manual = get_manual_do_jogador()
+        self.assertIsInstance(manual, dict)
+        self.assertTrue("secoes" in manual or "racas" in manual or "classes" in manual)
 
 
 if __name__ == "__main__":

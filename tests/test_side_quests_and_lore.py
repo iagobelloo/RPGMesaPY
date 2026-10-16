@@ -22,6 +22,35 @@ class MockAI(AIGameMaster):
 
 
 class TestSideQuestsAndHeroesLore(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.backup_files = {}
+        for p in [
+            "saves/save_slot_1.json", "saves/slot1.json",
+            "saves/save_slot_2.json", "saves/slot2.json",
+            "saves/save_slot_3.json", "saves/slot3.json"
+        ]:
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    cls.backup_files[p] = f.read()
+
+    @classmethod
+    def tearDownClass(cls):
+        slots = [
+            "saves/save_slot_1.json", "saves/slot1.json",
+            "saves/save_slot_2.json", "saves/slot2.json",
+            "saves/save_slot_3.json", "saves/slot3.json"
+        ]
+        for p in slots:
+            if p in cls.backup_files:
+                with open(p, "wb") as f:
+                    f.write(cls.backup_files[p])
+            elif os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+
     def setUp(self):
         self.ai = MockAI()
         self.session = SessionManager(self.ai)

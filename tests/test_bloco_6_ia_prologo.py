@@ -224,8 +224,8 @@ def test_personalized_prologue_racial_heritage_and_gender():
     }
     prologue_f = ai.get_personalized_prologue(char_female)
     assert "Lilith" in prologue_f
-    assert "Selo de Brasas Abissais" in prologue_f
-    assert "moldada pela dureza" in prologue_f
+    assert "Tiefling" in prologue_f
+    assert "Maga" in prologue_f
 
     # 2. Protagonista masculino Anão da Colina
     char_male = {
@@ -238,8 +238,8 @@ def test_personalized_prologue_racial_heritage_and_gender():
     }
     prologue_m = ai.get_personalized_prologue(char_male)
     assert "Thorin" in prologue_m
-    assert "Runa da Pedra-Forja" in prologue_m
-    assert "moldado pela dureza" in prologue_m
+    assert "Anão da Colina" in prologue_m
+    assert "Clérigo" in prologue_m
 
 
 

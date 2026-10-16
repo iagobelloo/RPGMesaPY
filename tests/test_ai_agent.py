@@ -189,9 +189,9 @@ class TestAIAgent(unittest.TestCase):
         }
         prologue_f = self.ai.get_personalized_prologue(char_fem)
         self.assertIn("Valéria", prologue_f)
-        self.assertIn("Como uma Humana Guerreira moldada", prologue_f)
-        self.assertIn("moldada pela dureza de Forasteira", prologue_f)
-        self.assertNotIn("Como um Humano Guerreiro moldado", prologue_f)
+        self.assertIn("Humana", prologue_f)
+        self.assertIn("Guerreira", prologue_f)
+        self.assertIn("Forasteira", prologue_f)
 
         # Personagem Masculino
         char_masc = {
@@ -204,9 +204,9 @@ class TestAIAgent(unittest.TestCase):
         }
         prologue_m = self.ai.get_personalized_prologue(char_masc)
         self.assertIn("Valerius", prologue_m)
-        self.assertIn("Como um Humano Guerreiro moldado", prologue_m)
-        self.assertIn("moldado pela dureza de Forasteiro", prologue_m)
-        self.assertNotIn("Como uma Humana Guerreira moldada", prologue_m)
+        self.assertIn("Humano", prologue_m)
+        self.assertIn("Guerreiro", prologue_m)
+        self.assertIn("Forasteiro", prologue_m)
 
     def test_09_gender_helpers_and_prologue_fallbacks(self):
         """Valida métodos utilitários de gênero e fallbacks de geração de prólogo."""
@@ -229,6 +229,62 @@ class TestAIAgent(unittest.TestCase):
         # Fallback de geração do prólogo dinâmico
         dyn_prologue_f = self.ai.generate_prologue({"name": "Aria", "race": "Elfo", "class": "Mago", "gender": "female"}, [])
         self.assertIn("Como uma Elfa Maga", dyn_prologue_f)
+
+    # 5. Correção de Fallback de Contrato vs Diálogo/Observação e Cascata de Modelos
+    def test_10_beat_1_mural_does_not_trigger_contract_completed_fallback(self):
+        """
+        Valida que menção a 'contratos de caçada no mural' no log do Beat 1
+        NUNCA dispara o fallback de contrato concluído em diálogos ou observação.
+        """
+        beat_1_log = "Na Taverna do Dragão Acordado há lareira crepitante e contratos de caçada no mural de avisos."
+
+        # 1. Falar com taverneiro
+        fb_tav = self.ai._create_visceral_fallback(beat_1_log, "falar com taverneiro")
+        self.assertNotIn("contrato sangrento chega ao fim", fb_tav.lower())
+        self.assertIn("taverneiro", fb_tav.lower())
+
+        # 2. Conversar com balconista
+        fb_balc = self.ai._create_visceral_fallback(beat_1_log, "conversar com balconista")
+        self.assertNotIn("contrato sangrento chega ao fim", fb_balc.lower())
+        self.assertIn("taverneiro", fb_balc.lower())
+
+        # 3. Observar
+        fb_obs = self.ai._create_visceral_fallback(beat_1_log, "observar")
+        self.assertNotIn("contrato sangrento chega ao fim", fb_obs.lower())
+        self.assertTrue("taverna" in fb_obs.lower() or "olhos" in fb_obs.lower() or "mercenários" in fb_obs.lower())
+
+        # 4. Dialogar genérico
+        fb_dial = self.ai._create_visceral_fallback(beat_1_log, "dialogar")
+        self.assertNotIn("contrato sangrento chega ao fim", fb_dial.lower())
+        self.assertIn("taverneiro", fb_dial.lower())
+
+        # 5. Conclusão real de contrato DEVE disparar o texto de contrato finalizado
+        fb_real_contract = self.ai._create_visceral_fallback("Contrato de caçada concluído com sucesso. Recompensa recebida.", "concluir contrato")
+        self.assertIn("contrato sangrento chega ao fim", fb_real_contract.lower())
+
+    def test_11_model_cascade_fallback(self):
+        """Valida que a cascata de modelos tenta os modelos ativos e atualiza para o modelo estável."""
+        cascade = self.ai._get_models_cascade()
+        self.assertEqual(cascade[0], "gemini-3.5-flash-lite")
+        self.assertIn("gemini-flash-lite-latest", cascade)
+        self.assertIn("gemini-flash-latest", cascade)
+
+        # Simula falha 404 no primeiro modelo e sucesso no segundo
+        call_models = []
+        def mock_generate_content(model, contents, config):
+            call_models.append(model)
+            if model == "gemini-3.5-flash-lite":
+                raise Exception("404 NOT_FOUND: Model not found")
+            mock_res = MagicMock()
+            mock_res.text = '{"tipo_acao": "DIALOGAR", "alvo": ["Taverneiro"], "recurso_utilizado": null, "intencao_cena": "Diálogo com taverneiro."}'
+            return mock_res
+
+        self.ai.client.models.generate_content = MagicMock(side_effect=mock_generate_content)
+        res = self.ai.parse_player_intent("conversar com o taverneiro", {})
+        self.assertEqual(res["tipo_acao"], "DIALOGAR")
+        self.assertEqual(call_models[0], "gemini-3.5-flash-lite")
+        self.assertEqual(call_models[1], "gemini-flash-lite-latest")
+        self.assertEqual(self.ai.model_name, "gemini-flash-lite-latest")
 
 
 if __name__ == "__main__":

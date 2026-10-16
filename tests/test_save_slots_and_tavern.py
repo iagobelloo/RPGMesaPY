@@ -27,24 +27,24 @@ class TestSaveSlotsAndTavern(unittest.TestCase):
         cls.backup_saves = {}
         os.makedirs("saves", exist_ok=True)
         for i in range(1, 4):
-            path = f"saves/slot{i}.json"
-            if os.path.exists(path):
-                with open(path, "r", encoding="utf-8") as f:
-                    cls.backup_saves[i] = f.read()
+            for pattern in [f"saves/slot{i}.json", f"saves/save_slot_{i}.json"]:
+                if os.path.exists(pattern):
+                    with open(pattern, "rb") as f:
+                        cls.backup_saves[pattern] = f.read()
 
     @classmethod
     def tearDownClass(cls):
-        # Restaura os saves de backup
+        # Restaura os saves de backup ou remove os criados pelo teste
         for i in range(1, 4):
-            path = f"saves/slot{i}.json"
-            if i in cls.backup_saves:
-                with open(path, "w", encoding="utf-8") as f:
-                    f.write(cls.backup_saves[i])
-            elif os.path.exists(path):
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
+            for pattern in [f"saves/slot{i}.json", f"saves/save_slot_{i}.json"]:
+                if pattern in cls.backup_saves:
+                    with open(pattern, "wb") as f:
+                        f.write(cls.backup_saves[pattern])
+                elif os.path.exists(pattern):
+                    try:
+                        os.remove(pattern)
+                    except Exception:
+                        pass
 
     def setUp(self):
         self.ai = DummyAI()
