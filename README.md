@@ -96,7 +96,7 @@ RPGMesaPY/
 
 ### 2. Clonando o Repositório
 ```bash
-git clone https://github.com/SEU_USUARIO/RPGMesaPY.git
+git clone https://github.com/iagobelloo/RPGMesaPY.git
 cd RPGMesaPY
 ```
 
