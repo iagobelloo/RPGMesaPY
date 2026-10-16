@@ -28,6 +28,10 @@ class SceneRenderer:
         self._cached_panel_w = int(self.width * 0.40)
         self.last_msg_id = None
         self.scroll_y = 0
+        self._reticle_cache = {}
+        self.selected_target_id = None
+        self.font_hp = AssetManager.get_font(10, bold=True)
+        self.font_init = AssetManager.get_font(11, bold=True)
         
         from ui.hud_components import PlayerHUD
         self.player_hud = PlayerHUD(12, 12)
@@ -36,30 +40,92 @@ class SceneRenderer:
     def add_floating_text(self, text: str, x: int, y: int, color: tuple):
         self.floating_texts.append({"text": text, "x": x, "y": y, "color": color, "timer": 60})
 
+    @staticmethod
+    def _parse_combat_line_segments(line: str) -> list:
+        """Divide uma linha mecânica em segmentos semânticos coloridos (d20 dourado, acerto verde, dano carmesim)."""
+        import re
+        C_GOLD = (245, 210, 80)
+        C_GREEN = (70, 230, 110)
+        C_RED = (245, 80, 80)
+        C_CYAN = (130, 205, 255)
+        C_TEXT = (220, 215, 210)
+        
+        token_pattern = re.compile(
+            r'(ACERTO CRÍTICO|FALHA CRÍTICA|ACERTO|ERRO|SUCESSO|FALHA|'
+            r'd20\s*\(\d+\)|'
+            r'\d+\s+de dano|'
+            r'sofreu\s+\d+\s+de dano|'
+            r'recuperou\s+\+?\d+\s+PV|'
+            r'restaurou\s+\+?\d+\s+PV|'
+            r'\+\d+\s+PV|'
+            r'\[DADO[^\]]*\]|\[HABILIDADE[^\]]*\]|\[SISTEMA\]|'
+            r'🎲|✨|⚡|⚔)'
+        )
+        segments = []
+        last_idx = 0
+        for m in token_pattern.finditer(line):
+            start, end = m.span()
+            if start > last_idx:
+                segments.append((line[last_idx:start], C_TEXT))
+            token = m.group(0)
+            tok_up = token.upper()
+            if any(h in tok_up for h in ['ACERTO', 'SUCESSO', 'RECUPEROU', 'RESTAUROU']):
+                col = C_GREEN
+            elif any(d in tok_up for d in ['DANO', 'ERRO', 'FALHA', 'SOFREU']):
+                col = C_RED
+            elif 'MAGIA' in tok_up or 'ARCANO' in tok_up:
+                col = C_CYAN
+            elif 'D20' in tok_up or token in ['🎲', '✨', '⚡', '⚔'] or '[DADO' in tok_up or '[HABILIDADE' in tok_up:
+                col = C_GOLD
+            else:
+                col = C_TEXT
+            segments.append((token, col))
+            last_idx = end
+        if last_idx < len(line):
+            segments.append((line[last_idx:], C_TEXT))
+        return segments if segments else [(line, C_TEXT)]
+
     def _format_chat_message(self, msg: dict, panel_w: int) -> dict:
-        """Pré-calcula a quebra de linha e altura de uma mensagem no momento da inserção (Zero Garbage a 60 FPS)."""
+        """Pré-calcula a quebra de linha, altura e segmentos de cor no momento da inserção (Zero Garbage a 60 FPS)."""
         from ui.hud_components import get_wrapped_text_dimensions
         text_str = msg.get("text", "")
         falante = msg.get("npc_falando") or "nenhum"
         msg_type = msg.get("type", "narrative")
         
         font_to_use = self.font_narrative if msg_type in ["narrative", "player"] else self.font_log
-        
         has_portrait = falante.lower() != "nenhum" and (msg_type in ["narrative", "player"])
+        
+        parsed_lines = []
+        accent_color = (170, 140, 75)
+        
         if has_portrait:
             msg_w = panel_w - 120
-        else:
-            msg_w = panel_w - 55
-            
-        _, text_h, lines = get_wrapped_text_dimensions(text_str, font_to_use, msg_w)
-        
-        total_msg_h = text_h
-        if has_portrait:
+            _, text_h, lines = get_wrapped_text_dimensions(text_str, font_to_use, msg_w)
             total_msg_h = max(text_h + 30, 80)
+        else:
+            # Pílula compacta para logs mecânicos/combate
+            msg_w = panel_w - 70
+            _, text_h, lines = get_wrapped_text_dimensions(text_str, font_to_use, msg_w)
+            total_msg_h = max(26, text_h + 10)
+            
+            txt_low = text_str.lower()
+            if any(k in txt_low for k in ["dano", "sofreu", "falha", "erro"]):
+                accent_color = (225, 65, 65)
+            elif any(k in txt_low for k in ["acerto", "sucesso", "cura", "recuperou", "restaurou"]):
+                accent_color = (55, 205, 95)
+            elif any(k in txt_low for k in ["d20", "dado", "teste", "iniciativa"]):
+                accent_color = (240, 195, 60)
+            else:
+                accent_color = (170, 140, 75)
+                
+            for l in lines:
+                parsed_lines.append(self._parse_combat_line_segments(l))
             
         return {
             "msg": msg,
             "lines": lines,
+            "parsed_lines": parsed_lines,
+            "accent_color": accent_color,
             "h": total_msg_h,
             "has_portrait": has_portrait,
             "falante": falante,
@@ -137,14 +203,104 @@ class SceneRenderer:
         screen.blit(self._shadow_cache[size], (x, y + size - (size // 4)))
         screen.blit(image, x, y) if isinstance(y, tuple) else screen.blit(image, (x, y))
 
-    def draw_health_bar(self, screen, cx, cy, hp_cur, hp_max, width):
-        """Desenha a barra de vida centralizada num ponto horizontal (cx)."""
-        pygame.draw.rect(screen, (20, 20, 20), (cx - width//2 - 2, cy - 2, width + 4, 14))
-        pygame.draw.rect(screen, (60, 0, 0), (cx - width//2, cy, width, 10))
-        fill_w = int((hp_cur / max(hp_max, 1)) * width)
+    def draw_health_bar(self, screen, cx, cy, hp_cur, hp_max, width, show_text: bool = True):
+        """Desenha a barra de vida centralizada num ponto horizontal (cx) com texto de PV (ex: '8/11')."""
+        bar_h = 11
+        frame_h = bar_h + 4
+        x = cx - width // 2
+        # Moldura externa retro-gótica com cantos suaves
+        pygame.draw.rect(screen, (15, 12, 12), (x - 2, cy - 2, width + 4, frame_h), border_radius=3)
+        pygame.draw.rect(screen, (60, 48, 30), (x - 2, cy - 2, width + 4, frame_h), 1, border_radius=3)
+        # Fundo vermelho escuro
+        pygame.draw.rect(screen, (55, 12, 12), (x, cy, width, bar_h), border_radius=2)
+        # Preenchimento de PV com cores semânticas
+        fill_w = int((max(0, hp_cur) / max(hp_max, 1)) * width)
         if fill_w > 0:
-            color = (50, 200, 50) if hp_cur > (hp_max // 2) else (200, 50, 50)
-            pygame.draw.rect(screen, color, (cx - width//2, cy, fill_w, 10))
+            fill_w = min(width, fill_w)
+            ratio = hp_cur / max(hp_max, 1)
+            if ratio > 0.5:
+                color = (50, 205, 60) # Verde vibrante
+            elif ratio > 0.2:
+                color = (235, 175, 45) # Dourado / Âmbar
+            else:
+                color = (225, 45, 45) # Carmesim
+            pygame.draw.rect(screen, color, (x, cy, fill_w, bar_h), border_radius=2)
+
+        if show_text:
+            # Texto nítido do PV (ex: '8/11') centralizado sobre a barra de vida com sombra de alto contraste
+            txt_str = f"{max(0, hp_cur)}/{max(1, hp_max)}"
+            font_hp = getattr(self, "font_hp", None) or AssetManager.get_font(10, bold=True)
+            txt_surf = font_hp.render(txt_str, True, (255, 255, 255))
+            tx = cx - txt_surf.get_width() // 2
+            ty = cy + (bar_h - txt_surf.get_height()) // 2
+            shadow_surf = font_hp.render(txt_str, True, (10, 10, 10))
+            screen.blit(shadow_surf, (tx + 1, ty + 1))
+            screen.blit(txt_surf, (tx, ty))
+
+    def _get_target_reticle_surf(self, width: int, height: int) -> pygame.Surface:
+        """Pré-renderiza retícula/mira dourada estilizada para o token (Zero Garbage por frame)."""
+        key = (width, height)
+        reticle = self._reticle_cache.get(key)
+        if reticle is None:
+            pad = 12
+            sw = width + pad * 2
+            sh = height + pad * 2
+            reticle = pygame.Surface((sw, sh), pygame.SRCALPHA)
+            
+            c_gold = (255, 215, 65)
+            c_glow = (255, 240, 150)
+            c_dark = (45, 30, 10)
+            
+            rx, ry = pad, pad
+            rw, rh = width, height
+            corner_len = max(10, min(22, min(width, height) // 3))
+            
+            # Cantoneiras douradas reforçadas com moldura dupla
+            for cx_c, cy_c, dx, dy in [
+                (rx - 2, ry - 2, 1, 1),
+                (rx + rw + 2, ry - 2, -1, 1),
+                (rx - 2, ry + rh + 2, 1, -1),
+                (rx + rw + 2, ry + rh + 2, -1, -1)
+            ]:
+                pygame.draw.line(reticle, c_dark, (cx_c, cy_c), (cx_c + dx * (corner_len + 2), cy_c), 4)
+                pygame.draw.line(reticle, c_dark, (cx_c, cy_c), (cx_c, cy_c + dy * (corner_len + 2)), 4)
+
+            for cx_c, cy_c, dx, dy in [
+                (rx, ry, 1, 1),
+                (rx + rw, ry, -1, 1),
+                (rx, ry + rh, 1, -1),
+                (rx + rw, ry + rh, -1, -1)
+            ]:
+                pygame.draw.line(reticle, c_gold, (cx_c, cy_c), (cx_c + dx * corner_len, cy_c), 3)
+                pygame.draw.line(reticle, c_gold, (cx_c, cy_c), (cx_c + dy * corner_len, cy_c), 3)
+                pygame.draw.line(reticle, c_glow, (cx_c, cy_c), (cx_c + dx * (corner_len // 2), cy_c), 1)
+                pygame.draw.line(reticle, c_glow, (cx_c, cy_c), (cx_c + dy * (corner_len // 2), cy_c), 1)
+
+            # Marcas de mira cruzada tática nas quatro bordas
+            mid_x = rx + rw // 2
+            mid_y = ry + rh // 2
+            tick = 8
+            pygame.draw.line(reticle, c_gold, (mid_x, ry - tick), (mid_x, ry - 2), 2)
+            pygame.draw.line(reticle, c_gold, (mid_x, ry + rh + 2), (mid_x, ry + rh + tick), 2)
+            pygame.draw.line(reticle, c_gold, (rx - tick, mid_y), (rx - 2, mid_y), 2)
+            pygame.draw.line(reticle, c_gold, (rx + rw + 2, mid_y), (rx + rw + tick, mid_y), 2)
+
+            # Triângulo indicador apontando para o alvo no topo
+            tri_cx = mid_x
+            tri_top = ry - tick - 4
+            tri_pts = [(tri_cx - 6, tri_top - 6), (tri_cx + 6, tri_top - 6), (tri_cx, tri_top)]
+            pygame.draw.polygon(reticle, c_gold, tri_pts)
+            pygame.draw.lines(reticle, c_glow, True, tri_pts, 1)
+
+            self._reticle_cache[key] = reticle
+        return reticle
+
+    def draw_target_reticle(self, screen: pygame.Surface, x: int, y: int, width: int, height: int):
+        """Renderiza a retícula dourada estilizada sobre o token do alvo selecionado."""
+        reticle = self._get_target_reticle_surf(width, height)
+        pad = 12
+        screen.blit(reticle, (x - pad, y - pad))
+
 
     def _get_campaign(self) -> dict:
         """Lê data/campaign.json UMA vez (antes era lido do disco a cada frame)."""
@@ -185,7 +341,133 @@ class SceneRenderer:
         else:
             return (85, 115)
 
-    def draw_in_game(self, screen: pygame.Surface, session: "SessionManager", current_message: dict = None):
+    def draw_initiative_banner(self, screen: pygame.Surface, session, hitboxes: dict = None):
+        """Renderiza a fita de iniciativa discreta com a ordem dos combatentes ativos da rodada (Zero Garbage)."""
+        combat_targets = getattr(session, "active_combat_targets", None)
+        if not combat_targets:
+            return
+            
+        pc = session.game_state.get("player_character", {})
+        if not pc:
+            return
+            
+        combat_allies = [
+            t for t in combat_targets.values()
+            if isinstance(t, dict) and t.get("faction") == "ally" and t.get("pv_atual", 0) > 0 and t.get("status") != "morto"
+        ]
+        living_enemies = [
+            t for t in combat_targets.values()
+            if isinstance(t, dict) and t.get("faction") != "ally" and t.get("pv_atual", 0) > 0 and t.get("status") != "morto"
+        ]
+        if not living_enemies:
+            return
+
+        panel_w = getattr(self, "_cached_panel_w", int(self.width * 0.40))
+        panel_x = 12
+        panel_h = 240
+        panel_y = self.height - panel_h - 85
+        banner_h = 24
+        banner_y = panel_y - banner_h - 4
+        banner_rect = pygame.Rect(panel_x, banner_y, panel_w, banner_h)
+        
+        # Fundo e moldura gótica do banner de iniciativa
+        pygame.draw.rect(screen, (20, 16, 26), banner_rect, border_radius=4)
+        pygame.draw.rect(screen, (155, 125, 55), banner_rect, 1, border_radius=4)
+        
+        font_b = getattr(self, "font_init", self.font_hud)
+        from ui.hud_components import QuickActionBar
+        QuickActionBar._draw_totem(screen, "sword", panel_x + 10, banner_y + banner_h // 2)
+        tag_surf = font_b.render("TURNO:", True, (245, 215, 80))
+        screen.blit(tag_surf, (panel_x + 20, banner_y + (banner_h - tag_surf.get_height()) // 2))
+        
+        cur_x = panel_x + 20 + tag_surf.get_width() + 8
+        mouse_pos = pygame.mouse.get_pos()
+        
+        combatants = []
+        pc_hp = pc.get("hp_current", 10)
+        pc_max = pc.get("hp_max", 10)
+        combatants.append({
+            "id": "player",
+            "name": pc.get("name", "Herói"),
+            "hp": f"{pc_hp}/{pc_max}",
+            "kind": "player",
+            "is_selected": False,
+            "is_active": True
+        })
+        for ally in combat_allies:
+            a_hp = ally.get("pv_atual", ally.get("hp_current", 10))
+            a_max = ally.get("pv_max", ally.get("hp_max", 10))
+            combatants.append({
+                "id": ally.get("id", "ally"),
+                "name": ally.get("name", ally.get("id", "Aliado")),
+                "hp": f"{a_hp}/{a_max}",
+                "kind": "ally",
+                "is_selected": False,
+                "is_active": False
+            })
+        for en in living_enemies:
+            e_id = en.get("id", "")
+            e_hp = en.get("pv_atual", 10)
+            e_max = en.get("pv_max", 10)
+            e_name = en.get("name") or en.get("tipo_bestiario") or e_id
+            combatants.append({
+                "id": e_id,
+                "name": e_name,
+                "hp": f"{e_hp}/{e_max}",
+                "kind": "enemy",
+                "is_selected": (self.selected_target_id == e_id),
+                "is_active": False
+            })
+            
+        max_x = panel_x + panel_w - 8
+        for idx, cb in enumerate(combatants):
+            if cur_x >= max_x - 24:
+                more_txt = font_b.render(f"+{len(combatants) - idx}", True, (170, 160, 150))
+                screen.blit(more_txt, (cur_x, banner_y + (banner_h - more_txt.get_height()) // 2))
+                break
+                
+            if idx > 0:
+                sep_surf = font_b.render("->", True, (215, 175, 75))
+                screen.blit(sep_surf, (cur_x, banner_y + (banner_h - sep_surf.get_height()) // 2))
+                cur_x += sep_surf.get_width() + 5
+                if cur_x >= max_x - 24:
+                    break
+                    
+            short_name = cb["name"]
+            if len(short_name) > 10:
+                short_name = short_name[:8] + ".."
+            lbl_str = f"{short_name} {cb['hp']}"
+            t_surf = font_b.render(lbl_str, True, (255, 255, 255))
+            pill_w = t_surf.get_width() + 10
+            if cur_x + pill_w > max_x:
+                pill_w = max_x - cur_x
+            pill_rect = pygame.Rect(cur_x, banner_y + 2, pill_w, banner_h - 4)
+            
+            is_hover = pill_rect.collidepoint(mouse_pos)
+            if cb["kind"] == "player":
+                bg_col = (35, 55, 30) if not is_hover else (45, 75, 40)
+                border_col = (110, 215, 80) if cb["is_active"] else (80, 160, 60)
+            elif cb["kind"] == "ally":
+                bg_col = (25, 40, 55) if not is_hover else (35, 55, 75)
+                border_col = (90, 160, 230)
+            else:
+                if cb["is_selected"]:
+                    bg_col = (65, 35, 20) if not is_hover else (85, 45, 25)
+                    border_col = (255, 215, 60)
+                else:
+                    bg_col = (50, 22, 24) if not is_hover else (70, 30, 32)
+                    border_col = (210, 65, 65)
+                    
+            pygame.draw.rect(screen, bg_col, pill_rect, border_radius=3)
+            pygame.draw.rect(screen, border_col, pill_rect, 2 if cb["is_selected"] else 1, border_radius=3)
+            screen.blit(t_surf, (pill_rect.x + (pill_w - t_surf.get_width()) // 2, pill_rect.centery - t_surf.get_height() // 2))
+            
+            if hitboxes is not None and cb["kind"] == "enemy":
+                hitboxes[f"banner_enemy_{cb['id']}"] = pill_rect
+                
+            cur_x += pill_w + 5
+
+    def draw_in_game(self, screen: pygame.Surface, session: "SessionManager", current_message: dict = None, render_legacy_hud: bool = False):
         game_state = session.game_state
         story_obj = getattr(session, "story", None)
         beat_str = str(getattr(story_obj, "current_beat", 1))
@@ -195,7 +477,7 @@ class SceneRenderer:
         screen.blit(AssetManager.get_scaled(bg_surf, (self.width, self.height)), (0, 0))
 
         self.current_player = game_state.get("player_character", {})
-        if self.current_player:
+        if render_legacy_hud and self.current_player:
             self.draw_top_hud(screen, self.current_player)
 
         # Coleta Inimigos e Monstros Vivos com porte proporcional (lado direito)
@@ -217,15 +499,29 @@ class SceneRenderer:
 
         enemy_hitboxes = {}
         if living_enemies:
-            play_area_x = int(self.width * 0.44)
-            avail_w = (self.width - 40) - play_area_x
+            # Sincronização do alvo ativo selecionado
+            living_ids = [e["id"] for e in living_enemies]
+            if self.selected_target_id not in living_ids:
+                self.selected_target_id = living_ids[0] if living_ids else None
+
+            is_tavern = "tavern" in str(bg_image).lower()
+            if is_tavern:
+                # Afasta inimigos da lareira central na taverna (lareira fica entre X: 0.58 e 0.77)
+                play_area_x = int(self.width * 0.77)
+                avail_w = (self.width - 25) - play_area_x
+                ground_y = self.height - 200
+            else:
+                # Distância segura da posição do herói (pelo menos 80 px da hitbox 128x128)
+                hero_right = int(self.width * 0.54) + 64
+                min_safe_x = hero_right + 80
+                play_area_x = max(int(self.width * 0.60), min_safe_x)
+                avail_w = (self.width - 40) - play_area_x
+                ground_y = self.height - 220
+
             n_enemies = len(living_enemies)
             total_w = sum(e["w"] for e in living_enemies)
-            gap = max(24, (avail_w - total_w) // (n_enemies + 1)) if avail_w > total_w else 16
-            
-            # Ponto de apoio do solo para alinhamento dos pés
-            ground_y = self.height - 220
-            start_x = play_area_x + max(10, (avail_w - (total_w + gap * (n_enemies - 1))) // 2)
+            gap = max(36, (avail_w - total_w) // (n_enemies + 1)) if avail_w > total_w else 24
+            start_x = play_area_x + max(6, (avail_w - (total_w + gap * (n_enemies - 1))) // 2)
             cur_x = start_x
             mouse_pos = pygame.mouse.get_pos()
             is_combat = (getattr(session, "game_mode", "") == "COMBATE" or bool(getattr(session, "active_combat_targets", None)))
@@ -245,31 +541,37 @@ class SceneRenderer:
                 
                 screen.blit(AssetManager.get_scaled(sprite, (draw_w, draw_h)), (x_pos, y_pos))
 
-                # Registra hitbox do inimigo para cliques de ataque
+                # Registra hitbox do inimigo para cliques de ataque e seleção
                 enemy_rect = pygame.Rect(x_pos, y_pos, draw_w, draw_h)
                 enemy_hitboxes[f"enemy_{enemy['id']}"] = enemy_rect
                 enemy_hitboxes[enemy["id"]] = enemy_rect
 
-                # Feedback visual de hover/mira em combate
-                if is_combat and enemy_rect.collidepoint(mouse_pos):
-                    pygame.draw.rect(screen, (255, 60, 60), enemy_rect, 2, border_radius=4)
-                    tip_surf = self.font_names.render("Atacar", True, (255, 215, 0))
+                is_selected = (self.selected_target_id == enemy["id"])
+                if is_selected:
+                    self.draw_target_reticle(screen, x_pos, y_pos, draw_w, draw_h)
+                elif is_combat and enemy_rect.collidepoint(mouse_pos):
+                    # Feedback visual de hover em combate (mira sutil de seleção)
+                    pygame.draw.rect(screen, (255, 90, 80), enemy_rect, 2, border_radius=4)
+                    tip_surf = self.font_hud.render("Selecionar Alvo", True, (255, 220, 80))
                     cx_tip = x_pos + (draw_w // 2)
-                    tip_bg = pygame.Rect(cx_tip - tip_surf.get_width() // 2 - 6, y_pos - 22, tip_surf.get_width() + 12, tip_surf.get_height() + 4)
+                    tip_bg = pygame.Rect(cx_tip - tip_surf.get_width() // 2 - 6, y_pos - 20, tip_surf.get_width() + 12, tip_surf.get_height() + 4)
                     pygame.draw.rect(screen, (25, 15, 15), tip_bg, border_radius=3)
-                    pygame.draw.rect(screen, (255, 60, 60), tip_bg, 1, border_radius=3)
+                    pygame.draw.rect(screen, (255, 180, 50), tip_bg, 1, border_radius=3)
                     screen.blit(tip_surf, (tip_bg.x + 6, tip_bg.y + 2))
                 
-                # Health Bar dinâmica
+                # Health Bar dinâmica com texto numérico de PV
                 cx = x_pos + (draw_w // 2)
                 bar_w = max(70, min(110, draw_w))
-                if enemy["target"]:
-                    self.draw_health_bar(screen, cx, ground_y + 10, enemy["target"].get("pv_atual", 0), enemy["target"].get("pv_max", 10), bar_w)
-                    
+                feet_y = ground_y
+                name_y = feet_y + 14
                 name_txt = self.font_names.render(enemy["id"], True, (255, 255, 255))
-                screen.blit(name_txt, (cx - (name_txt.get_width() // 2), ground_y + 26))
+                screen.blit(name_txt, (cx - (name_txt.get_width() // 2), name_y))
+                if enemy["target"]:
+                    self.draw_health_bar(screen, cx, name_y + 18, enemy["target"].get("pv_atual", 0), enemy["target"].get("pv_max", 10), bar_w, show_text=True)
                 
                 cur_x += max(e_w, draw_w) + gap
+        else:
+            self.selected_target_id = None
 
 
         # Linha da Party (Jogador + Aliados no Clímax Beat 15 ou ativos em combate)
@@ -299,10 +601,17 @@ class SceneRenderer:
             for ally in unlocked.values():
                 players.append(ally)
 
-        hitboxes = self.draw_players(screen, players)
+        is_tavern = "tavern" in str(bg_image).lower()
+        hitboxes = self.draw_players(screen, players, is_tavern=is_tavern)
         hitboxes.update(enemy_hitboxes)
 
-        self.draw_side_dialog_panel(screen, current_message)
+        if render_legacy_hud:
+            self.draw_side_dialog_panel(screen, current_message)
+
+        # Fita de Iniciativa / Fila de Turno no combate (acima do chat legado)
+        is_combat = (getattr(session, "game_mode", "") == "COMBATE" or bool(getattr(session, "active_combat_targets", None)))
+        if render_legacy_hud and is_combat and living_enemies:
+            self.draw_initiative_banner(screen, session, hitboxes)
 
         for ft in self.floating_texts[:]:
             ft["y"] -= 1
@@ -379,19 +688,27 @@ class SceneRenderer:
                 item_name = event.get("item", "")
                 self.add_floating_text(f"+ {item_name}", target_x, target_y - 50, (180, 100, 255)) # Roxo/Azul
 
-    def draw_players(self, screen: pygame.Surface, players: list) -> dict:
+    def draw_players(self, screen: pygame.Surface, players: list, is_tavern: bool = False) -> dict:
         hitboxes = {}
         if not players: return hitboxes
         from ui.asset_manager import AssetManager
 
-        play_area_x = int(self.width * 0.40)
-        play_area_w = self.width - play_area_x
+        if is_tavern:
+            # Afasta heróis da lareira na taverna, posicionando-os no flanco esquerdo/mesas
+            play_area_x = int(self.width * 0.42)
+            play_area_w = int(self.width * 0.16)
+            cy = self.height - 180
+        else:
+            play_area_x = int(self.width * 0.36)
+            play_area_w = int(self.width * 0.18)
+            cy = self.height - 180
+
         spacing = play_area_w // (len(players) + 1)
         token_size = 128
 
         for i, p in enumerate(players):
             cx = play_area_x + spacing * (i + 1)
-            cy = self.height - 180
+            cy = cy
 
             if p.get("sprite_key") or p.get("faction") == "ally":
                 hero_surf = AssetManager.get_entity_sprite(p, kind="corpo", size=(token_size, token_size))
@@ -410,13 +727,15 @@ class SceneRenderer:
                 if p.get("name"):
                     hitboxes[p["name"]] = box_rect
             
+            feet_y = cy + (token_size // 2)
+            name_y = feet_y + 14
             name_txt = self.font_names.render(p.get("name", "Unknown"), True, (255, 255, 255))
-            screen.blit(name_txt, (cx - (name_txt.get_width()//2), cy + (token_size // 2) + 6))
+            screen.blit(name_txt, (cx - (name_txt.get_width() // 2), name_y))
             
             # Health Bar dinâmica para membros da party
             hp_cur = p.get("hp_current", p.get("pv_atual", 0))
             hp_max = max(1, p.get("hp_max", p.get("pv_max", 1)))
-            self.draw_health_bar(screen, cx, cy + (token_size // 2) + 24, hp_cur, hp_max, 56)
+            self.draw_health_bar(screen, cx, name_y + 18, hp_cur, hp_max, 56)
             
         return hitboxes
 
@@ -461,8 +780,14 @@ class SceneRenderer:
         if not hasattr(self, "scroll_y"):
             self.scroll_y = max_scroll
             
-        if new_message:
-            self.scroll_y = max_scroll
+        if new_message or len(self._formatted_messages) != getattr(self, "_last_history_count", 0):
+            # Smart Anchor: ancore no TOPO da nova mensagem para que o jogador sempre leia do início
+            if len(self._formatted_messages) > 1:
+                new_msg_top = sum(pmsg["h"] + 15 for pmsg in self._formatted_messages[:-1])
+            else:
+                new_msg_top = 0
+            self.scroll_y = min(new_msg_top, max_scroll)
+            self._last_history_count = len(self._formatted_messages)
             
         self.scroll_y = max(0, min(self.scroll_y, max_scroll))
         
@@ -507,16 +832,40 @@ class SceneRenderer:
                             screen.blit(txt_surf, (draw_x + 70, text_y))
                         text_y += line_h
                 else:
-                    c = color_combat if pmsg["msg_type"] == "combat" else color_narrative
-                    text_y = current_y
+                    # Cartão / Pílula compacta para logs mecânicos (Zero Garbage por frame)
+                    pill_x = panel_x + 14
+                    pill_w = panel_w - 28
+                    pill_h = msg_h
+                    pill_rect = pygame.Rect(pill_x, current_y, pill_w, pill_h)
+
+                    pygame.draw.rect(screen, (22, 20, 26), pill_rect, border_radius=5)
+                    pygame.draw.rect(screen, (180, 150, 60), pill_rect, 1, border_radius=5)
+                    accent_rect = pygame.Rect(pill_x, current_y, 4, pill_h)
+                    pygame.draw.rect(screen, pmsg.get("accent_color", (170, 140, 75)), accent_rect, border_top_left_radius=5, border_bottom_left_radius=5)
+
+                    text_y = current_y + 4
                     line_h = pmsg["font"].get_linesize()
-                    for line in pmsg["lines"]:
-                        if text_y + pmsg["font"].get_height() > panel_y + panel_h:
-                            break
-                        if line:
-                            txt_surf = pmsg["font"].render(line, True, c)
-                            screen.blit(txt_surf, (draw_x, text_y))
-                        text_y += line_h
+                    parsed_lines = pmsg.get("parsed_lines")
+                    if parsed_lines:
+                        for seg_list in parsed_lines:
+                            if text_y + pmsg["font"].get_height() > panel_y + panel_h:
+                                break
+                            cur_x = pill_x + 12
+                            for seg_text, seg_col in seg_list:
+                                if seg_text:
+                                    txt_surf = pmsg["font"].render(seg_text, True, seg_col)
+                                    screen.blit(txt_surf, (cur_x, text_y))
+                                    cur_x += txt_surf.get_width()
+                            text_y += line_h
+                    else:
+                        c = color_combat if pmsg["msg_type"] == "combat" else color_narrative
+                        for line in pmsg["lines"]:
+                            if text_y + pmsg["font"].get_height() > panel_y + panel_h:
+                                break
+                            if line:
+                                txt_surf = pmsg["font"].render(line, True, c)
+                                screen.blit(txt_surf, (pill_x + 12, text_y))
+                            text_y += line_h
                     
             current_y += msg_h + 15
             
@@ -617,8 +966,13 @@ class BeatTransitionScene:
         self.description = ""
         self.bg_image_name = "tavern_bg.jpg"
         self.desc_lines = []
+        self.desc_pages = []
+        self.current_page = 0
+        self.total_pages = 1
         self.is_act_interlude = False
         self.interlude_info = None
+        self.typewriter_chars = 0.0
+        self.typewriter_speed = 0.85
         
         # Animação não-bloqueante a 60 FPS
         self.alpha = 0.0
@@ -748,28 +1102,51 @@ class BeatTransitionScene:
         self.is_act_interlude = bool(is_act_interlude or (beat_num in ACT_INTERLUDES))
         self.interlude_info = ACT_INTERLUDES.get(beat_num) if self.is_act_interlude else None
         
-        # Pré-calcula quebra de linhas da descrição no momento de início (Zero Garbage a 60 FPS)
+        # Pré-calcula quebra de linhas da descrição com paginação (Zero Garbage a 60 FPS)
         from ui.hud_components import get_wrapped_text_dimensions
         if self.is_act_interlude:
             max_text_w = self.card_interlude_w - 90
-            max_lines = 8
+            lines_per_page = 6
         else:
             max_text_w = self.card_w - 80
-            max_lines = 4
+            lines_per_page = 4
             
         _, _, lines = get_wrapped_text_dimensions(self.description, self.font_desc, max_text_w)
-        self.desc_lines = lines[:max_lines] if lines else []
+        all_lines = lines if lines else []
+        self.desc_pages = []
+        if all_lines:
+            for i in range(0, len(all_lines), lines_per_page):
+                self.desc_pages.append(all_lines[i:i + lines_per_page])
+        else:
+            self.desc_pages = [[]]
+            
+        self.current_page = 0
+        self.total_pages = len(self.desc_pages)
+        self.desc_lines = self.desc_pages[0]
+        self.typewriter_chars = 0.0
 
     def handle_event(self, event) -> bool:
         """Retorna True se o jogador pressionar tecla ou clicar para continuar."""
         if not self.is_active:
             return False
-        if event.type == pygame.KEYDOWN and event.key in [pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE]:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.is_active = False
             return True
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            self.is_active = False
-            return True
+        if (event.type == pygame.KEYDOWN and event.key in [pygame.K_RETURN, pygame.K_SPACE]) or (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
+            total_chars = sum(len(l) for l in self.desc_lines)
+            if self.typewriter_chars < total_chars:
+                # Completa o texto da página atual instantaneamente
+                self.typewriter_chars = float(total_chars)
+                return False
+            else:
+                if self.current_page < self.total_pages - 1:
+                    self.current_page += 1
+                    self.desc_lines = self.desc_pages[self.current_page]
+                    self.typewriter_chars = 0.0
+                    return False
+                else:
+                    self.is_active = False
+                    return True
         return False
 
     def draw(self, screen: pygame.Surface) -> None:
@@ -788,6 +1165,14 @@ class BeatTransitionScene:
         import math
         pulse_val = int(185 + 70 * math.sin(self.pulse_timer * 3))
         cx = self.width // 2
+        
+        # Avanço do efeito máquina de escrever (typewriter)
+        total_chars = sum(len(l) for l in self.desc_lines)
+        if self.typewriter_chars < total_chars:
+            self.typewriter_chars += self.typewriter_speed
+            if self.typewriter_chars > total_chars:
+                self.typewriter_chars = float(total_chars)
+        is_typing = (self.typewriter_chars < total_chars)
         
         if self.is_act_interlude:
             # =========================================================================
@@ -837,17 +1222,31 @@ class BeatTransitionScene:
             else:
                 start_desc_y = top_y + 195
                 
-            # Linhas de Ambientação Estendidas (até 8 linhas pré-calculadas)
+            # Linhas de Ambientação Estendidas (com efeito typewriter letra a letra)
             line_h = self.font_desc.get_linesize() + 2
+            chars_left = int(self.typewriter_chars)
             for i, line in enumerate(self.desc_lines):
-                if line.strip():
-                    d_surf = self.font_desc.render(line, True, (220, 210, 195))
+                if not line.strip() or chars_left <= 0:
+                    continue
+                if chars_left >= len(line):
+                    visible_line = line
+                    chars_left -= len(line)
+                else:
+                    visible_line = line[:chars_left]
+                    chars_left = 0
+                if visible_line:
+                    d_surf = self.font_desc.render(visible_line, True, (220, 210, 195))
                     d_rect = d_surf.get_rect(center=(cx, start_desc_y + (i * line_h)))
                     screen.blit(d_surf, d_rect)
                     
-            # Indicador Pulsante Dourado Específico do Ato
+            # Indicador Pulsante Dourado Específico do Ato com Suporte a Paginação
             prompt_color = (pulse_val, int(pulse_val * 0.85), int(pulse_val * 0.45))
-            prompt_text = info.get("prompt", "[ Pressione ENTER ou Clique para Continuar ]")
+            if is_typing:
+                prompt_text = "[ Pressione ESPAÇO ou Clique para Exibir Tudo ]"
+            elif self.total_pages > 1 and self.current_page < self.total_pages - 1:
+                prompt_text = f"[ Pressione ESPAÇO ou Clique para Avançar ({self.current_page + 1}/{self.total_pages}) ]"
+            else:
+                prompt_text = info.get("prompt", "[ Pressione ENTER ou Clique para Continuar ]")
             prompt_surf = self.font_prompt.render(prompt_text, True, prompt_color)
             prompt_rect = prompt_surf.get_rect(center=(cx, top_y + self.card_interlude_h - 38))
             screen.blit(prompt_surf, prompt_rect)
@@ -876,17 +1275,32 @@ class BeatTransitionScene:
             name_rect = name_surf.get_rect(center=(cx, self.card_y + 120))
             screen.blit(name_surf, name_rect)
             
-            # Breve descrição de ambientação
+            # Breve descrição de ambientação (com efeito typewriter letra a letra)
             start_desc_y = self.card_y + 175
             line_h = self.font_desc.get_linesize()
+            chars_left = int(self.typewriter_chars)
             for i, line in enumerate(self.desc_lines):
-                if line.strip():
-                    d_surf = self.font_desc.render(line, True, (205, 200, 190))
+                if not line.strip() or chars_left <= 0:
+                    continue
+                if chars_left >= len(line):
+                    visible_line = line
+                    chars_left -= len(line)
+                else:
+                    visible_line = line[:chars_left]
+                    chars_left = 0
+                if visible_line:
+                    d_surf = self.font_desc.render(visible_line, True, (205, 200, 190))
                     d_rect = d_surf.get_rect(center=(cx, start_desc_y + (i * line_h)))
                     screen.blit(d_surf, d_rect)
                     
-            # Prompt Pulsante: [ Pressione ENTER ou Clique para Avançar ]
+            # Prompt Pulsante com Suporte a Paginação
             prompt_color = (pulse_val, int(pulse_val * 0.85), int(pulse_val * 0.5))
-            prompt_surf = self.font_prompt.render("[ Pressione ENTER ou Clique para Continuar ]", True, prompt_color)
+            if is_typing:
+                prompt_text = "[ Pressione ESPAÇO ou Clique para Exibir Tudo ]"
+            elif self.total_pages > 1 and self.current_page < self.total_pages - 1:
+                prompt_text = f"[ Pressione ESPAÇO ou Clique para Avançar ({self.current_page + 1}/{self.total_pages}) ]"
+            else:
+                prompt_text = "[ Pressione ENTER ou Clique para Continuar ]"
+            prompt_surf = self.font_prompt.render(prompt_text, True, prompt_color)
             prompt_rect = prompt_surf.get_rect(center=(cx, self.card_y + self.card_h - 40))
             screen.blit(prompt_surf, prompt_rect)

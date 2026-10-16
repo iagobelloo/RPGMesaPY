@@ -56,6 +56,7 @@ def clean_tofu_glyphs(text: str) -> str:
     res = text
     for k, v in replacements.items():
         res = res.replace(k, v)
+    res = res.replace("()", "").replace("( )", "")
     if "\n" in text:
         return "\n".join(" ".join(line.split()) for line in res.splitlines())
     return " ".join(res.split())
@@ -94,7 +95,6 @@ def draw_ui_button(screen: pygame.Surface, rect: pygame.Rect, text: str, font: p
         
     screen.blit(btn_surf, (rect.x, rect.y))
         
-    font.set_bold(True)
     # Texto Centralizado com sanitização de caracteres exóticos
     text_color = (245, 245, 230) # Bege claro / branco
     if not is_ready:
@@ -204,7 +204,7 @@ class Panel:
         pass
 
 class MainMenuPanel(Panel):
-    """Painel inicial (Menu de Abertura)."""
+    """Painel inicial (Menu de Abertura) com estética Dark Fantasy e renderização nítida."""
     def __init__(self, x: int, y: int, width: int, height: int):
         super().__init__(x, y, width, height, title="Crônicas da Taverna")
         
@@ -213,9 +213,14 @@ class MainMenuPanel(Panel):
         raw_bg = AssetManager.get_image("background", "menu_bg")
         self.bg_image = pygame.transform.scale(raw_bg, (sw, sh))
         
-        self.overlay = pygame.Surface((sw, sh))
-        self.overlay.set_alpha(150)
-        self.overlay.fill((0, 0, 0))
+        # Vinheta escura translúcida (Zero Garbage por frame)
+        self.overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        self.overlay.fill((10, 8, 14, 185))
+        
+        # Fontes nítidas sem synthetic bold/italic doubling
+        self.font_main_title = AssetManager.get_font(44)
+        self.font_subtitle = AssetManager.get_font(16)
+        self.font_btn = AssetManager.get_font(18)
         
         # Botões centralizados
         btn_w, btn_h = 260, 46
@@ -225,28 +230,50 @@ class MainMenuPanel(Panel):
         self.btn_manual = pygame.Rect(btn_x, y + 196, btn_w, btn_h)
         self.btn_quit = pygame.Rect(btn_x, y + 254, btn_w, btn_h)
         
+        # Moldura Dark Fantasy gótica pré-renderizada para o menu (Zero Garbage)
+        frame_w, frame_h = btn_w + 64, 252
+        self.frame_x = btn_x - 32
+        self.frame_y = y + 64
+        self.frame_surf = pygame.Surface((frame_w, frame_h), pygame.SRCALPHA)
+        self.frame_surf.fill((20, 15, 12, 215))
+        pygame.draw.rect(self.frame_surf, (70, 50, 28), (0, 0, frame_w, frame_h), 2, border_radius=6)
+        pygame.draw.rect(self.frame_surf, COLOR_GOLD, (4, 4, frame_w - 8, frame_h - 8), 1, border_radius=5)
+        # Cantoneiras douradas
+        c_len = 14
+        for cx, cy, dx, dy in [(4, 4, 1, 1), (frame_w - 5, 4, -1, 1), (4, frame_h - 5, 1, -1), (frame_w - 5, frame_h - 5, -1, -1)]:
+            pygame.draw.line(self.frame_surf, (245, 215, 110), (cx, cy), (cx + dx * c_len, cy), 2)
+            pygame.draw.line(self.frame_surf, (245, 215, 110), (cx, cy), (cx, cy + dy * c_len), 2)
+        
     def _draw_button(self, screen, rect, text, is_active=True):
         mouse_pos = pygame.mouse.get_pos()
         is_hover = rect.collidepoint(mouse_pos)
-        draw_ui_button(screen, rect, text, self.font_title, is_hover, is_active)
+        draw_ui_button(screen, rect, text, self.font_btn, is_hover, is_active)
 
     def draw(self, screen: pygame.Surface):
         if not self.is_visible: return
         
         screen.blit(self.bg_image, (0, 0))
         screen.blit(self.overlay, (0, 0))
+        screen.blit(self.frame_surf, (self.frame_x, self.frame_y))
         
-        # Título Flutuante Cinematográfico
-        title_font = AssetManager.get_font(62, bold=True, italic=True)
+        # Título Nítido Dourado com Sombra Dark Fantasy
         title_text = self.title
+        tx = self.rect.x + (self.rect.width - self.font_main_title.size(title_text)[0]) // 2
+        ty = self.rect.y - 36
         
-        # Sombra (Text Shadow)
-        shadow_surf = title_font.render(title_text, True, (0, 0, 0))
-        screen.blit(shadow_surf, (self.rect.x + (self.rect.width - shadow_surf.get_width()) // 2 + 3, self.rect.y - 40 + 3))
+        # Sombra sólida de alto contraste
+        shadow_surf = self.font_main_title.render(title_text, True, (12, 8, 4))
+        screen.blit(shadow_surf, (tx + 2, ty + 2))
         
-        # Texto Principal Dourado/Amarelado
-        title_surf = title_font.render(title_text, True, (229, 192, 123)) # #E5C07B
-        screen.blit(title_surf, (self.rect.x + (self.rect.width - title_surf.get_width()) // 2, self.rect.y - 40))
+        # Texto Dourado Nítido
+        title_surf = self.font_main_title.render(title_text, True, (245, 215, 110))
+        screen.blit(title_surf, (tx, ty))
+        
+        # Subtítulo de Ambientação
+        sub_text = "O Despertar das Cinzas • Livro de Regras D&D 5E"
+        sub_x = self.rect.x + (self.rect.width - self.font_subtitle.size(sub_text)[0]) // 2
+        sub_surf = self.font_subtitle.render(sub_text, True, (200, 180, 145))
+        screen.blit(sub_surf, (sub_x, ty + 46))
         
         self._draw_button(screen, self.btn_new_game, "Nova Campanha", True)
         self._draw_button(screen, self.btn_load_game, "Carregar Jogo", True)
@@ -463,7 +490,10 @@ class BackpackModal(Panel):
         self._equip_buttons = {}  # item_name -> pygame.Rect
         self._items_db_cache = None
         self.last_load_info = (0, 10)
-        self.last_load_str = "Carga: [□□□□□□□□□□] 0 / 10 Slots"
+        self.last_load_str = "Carga: [----------] 0 / 10 Slots"
+        # Backdrop overlay translúcido para evitar sangramento do cenário ao fundo
+        self._backdrop_overlay = pygame.Surface((1280, 720), pygame.SRCALPHA)
+        self._backdrop_overlay.fill((0, 0, 0, 165))
 
     def get_load_capacity(self, pc: dict = None) -> tuple:
         """Retorna (slots_usados, slots_maximos) para o herói atual."""
@@ -543,6 +573,9 @@ class BackpackModal(Panel):
         if not pc:
             return
 
+        # Escurecimento de fundo para evitar sangramento do cenário
+        screen.blit(self._backdrop_overlay, (0, 0))
+
         # Tenta carregar textura de mochila ou desenha painel de couro/madeira com moldura rica
         bg_surf = AssetManager.get_image("ui", "backpack_bg")
         if bg_surf is not None:
@@ -597,7 +630,7 @@ class BackpackModal(Panel):
         self.last_load_info = (used_slots, max_slots)
         filled_blocks = min(used_slots, max_slots)
         empty_blocks = max(0, max_slots - filled_blocks)
-        self.last_load_str = f"Carga: [{'■' * filled_blocks}{'□' * empty_blocks}] {used_slots} / {max_slots} Slots"
+        self.last_load_str = f"Carga: [{'=' * filled_blocks}{'-' * empty_blocks}] {used_slots} / {max_slots} Slots"
 
         load_color = (235, 110, 80) if used_slots >= max_slots else (210, 195, 165)
         screen.blit(self.font_s.render(f"Carga: {used_slots} / {max_slots} Slots", True, load_color), (left_x, cur_y))
@@ -781,21 +814,33 @@ class GrimoireModal(Panel):
         self._spell_buttons = {}  # spell_id -> pygame.Rect
         self._monster_buttons = {} # monster_id -> pygame.Rect
         self.selected_monster = "goblin"
+        self.bestiary_page = 0
+        self.btn_bestiary_prev = pygame.Rect(0, 0, 0, 0)
+        self.btn_bestiary_next = pygame.Rect(0, 0, 0, 0)
+        self._compendium_keys = [
+            "goblin", "kobold", "esqueleto", "zumbi", "orc", "lobo_atroz", "sombra",
+            "bandido", "veterano", "ogro", "aranha_gigante", "geleia_ocre", "armadura_animada",
+            "mimico", "gargula", "manticora", "aparicao", "cria_de_vampiro", "quimera",
+            "ogro_brutal", "aboleth", "rakshasa", "gigante_do_fogo", "vampiro", "lich",
+            "hidra", "kraken", "boss_final"
+        ]
 
-        # 4 Abas Temáticas
-        self.active_tab = "items"  # "items" por padrão para compatibilidade legada; main.py define "habilidades"
-        tab_w = 125
+        # 5 Abas Temáticas Delimitadas
+        self.active_tab = "habilidades"  # "habilidades" por padrão
+        tab_w = 98
         tab_h = 28
-        start_tab_x = x + width - (tab_w * 4 + 25)
+        start_tab_x = x + width - (tab_w * 5 + 32)
         self.tab_skills_rect = pygame.Rect(start_tab_x, y + 26, tab_w, tab_h)
-        self.tab_bestiary_rect = pygame.Rect(start_tab_x + tab_w + 4, y + 26, tab_w, tab_h)
-        self.tab_journal_rect = pygame.Rect(start_tab_x + (tab_w + 4) * 2, y + 26, tab_w, tab_h)
-        self.tab_status_rect = pygame.Rect(start_tab_x + (tab_w + 4) * 3, y + 26, tab_w, tab_h)
+        self.tab_spells_rect = pygame.Rect(start_tab_x + tab_w + 4, y + 26, tab_w, tab_h)
+        self.tab_bestiary_rect = pygame.Rect(start_tab_x + (tab_w + 4) * 2, y + 26, tab_w, tab_h)
+        self.tab_journal_rect = pygame.Rect(start_tab_x + (tab_w + 4) * 3, y + 26, tab_w, tab_h)
+        self.tab_status_rect = pygame.Rect(start_tab_x + (tab_w + 4) * 4, y + 26, tab_w, tab_h)
 
         # Aliases para compatibilidade legada
         self.tab_items_rect = self.tab_status_rect
-        self.tab_spells_rect = self.tab_skills_rect
         self._item_buttons = {}
+        self._skill_action_buttons = {}
+        self.selected_spell_id = None
 
         self._spells_db_cache = None
         self._items_db_cache = None
@@ -825,6 +870,7 @@ class GrimoireModal(Panel):
         self._skill_icon_rects = {} # sk_id -> pygame.Rect (40x40)
         self._skill_node_rects = {} # sk_id -> pygame.Rect (card inteiro)
         self.btn_learn_skill = pygame.Rect(0, 0, 0, 0)
+        self.btn_use_skill = pygame.Rect(0, 0, 0, 0)
 
         # Estado do Modal/Overlay de Level Up Interativo
         self.level_up_modal_open = False
@@ -1403,15 +1449,16 @@ class GrimoireModal(Panel):
         page_w = (self.rect.width // 2) - 76
         right_x = self.rect.x + (self.rect.width // 2) + 32
 
-        # Renderização das 4 Abas
+        # Renderização das 5 Abas Delimitadas
         tabs = [
             ("habilidades", "Habilidades", self.tab_skills_rect),
+            ("spells", "Magias", self.tab_spells_rect),
             ("bestiario", "Bestiário", self.tab_bestiary_rect),
             ("diario", "Diário / Missões", self.tab_journal_rect),
             ("status", "Ficha & Equip.", self.tab_status_rect),
         ]
         for tid, tlabel, trect in tabs:
-            is_active = (self.active_tab == tid) or (tid == "habilidades" and self.active_tab == "spells") or (tid == "status" and self.active_tab == "items")
+            is_active = (self.active_tab == tid) or (tid == "status" and self.active_tab == "items")
             color_bg = COLOR_GOLD if is_active else (210, 200, 180)
             pygame.draw.rect(screen, color_bg, trect, border_radius=4)
             pygame.draw.rect(screen, COLOR_WOOD_DARK, trect, 2, border_radius=4)
@@ -1419,38 +1466,57 @@ class GrimoireModal(Panel):
             screen.blit(txt_t, (trect.centerx - txt_t.get_width() // 2, trect.centery - txt_t.get_height() // 2))
 
         # =====================================================================
-        # ABA 1: HABILIDADES (Árvore Visual com 4 Tiers & Ícones Quadrados) ou ABA SPELLS
+        # ABA 1: HABILIDADES (Ações Rápidas de Classe + Árvore de 4 Tiers)
         # =====================================================================
-        if self.active_tab in ("habilidades", "spells"):
-            # --- PÁGINA ESQUERDA: Magias / Descrição da Habilidade Selecionada ---
+        if self.active_tab == "habilidades":
+            # --- PÁGINA ESQUERDA: Habilidades Disponíveis em Batalha & Detalhes ---
             cur_y = self.rect.y + 62
-            screen.blit(self.font_b.render("Grimório de Magias", True, COLOR_INK), (left_x, cur_y))
+            screen.blit(self.font_b.render("Habilidades Prontas para Combate", True, COLOR_INK), (left_x, cur_y))
+            cur_y += 22
+            screen.blit(self.font_tiny.render("Técnicas desbloqueadas para uso imediato em ação ou bônus", True, (90, 80, 70)), (left_x, cur_y))
             cur_y += 24
-            slots = pc.get("spell_slots", {})
-            slots_str = " | ".join(f"Nv {l}: {q}" for l, q in sorted(slots.items())) if slots else "Sem espaços arcanos (Marcial)."
-            screen.blit(self.font_s.render(slots_str, True, (90, 80, 70)), (left_x, cur_y))
-            cur_y += 28
 
-            self._spell_buttons.clear()
-            spells = self._get_player_spells()
-            if not spells:
-                screen.blit(self.font_n.render("Nenhuma magia registrada no grimório.", True, (120, 110, 100)), (left_x, cur_y))
-                cur_y += 50
+            self._skill_action_buttons.clear()
+            if self.session_ref and hasattr(self.session_ref, "get_available_skills"):
+                avail_skills = self.session_ref.get_available_skills()
             else:
-                for s in spells[:3]:
-                    s_id = s.get("id", s.get("name"))
-                    s_name = f"{s.get('name', 'Magia')} (Nv {s.get('level', 1)})"
-                    screen.blit(self.font_s.render(s_name, True, COLOR_INK), (left_x, cur_y + 2))
-                    s_desc = s.get("damage_dice", "") or s.get("mechanical_action", "")
-                    screen.blit(self.font_tiny.render(s_desc, True, (100, 90, 80)), (left_x, cur_y + 18))
+                skill_tree = self._get_class_skill_tree(pc.get("class", "Guerreiro"))
+                avail_skills = [
+                    {
+                        "id": s["canonical_id"],
+                        "name": s["name"],
+                        "cost": "Ação Bônus" if any(w in s["name"].lower() for w in ["fôlego", "folego", "marca", "ação ardilosa", "acao ardilosa"]) else "Ação",
+                        "short_desc": s["short_desc"]
+                    }
+                    for s in skill_tree if self._get_skill_state(s, pc) == "acquired"
+                ]
 
-                    btn_cast = pygame.Rect(left_x + page_w - 75, cur_y + 2, 70, 24)
-                    self._spell_buttons[s_id] = btn_cast
-                    draw_ui_button(screen, btn_cast, "Conjurar", self.font_btn, btn_cast.collidepoint(mouse_pos), True)
-                    cur_y += 40
+            if not avail_skills:
+                screen.blit(self.font_n.render("Nenhuma habilidade ativa no momento.", True, (120, 110, 100)), (left_x, cur_y))
+                cur_y += 44
+            else:
+                for sk in avail_skills[:3]:
+                    sk_id = sk.get("id", sk.get("name"))
+                    sk_name = sk.get("name", "Habilidade")
+                    sk_cost = sk.get("cost", "Ação")
+                    
+                    card_h_sk = 38
+                    sk_box = pygame.Rect(left_x, cur_y, page_w, card_h_sk)
+                    is_h = sk_box.collidepoint(mouse_pos)
+                    pygame.draw.rect(screen, (236, 226, 206) if is_h else (230, 220, 198), sk_box, border_radius=4)
+                    pygame.draw.rect(screen, (180, 160, 130), sk_box, 1, border_radius=4)
+                    
+                    QuickActionBar._draw_totem(screen, "lightning", left_x + 12, cur_y + card_h_sk // 2)
+                    screen.blit(self.font_btn.render(f"{sk_name}", True, COLOR_INK), (left_x + 24, cur_y + 3))
+                    screen.blit(self.font_tiny.render(f"[{sk_cost}] • {sk.get('short_desc', '')}", True, (95, 80, 65)), (left_x + 24, cur_y + 20))
+
+                    btn_use = pygame.Rect(left_x + page_w - 92, cur_y + 6, 88, 26)
+                    self._skill_action_buttons[sk_id] = (btn_use, sk_id, sk_name)
+                    draw_ui_button(screen, btn_use, "⚡ Usar", self.font_btn, btn_use.collidepoint(mouse_pos), True)
+                    cur_y += 44
 
             # Painel Inferior Esquerdo: Detalhes da Habilidade Selecionada na Árvore
-            cur_y = max(cur_y + 10, self.rect.y + 260)
+            cur_y = max(cur_y + 8, self.rect.y + 250)
             pygame.draw.line(screen, (190, 180, 160), (left_x, cur_y), (left_x + page_w, cur_y), 1)
             cur_y += 8
 
@@ -1482,9 +1548,15 @@ class GrimoireModal(Panel):
 
             if sel_state == "available":
                 self.btn_learn_skill = pygame.Rect(left_x, self.rect.bottom - 74, page_w, 32)
+                self.btn_use_skill = pygame.Rect(0, 0, 0, 0)
                 draw_ui_button(screen, self.btn_learn_skill, "Aprender Habilidade", self.font_b, self.btn_learn_skill.collidepoint(mouse_pos), True)
+            elif sel_state == "acquired":
+                self.btn_learn_skill = pygame.Rect(0, 0, 0, 0)
+                self.btn_use_skill = pygame.Rect(left_x, self.rect.bottom - 74, page_w, 32)
+                draw_ui_button(screen, self.btn_use_skill, "⚡ Usar Habilidade", self.font_b, self.btn_use_skill.collidepoint(mouse_pos), True)
             else:
                 self.btn_learn_skill = pygame.Rect(0, 0, 0, 0)
+                self.btn_use_skill = pygame.Rect(0, 0, 0, 0)
 
             # --- PÁGINA DIREITA: Árvore de Habilidades Visual com 4 Tiers ---
             r_y = self.rect.y + 62
@@ -1536,7 +1608,15 @@ class GrimoireModal(Panel):
                 # Informações da Habilidade ao lado do ícone
                 info_x = node_x + 50
                 name_col = COLOR_INK if state != "locked" else (100, 90, 80)
-                screen.blit(self.font_btn.render(f"Nv {req_lvl}: {sk['name']}", True, name_col), (info_x, r_y + 2))
+                
+                # Trunca nome se ultrapassar o espaço disponível antes da badge
+                sk_name_str = f"Nv {req_lvl}: {sk['name']}"
+                max_name_w = (right_x + page_w - 100) - info_x
+                if self.font_btn.size(sk_name_str)[0] > max_name_w:
+                    while len(sk_name_str) > 3 and self.font_btn.size(sk_name_str + "..")[0] > max_name_w:
+                        sk_name_str = sk_name_str[:-1]
+                    sk_name_str = sk_name_str.rstrip() + ".."
+                screen.blit(self.font_btn.render(sk_name_str, True, name_col), (info_x, r_y + 2))
 
                 badge_str = "Adquirida [OK]" if state == "acquired" else ("Disponível" if state == "available" else f"Nv {req_lvl}")
                 badge_col = (35, 120, 35) if state == "acquired" else ((195, 120, 20) if state == "available" else (130, 80, 60))
@@ -1544,6 +1624,116 @@ class GrimoireModal(Panel):
 
                 screen.blit(self.font_tiny.render(sk["short_desc"], True, (90, 80, 70)), (info_x, r_y + 24))
                 r_y += tier_h
+
+        # =====================================================================
+        # ABA 2: MAGIAS (Grimório Arcano & Divino ou Vocação Marcial)
+        # =====================================================================
+        elif self.active_tab == "spells":
+            char_class = pc.get("class", "Guerreiro")
+            c_low = char_class.lower()
+            slots = pc.get("spell_slots", {})
+            has_spells = bool(slots) or bool(pc.get("spells"))
+            is_martial = any(m in c_low for m in ["guerreiro", "fighter", "ladino", "rogue"]) or ("patrulheiro" in c_low and pc.get("level", 1) < 2)
+
+            if is_martial and not has_spells:
+                # --- PÁGINA ESQUERDA: Moldura Temática da Vocação Marcial ---
+                cur_y = self.rect.y + 65
+                screen.blit(self.font_b.render("Grimório Arcano & Sagrado", True, COLOR_INK), (left_x, cur_y))
+                cur_y += 28
+                box_l = pygame.Rect(left_x, cur_y, page_w, 260)
+                pygame.draw.rect(screen, (232, 222, 202), box_l, border_radius=6)
+                pygame.draw.rect(screen, (165, 140, 95), box_l, 1, border_radius=6)
+
+                screen.blit(self.font_b.render("✦ Vocação Marcial ✦", True, (135, 45, 20)), (left_x + 16, cur_y + 16))
+                screen.blit(self.font_btn.render(f"Disciplina do {char_class}", True, COLOR_WOOD_DARK), (left_x + 16, cur_y + 40))
+                pygame.draw.line(screen, (190, 175, 145), (left_x + 16, cur_y + 60), (left_x + page_w - 16, cur_y + 60), 1)
+
+                info_txt = (
+                    f"O {char_class} não manipula a Trama Arcana nem utiliza espaços de magia "
+                    "para conjurar encantamentos. Seu poder é forjado no condicionamento físico, "
+                    "no domínio das armas mortais, armaduras e na superioridade tática no campo de batalha.\n\n"
+                    "✦ Suas manobras, defesas e ataques especiais são ativados através da aba 'Habilidades'."
+                )
+                draw_text_wrapped(screen, info_txt, self.font_s, (80, 70, 60), pygame.Rect(left_x + 16, cur_y + 72, page_w - 32, 170))
+
+                # --- PÁGINA DIREITA: Tradição de Combate & Recursos Marciais ---
+                r_y = self.rect.y + 65
+                screen.blit(self.font_b.render(f"Tradição de Batalha — {char_class}", True, COLOR_INK), (right_x, r_y))
+                r_y += 28
+                box_r = pygame.Rect(right_x, r_y, page_w, 260)
+                pygame.draw.rect(screen, (232, 222, 202), box_r, border_radius=6)
+                pygame.draw.rect(screen, (165, 140, 95), box_r, 1, border_radius=6)
+
+                screen.blit(self.font_b.render("Privilégios Marciais:", True, COLOR_INK), (right_x + 16, r_y + 16))
+                if "ladino" in c_low:
+                    prof_txt = (
+                        "• Perícias Marciais: Armas com Acuidade, Furtividade e Ladinagem.\n"
+                        "• Ataque Furtivo: Dano extra letal contra alvos vulneráveis.\n"
+                        "• Esquiva & Agilidade: Reações rápidas para mitigar perigos."
+                    )
+                elif "patrulheiro" in c_low:
+                    prof_txt = (
+                        "• Perícias Marciais: Todas as armas simples e marciais.\n"
+                        "• Sobrevivência: Rastreamento, terreno favorecido e arquearia.\n"
+                        "• Nível 2+: Despertará magias da natureza e conjurações primordiais."
+                    )
+                else:
+                    prof_txt = (
+                        "• Perícias Marciais: Todas as armas e armaduras pesadas e escudos.\n"
+                        "• Retomar o Fôlego: Cura vigorosa instantânea como ação bônus.\n"
+                        "• Surto de Ação: Executa uma ação extra no mesmo turno de batalha."
+                    )
+                draw_text_wrapped(screen, prof_txt, self.font_s, (75, 65, 55), pygame.Rect(right_x + 16, r_y + 44, page_w - 32, 140))
+                pygame.draw.line(screen, (190, 175, 145), (right_x + 16, r_y + 200), (right_x + page_w - 16, r_y + 200), 1)
+                screen.blit(self.font_tiny.render("Consulte a aba Habilidades para usar suas manobras ativas.", True, (120, 90, 45)), (right_x + 16, r_y + 215))
+
+            else:
+                # --- PÁGINA ESQUERDA: Magias Preparadas de Conjurador ---
+                cur_y = self.rect.y + 62
+                screen.blit(self.font_b.render("Grimório de Magias Preparadas", True, COLOR_INK), (left_x, cur_y))
+                cur_y += 24
+                slots_str = " | ".join(f"Nv {l}: {q}" for l, q in sorted(slots.items())) if slots else "Espaços arcanos restaurados."
+                screen.blit(self.font_s.render(slots_str, True, (90, 80, 70)), (left_x, cur_y))
+                cur_y += 28
+
+                self._spell_buttons.clear()
+                if self.session_ref and hasattr(self.session_ref, "get_available_spells"):
+                    spells = self.session_ref.get_available_spells()
+                else:
+                    spells = self._get_player_spells()
+
+                if not spells:
+                    screen.blit(self.font_n.render("Nenhuma magia registrada no grimório.", True, (120, 110, 100)), (left_x, cur_y))
+                else:
+                    for s in spells[:5]:
+                        s_id = s.get("id", s.get("name"))
+                        s_name = f"{s.get('name', 'Magia')} (Nv {s.get('level', 1)})"
+                        screen.blit(self.font_s.render(s_name, True, COLOR_INK), (left_x, cur_y + 2))
+                        s_desc = s.get("damage_dice", "") or s.get("mechanical_action", "") or s.get("school", "")
+                        screen.blit(self.font_tiny.render(s_desc, True, (100, 90, 80)), (left_x, cur_y + 18))
+
+                        btn_cast = pygame.Rect(left_x + page_w - 75, cur_y + 2, 70, 24)
+                        self._spell_buttons[s_id] = btn_cast
+                        draw_ui_button(screen, btn_cast, "Conjurar", self.font_btn, btn_cast.collidepoint(mouse_pos), True)
+                        cur_y += 40
+
+                # --- PÁGINA DIREITA: Tradição Arcana & Conhecimento Místico ---
+                r_y = self.rect.y + 62
+                screen.blit(self.font_b.render(f"Tradição Mística — {char_class}", True, COLOR_INK), (right_x, r_y))
+                r_y += 24
+                screen.blit(self.font_tiny.render("Canalização de feitiços e encantamentos ativos", True, (90, 80, 70)), (right_x, r_y))
+                r_y += 24
+                box_caster = pygame.Rect(right_x, r_y, page_w, 240)
+                pygame.draw.rect(screen, (232, 222, 202), box_caster, border_radius=6)
+                pygame.draw.rect(screen, (165, 140, 95), box_caster, 1, border_radius=6)
+
+                caster_intro = (
+                    f"As magias de {char_class} são conjuradas manipulando as forças arcanas e divinas do mundo.\n\n"
+                    "• Espaços de Magia: Consumidos ao lançar feitiços de Nível 1 ou superior.\n"
+                    "• Descanso Breve e Longo: Recuperam seus espaços arcanos e divindades.\n"
+                    "• Clique em 'Conjurar' para lançar a magia imediatamente em combate."
+                )
+                draw_text_wrapped(screen, caster_intro, self.font_s, (75, 65, 55), pygame.Rect(right_x + 16, r_y + 16, page_w - 32, 200))
 
         # =====================================================================
         # ABA LEGADA: ITENS / CONSUMÍVEIS (Bloco 7)
@@ -1591,12 +1781,34 @@ class GrimoireModal(Panel):
                             if t.get("id"): discovered_set.add(str(t["id"]).lower())
                             if t.get("tipo_bestiario"): discovered_set.add(str(t["tipo_bestiario"]).lower())
 
-            compendium_keys = ["goblin", "kobold", "esqueleto", "lobo_atroz", "ogro", "aranha_gigante", "manticora", "boss_final"]
+            compendium_keys = getattr(self, "_compendium_keys", [
+                "goblin", "kobold", "esqueleto", "zumbi", "orc", "lobo_atroz", "sombra",
+                "bandido", "veterano", "ogro", "aranha_gigante", "geleia_ocre", "armadura_animada",
+                "mimico", "gargula", "manticora", "aparicao", "cria_de_vampiro", "quimera",
+                "ogro_brutal", "aboleth", "rakshasa", "gigante_do_fogo", "vampiro", "lich",
+                "hidra", "kraken", "boss_final"
+            ])
             self._monster_buttons.clear()
 
-            for m_key in compendium_keys:
+            per_page = 7
+            total_pages = max(1, (len(compendium_keys) + per_page - 1) // per_page)
+            if self.bestiary_page >= total_pages:
+                self.bestiary_page = total_pages - 1
+            if self.bestiary_page < 0:
+                self.bestiary_page = 0
+
+            start_idx = self.bestiary_page * per_page
+            page_monsters = compendium_keys[start_idx:start_idx + per_page]
+
+            for m_key in page_monsters:
                 clean_key = m_key.replace("m_", "").lower()
-                is_discovered = (m_key in discovered_set or clean_key in discovered_set or any(clean_key in d or d in clean_key for d in discovered_set))
+                clean_norm = clean_key.replace("_", " ")
+                is_discovered = (
+                    m_key in discovered_set or
+                    clean_key in discovered_set or
+                    clean_norm in discovered_set or
+                    any(clean_key in d or d in clean_key or clean_norm in d for d in discovered_set)
+                )
 
                 m_btn = pygame.Rect(left_x, cur_y, page_w, 24)
                 self._monster_buttons[m_key] = m_btn
@@ -1607,26 +1819,49 @@ class GrimoireModal(Panel):
 
                 if is_discovered:
                     lore = BESTIARY_LORE.get(clean_key, {})
-                    m_label = lore.get("name") or clean_key.replace("_", " ").title()
+                    mon_entry = BESTIARIO_5E.get(m_key) or BESTIARIO_5E.get(f"m_{clean_key}") or BESTIARIO_5E.get(clean_norm) or {}
+                    m_label = lore.get("name") or mon_entry.get("name") or clean_key.replace("_", " ").title()
                     screen.blit(self.font_s.render(f"- {m_label}", True, COLOR_WOOD_DARK if is_sel else COLOR_INK), (left_x + 8, cur_y + 4))
                 else:
                     screen.blit(self.font_s.render("- ??? (Desconhecido) [Oculto]", True, (130, 115, 100)), (left_x + 8, cur_y + 4))
 
                 cur_y += 28
 
+            # Controles de Paginação do Bestiário (7 por página)
+            nav_y = self.rect.bottom - 60
+            nav_btn_w = 90
+            self.btn_bestiary_prev = pygame.Rect(left_x, nav_y, nav_btn_w, 26)
+            self.btn_bestiary_next = pygame.Rect(left_x + page_w - nav_btn_w, nav_y, nav_btn_w, 26)
+            draw_ui_button(screen, self.btn_bestiary_prev, "< Anterior", self.font_tiny, self.btn_bestiary_prev.collidepoint(mouse_pos), self.bestiary_page > 0)
+            draw_ui_button(screen, self.btn_bestiary_next, "Próxima >", self.font_tiny, self.btn_bestiary_next.collidepoint(mouse_pos), self.bestiary_page < total_pages - 1)
+            p_lbl = self.font_tiny.render(f"Pág {self.bestiary_page + 1}/{total_pages}", True, COLOR_INK)
+            screen.blit(p_lbl, (left_x + (page_w - p_lbl.get_width()) // 2, nav_y + 6))
+
             # Página Direita: Ficha de Detalhes ou Silhueta Misteriosa
             r_y = self.rect.y + 65
             sel_clean = self.selected_monster.replace("m_", "").lower()
-            is_sel_discovered = (self.selected_monster in discovered_set or sel_clean in discovered_set or any(sel_clean in d or d in sel_clean for d in discovered_set))
+            sel_norm = sel_clean.replace("_", " ")
+            is_sel_discovered = (
+                self.selected_monster in discovered_set or
+                sel_clean in discovered_set or
+                sel_norm in discovered_set or
+                any(sel_clean in d or d in sel_clean or sel_norm in d for d in discovered_set)
+            )
 
             if is_sel_discovered:
-                mon_data = BESTIARIO_5E.get(self.selected_monster, BESTIARIO_5E.get(f"m_{sel_clean}", {}))
+                mon_data = (
+                    BESTIARIO_5E.get(self.selected_monster) or
+                    BESTIARIO_5E.get(f"m_{sel_clean}") or
+                    BESTIARIO_5E.get(sel_norm) or
+                    BESTIARIO_5E.get(sel_clean.replace("_", " ").title()) or
+                    (BESTIARIO_5E.get("m_supreme_dragon", {}) if "boss" in sel_clean or "dragon" in sel_clean else {})
+                )
                 lore = BESTIARY_LORE.get(sel_clean, {
-                    "name": sel_clean.replace("_", " ").title(),
-                    "descricao": "Monstruosidade perigosa catalogada pelos aventureiros.",
-                    "pontos_fortes": "Ataques ferozes e instinto predatório.",
-                    "fraquezas": "Coordenação defensiva do grupo.",
-                    "tatico": "Ataque com sabedoria e explore suas fraquezas de alcance."
+                    "name": mon_data.get("name", sel_clean.replace("_", " ").title()),
+                    "descricao": mon_data.get("descricao", "Monstruosidade perigosa catalogada pelos aventureiros."),
+                    "pontos_fortes": ", ".join(mon_data.get("pontos_fortes", [])) if isinstance(mon_data.get("pontos_fortes"), list) else mon_data.get("pontos_fortes", "Ataques ferozes e instinto predatório."),
+                    "fraquezas": ", ".join(mon_data.get("fraquezas", [])) if isinstance(mon_data.get("fraquezas"), list) else mon_data.get("fraquezas", "Coordenação defensiva do grupo."),
+                    "tatico": mon_data.get("tatico", "Ataque com sabedoria e explore suas fraquezas de alcance.")
                 })
 
                 m_title = lore.get("name", sel_clean.title())
@@ -1660,9 +1895,13 @@ class GrimoireModal(Panel):
                 r_y += 36
 
                 # Pontos Fortes e Fraquezas
-                screen.blit(self.font_tiny.render(f"+ Fortes: {lore.get('pontos_fortes', '')}", True, (130, 40, 20)), (right_x, r_y))
+                pf_val = lore.get('pontos_fortes', '')
+                if isinstance(pf_val, list): pf_val = ", ".join(pf_val)
+                fq_val = lore.get('fraquezas', '')
+                if isinstance(fq_val, list): fq_val = ", ".join(fq_val)
+                screen.blit(self.font_tiny.render(f"+ Fortes: {pf_val}", True, (130, 40, 20)), (right_x, r_y))
                 r_y += 16
-                screen.blit(self.font_tiny.render(f"- Fraqueza: {lore.get('fraquezas', '')}", True, (30, 110, 40)), (right_x, r_y))
+                screen.blit(self.font_tiny.render(f"- Fraqueza: {fq_val}", True, (30, 110, 40)), (right_x, r_y))
                 r_y += 20
 
                 # Conselho Tático
@@ -1847,8 +2086,11 @@ class GrimoireModal(Panel):
                     badge_col = (30, 130, 30) if is_concluded else ((180, 110, 20) if is_rumor else (160, 90, 20))
                     screen.blit(self.font_btn.render(f"[{badge_txt}]", True, badge_col), (right_x, r_y))
                     r_y += 22
-                    draw_text_wrapped(screen, quest_data.get("description", ""), self.font_tiny, (70, 60, 50), pygame.Rect(right_x, r_y, page_w, 54))
-                    r_y += 58
+                    desc_text = quest_data.get("description", "")
+                    _, desc_h, _ = get_wrapped_text_dimensions(desc_text, self.font_tiny, page_w)
+                    box_h = max(36, min(desc_h, 80))
+                    draw_text_wrapped(screen, desc_text, self.font_tiny, (70, 60, 50), pygame.Rect(right_x, r_y, page_w, box_h))
+                    r_y += box_h + 10
 
                     objectives = self._get_formatted_objectives(quest_data)
                     for obj in objectives[:3]:
@@ -2227,7 +2469,10 @@ class GrimoireModal(Panel):
 
             # Troca de abas
             if self.tab_skills_rect.collidepoint(mouse_pos):
-                self.active_tab = "spells" if self.active_tab in ("items", "spells") else "habilidades"
+                self.active_tab = "habilidades"
+                return ""
+            if self.tab_spells_rect.collidepoint(mouse_pos):
+                self.active_tab = "spells"
                 return ""
             if self.tab_bestiary_rect.collidepoint(mouse_pos):
                 self.active_tab = "bestiario"
@@ -2236,11 +2481,14 @@ class GrimoireModal(Panel):
                 self.active_tab = "diario"
                 return ""
             if self.tab_status_rect.collidepoint(mouse_pos):
-                self.active_tab = "items" if self.active_tab in ("items", "spells") else "status"
+                self.active_tab = "status"
                 return ""
 
-            # Aba Habilidades: seleção de nós na árvore e botões
+            # Aba Habilidades: seleção de nós na árvore e botões de ação rápida
             if self.active_tab == "habilidades":
+                for sk_id, (btn_rect, action_id, sk_name) in getattr(self, "_skill_action_buttons", {}).items():
+                    if btn_rect.collidepoint(mouse_pos):
+                        return f"use_skill:{action_id}|{sk_name}"
                 for sk_id, node_rect in self._skill_node_rects.items():
                     icon_rect = self._skill_icon_rects.get(sk_id)
                     if node_rect.collidepoint(mouse_pos) or (icon_rect and icon_rect.collidepoint(mouse_pos)):
@@ -2251,6 +2499,19 @@ class GrimoireModal(Panel):
                         pc = self.game_state_ref.get("player_character")
                         self.open_level_up_modal(pc)
                     return "open_level_up_modal"
+                if getattr(self, "btn_use_skill", None) and self.btn_use_skill.collidepoint(mouse_pos):
+                    pc = (self.game_state_ref or {}).get("player_character", {})
+                    skill_tree = self._get_class_skill_tree(pc.get("class", "Guerreiro"))
+                    selected_sk = next((s for s in skill_tree if s["id"] == self.selected_skill_node), None)
+                    sk_key = (selected_sk.get("canonical_id") or selected_sk["id"]) if selected_sk else self.selected_skill_node
+                    sk_name = selected_sk["name"] if selected_sk else self.selected_skill_node
+                    return f"use_skill:{sk_key}|{sk_name}"
+
+            # Aba Magias: conjuração de magias preparadas
+            if self.active_tab == "spells":
+                for s_id, btn_rect in getattr(self, "_spell_buttons", {}).items():
+                    if btn_rect.collidepoint(mouse_pos):
+                        return f"cast_spell:{s_id}"
 
             # Aba Status: abrir mochila ou subir de nível
             if self.active_tab == "status":
@@ -2260,7 +2521,17 @@ class GrimoireModal(Panel):
                     if slot_rect.collidepoint(mouse_pos):
                         return "open_backpack"
 
-            # Bestiário: seleção de monstro
+            # Bestiário: paginação e seleção de monstro
+            if self.active_tab == "bestiario":
+                if hasattr(self, "btn_bestiary_prev") and self.btn_bestiary_prev.collidepoint(mouse_pos):
+                    if self.bestiary_page > 0:
+                        self.bestiary_page -= 1
+                    return ""
+                if hasattr(self, "btn_bestiary_next") and self.btn_bestiary_next.collidepoint(mouse_pos):
+                    total_pages = max(1, (len(self._compendium_keys) + 6) // 7)
+                    if self.bestiary_page < total_pages - 1:
+                        self.bestiary_page += 1
+                    return ""
             for m_id, b_rect in self._monster_buttons.items():
                 if b_rect.collidepoint(mouse_pos):
                     self.selected_monster = m_id
@@ -2554,6 +2825,10 @@ def _lighten(color: tuple, amount: int = 60) -> tuple:
     return tuple(min(255, c + amount) for c in color[:3])
 
 
+def _darken(color: tuple, amount: int = 40) -> tuple:
+    return tuple(max(0, c - amount) for c in color[:3])
+
+
 class PlayerHUD:
     """HUD do herói: retrato + Nome/Nível + barras PV, PM, PA, XP (as que existirem).
 
@@ -2640,13 +2915,18 @@ class PlayerHUD:
         return surf
 
     def _draw_bar(self, screen, rect: pygame.Rect, cur, mx, color):
-        pygame.draw.rect(screen, (28, 22, 22), rect)
+        pygame.draw.rect(screen, (22, 18, 18), rect)
         ratio = max(0.0, min(1.0, cur / max(mx, 1)))
         fill_w = int(rect.width * ratio)
         if fill_w > 0:
-            pygame.draw.rect(screen, color, (rect.x, rect.y, fill_w, rect.height))
-            pygame.draw.line(screen, _lighten(color), (rect.x, rect.y), (rect.x + fill_w - 1, rect.y))
-        pygame.draw.rect(screen, (95, 75, 45), rect, 1)
+            fill_rect = pygame.Rect(rect.x, rect.y, fill_w, rect.height)
+            pygame.draw.rect(screen, color, fill_rect)
+            # Brilho metálico superior (highlight polido)
+            pygame.draw.line(screen, _lighten(color, 50), (rect.x, rect.y), (rect.x + fill_w - 1, rect.y))
+            pygame.draw.line(screen, _lighten(color, 25), (rect.x, rect.y + 1), (rect.x + fill_w - 1, rect.y + 1))
+            # Sombra de chanfro metálico inferior
+            pygame.draw.line(screen, _darken(color, 45), (rect.x, rect.bottom - 1), (rect.x + fill_w - 1, rect.bottom - 1))
+        pygame.draw.rect(screen, (100, 80, 50), rect, 1)
 
         value = f"{cur}/{mx}"
         tw, th = self.font_label.size(value)
@@ -2682,10 +2962,14 @@ class PlayerHUD:
         w = self.PADDING + self.PORTRAIT + self.PORTRAIT_GAP + content_w + self.PADDING
         h = self.PADDING + max(self.PORTRAIT, content_h) + self.PADDING
 
-        # --- Painel retrô semitransparente ---
+        # --- Painel retrô semitransparente com moldura Dark Fantasy ---
         screen.blit(self._get_panel_surface(w, h), (x, y))
-        pygame.draw.rect(screen, COLOR_GOLD, (x, y, w, h), 2)
-        pygame.draw.rect(screen, (70, 50, 25), (x + 3, y + 3, w - 6, h - 6), 1)
+        pygame.draw.rect(screen, (20, 15, 10), (x, y, w, h), 2, border_radius=4)
+        pygame.draw.rect(screen, COLOR_GOLD, (x + 2, y + 2, w - 4, h - 4), 1, border_radius=3)
+        # Cantoneiras góticas douradas
+        for cx_pt, cy_pt, dx, dy in [(x + 2, y + 2, 1, 1), (x + w - 3, y + 2, -1, 1), (x + 2, y + h - 3, 1, -1), (x + w - 3, y + h - 3, -1, -1)]:
+            pygame.draw.line(screen, (255, 225, 120), (cx_pt, cy_pt), (cx_pt + dx * 8, cy_pt), 2)
+            pygame.draw.line(screen, (255, 225, 120), (cx_pt, cy_pt), (cx_pt, cy_pt + dy * 8), 2)
 
         # --- Retrato (ícone do herói) com downscaling de alta definição e moldura dark fantasy elegante ---
         px, py = x + self.PADDING, y + self.PADDING
@@ -2737,61 +3021,332 @@ class PlayerHUD:
 
 
 class QuickActionBar:
-    """Barra compacta de atalhos rápidos de ação do jogador (Mochila, Grimório, Observar/Atacar, Dialogar, Descansar)."""
+    """Barra compacta de atalhos rápidos de ação do jogador com botões contextuais, totens e flyouts."""
     def __init__(self, x: int, y: int, width: int, height: int = 28):
         self.rect = pygame.Rect(x, y, width, height)
-        self.font = AssetManager.get_font(13, bold=True)
+        self.font = AssetManager.get_font(12, bold=True)
+        self.font_btn_small = AssetManager.get_font(11, bold=True)
+        self.font_title = AssetManager.get_font(13, bold=True)
+        self.font_item = AssetManager.get_font(12, bold=True)
+        self.font_desc = AssetManager.get_font(10)
         self.is_combat = False
+        self.flyout_open = False
+        self.flyout_mode = "skills"
+        self.flyout_items = []
+        self.player = None
+        self.target_name = ""
         self._rebuild_buttons()
 
     def set_combat_mode(self, is_combat: bool):
         if self.is_combat != is_combat:
             self.is_combat = is_combat
+            self.flyout_open = False
             self._rebuild_buttons()
+
+    def set_target_name(self, target_name: str):
+        target_name = (target_name or "").strip()
+        if self.target_name != target_name:
+            self.target_name = target_name
+            if self.is_combat:
+                self._rebuild_buttons()
 
     def _rebuild_buttons(self):
         if self.is_combat:
+            atk_lbl = f"⚔ Atacar: {self.target_name}" if self.target_name else "⚔ Atacar"
             self.btn_configs = [
-                {"id": "attack",    "label": "⚔ Atacar"},
-                {"id": "inventory", "label": "Mochila"},
-                {"id": "grimoire",  "label": "Grimório"},
-                {"id": "observe",   "label": "Observar"},
-                {"id": "talk",      "label": "Dialogar"},
+                {"id": "attack",    "label": atk_lbl,       "totem": "sword",     "weight": 1.45},
+                {"id": "dodge",     "label": "Esquivar",    "totem": "shield",    "weight": 1.05},
+                {"id": "disengage", "label": "Recuar",      "totem": "run",       "weight": 0.95},
+                {"id": "skills",    "label": "Hab.",        "totem": "lightning", "weight": 0.95},
+                {"id": "spells",    "label": "Magia",       "totem": "star",      "weight": 0.95},
+                {"id": "inventory", "label": "Mochila",     "totem": None,        "weight": 0.85},
+                {"id": "grimoire",  "label": "Grimório",    "totem": None,        "weight": 0.85},
             ]
         else:
             self.btn_configs = [
-                {"id": "inventory", "label": "Mochila"},
-                {"id": "grimoire",  "label": "Grimório"},
-                {"id": "observe",   "label": "Observar"},
-                {"id": "talk",      "label": "Dialogar"},
-                {"id": "rest",      "label": "Descansar"},
+                {"id": "skills",    "label": "Hab.",       "totem": "lightning", "weight": 1.0},
+                {"id": "spells",    "label": "Magia",      "totem": "star",      "weight": 1.0},
+                {"id": "inventory", "label": "Mochila",    "totem": None,        "weight": 1.0},
+                {"id": "grimoire",  "label": "Grimório",   "totem": None,        "weight": 1.0},
+                {"id": "observe",   "label": "Observar",   "totem": None,        "weight": 1.0},
+                {"id": "talk",      "label": "Dialogar",   "totem": None,        "weight": 1.0},
+                {"id": "rest",      "label": "Descansar",  "totem": None,        "weight": 1.0},
             ]
         self.buttons = []
-        btn_w = (self.rect.width - ((len(self.btn_configs) - 1) * 4)) // len(self.btn_configs)
+        n_btns = len(self.btn_configs)
+        total_weight = sum(cfg.get("weight", 1.0) for cfg in self.btn_configs)
+        avail_w = self.rect.width - ((n_btns - 1) * 4)
+        cur_x = self.rect.x
         for i, cfg in enumerate(self.btn_configs):
-            b_rect = pygame.Rect(self.rect.x + i * (btn_w + 4), self.rect.y, btn_w, self.rect.height)
-            self.buttons.append({"id": cfg["id"], "label": cfg["label"], "rect": b_rect})
+            if i == n_btns - 1:
+                btn_w = self.rect.right - cur_x
+            else:
+                btn_w = int(avail_w * (cfg.get("weight", 1.0) / total_weight))
+            b_rect = pygame.Rect(cur_x, self.rect.y, btn_w, self.rect.height)
+            self.buttons.append({
+                "id": cfg["id"],
+                "label": cfg["label"],
+                "totem": cfg.get("totem"),
+                "rect": b_rect
+            })
+            cur_x += btn_w + 4
 
-    def draw(self, screen: pygame.Surface, is_combat: bool = None):
+    @staticmethod
+    def _draw_totem(screen: pygame.Surface, kind: str, x: int, y: int):
+        """Desenha totens procedurais de alta precisão (sem tofu em fontes retrô)."""
+        if kind == "lightning":
+            pts = [(x + 2, y - 6), (x - 3, y - 1), (x, y - 1), (x - 2, y + 6), (x + 3, y + 1), (x, y + 1)]
+            pygame.draw.polygon(screen, (255, 220, 60), pts)
+            pygame.draw.lines(screen, (255, 245, 180), False, pts[:3], 1)
+        elif kind == "star":
+            pts = [(x, y - 6), (x + 2, y - 2), (x + 6, y), (x + 2, y + 2), (x, y + 6), (x - 2, y + 2), (x - 6, y), (x - 2, y - 2)]
+            pygame.draw.polygon(screen, (140, 225, 255), pts)
+            pygame.draw.circle(screen, (255, 255, 255), (x, y), 1)
+        elif kind == "sword":
+            pygame.draw.line(screen, (240, 240, 240), (x - 4, y - 4), (x + 4, y + 4), 2)
+            pygame.draw.line(screen, (255, 215, 60), (x - 4, y - 1), (x - 1, y - 4), 1)
+        elif kind == "shield":
+            pts = [(x - 5, y - 6), (x + 5, y - 6), (x + 5, y), (x, y + 6), (x - 5, y)]
+            pygame.draw.polygon(screen, (85, 135, 215), pts)
+            pygame.draw.lines(screen, (225, 195, 80), True, pts, 1)
+            pygame.draw.line(screen, (225, 195, 80), (x, y - 5), (x, y + 4), 1)
+        elif kind == "run":
+            pts = [(x - 5, y + 3), (x - 2, y + 5), (x + 4, y + 5), (x + 4, y + 1), (x + 1, y - 1), (x + 5, y - 5), (x - 1, y - 2), (x - 4, y)]
+            pygame.draw.polygon(screen, (75, 215, 140), pts)
+            pygame.draw.circle(screen, (255, 255, 255), (x + 2, y - 3), 1)
+
+    def get_active_skills(self) -> list:
+        """Coleta habilidades ativas desbloqueadas do personagem."""
+        if not self.player:
+            return []
+        char_class = self.player.get("class", "Guerreiro")
+        tree = GrimoireModal._get_class_skill_tree(None, char_class)
+        unlocked = set(self.player.get("unlocked_skills", []))
+        known_abs = set(self.player.get("abilities", []))
+        lvl = max(1, int(self.player.get("level", 1)))
+
+        active_list = []
+        for sk in tree:
+            is_unlocked = (
+                sk["id"] in unlocked
+                or sk.get("canonical_id") in unlocked
+                or sk["name"] in known_abs
+                or sk["level"] <= lvl
+            )
+            if is_unlocked:
+                active_list.append(sk)
+
+        for ab in self.player.get("abilities", []):
+            ab_str = str(ab)
+            if any(k in ab_str.lower() for k in ["magia:", "truque:"]):
+                continue
+            if not any(s["name"].lower() == ab_str.lower() for s in active_list):
+                active_list.append({
+                    "id": ab_str,
+                    "canonical_id": ab_str,
+                    "name": ab_str,
+                    "short_desc": "Habilidade Heroica",
+                    "glyph": "⚡",
+                    "level": 1
+                })
+        return active_list
+
+    def get_active_spells(self) -> list:
+        """Coleta magias e truques ativos conhecidos do herói."""
+        if not self.player:
+            return []
+        spells_list = []
+        for ab in self.player.get("abilities", []):
+            ab_str = str(ab)
+            if any(k in ab_str.lower() for k in ["magia", "truque", "cantrip", "spell"]):
+                clean_name = ab_str.replace("Truque:", "").replace("Magia:", "").strip()
+                spells_list.append({
+                    "id": clean_name.lower().replace(" ", "_"),
+                    "name": clean_name,
+                    "short_desc": "Truque / Magia Conhecida",
+                    "glyph": "✨"
+                })
+        for sp in (self.player.get("known_spells", []) or self.player.get("spells", [])):
+            if isinstance(sp, str):
+                s_name = sp
+                s_id = sp.lower().replace(" ", "_")
+                s_desc = "Magia Arcana"
+            elif isinstance(sp, dict):
+                s_name = sp.get("name", "Magia")
+                s_id = sp.get("id", s_name.lower().replace(" ", "_"))
+                s_desc = sp.get("description", "Magia Arcana")[:35]
+            else:
+                continue
+            if not any(s["name"].lower() == s_name.lower() for s in spells_list):
+                spells_list.append({
+                    "id": s_id,
+                    "name": s_name,
+                    "short_desc": s_desc,
+                    "glyph": "✨"
+                })
+        return spells_list
+
+    def draw(self, screen: pygame.Surface, is_combat: bool = None, player: dict = None, target_name: str = None):
+        if player is not None:
+            self.player = player
+        if target_name is not None and target_name != self.target_name:
+            self.set_target_name(target_name)
         if is_combat is not None and is_combat != self.is_combat:
             self.set_combat_mode(is_combat)
+            
         mouse_pos = pygame.mouse.get_pos()
         for b in self.buttons:
             is_hover = b["rect"].collidepoint(mouse_pos)
+            font_to_use = self.font_btn_small if b["rect"].width < 75 else self.font
             if b["id"] == "attack":
                 bg_col = (180, 45, 35) if not is_hover else (225, 65, 50)
+                border_col = COLOR_GOLD if is_hover else (255, 180, 50)
                 pygame.draw.rect(screen, bg_col, b["rect"], border_radius=4)
-                pygame.draw.rect(screen, COLOR_GOLD if is_hover else (255, 180, 50), b["rect"], 2, border_radius=4)
-                txt = self.font.render(clean_tofu_glyphs(b["label"]), True, (255, 255, 255))
-                screen.blit(txt, (b["rect"].centerx - txt.get_width() // 2, b["rect"].centery - txt.get_height() // 2))
+                pygame.draw.rect(screen, border_col, b["rect"], 2, border_radius=4)
+                
+                raw_lbl = b["label"]
+                avail_txt_w = b["rect"].width - 24
+                display_lbl = clean_tofu_glyphs(raw_lbl).strip()
+                if font_to_use.size(display_lbl)[0] > avail_txt_w:
+                    while font_to_use.size(display_lbl + "..")[0] > avail_txt_w and len(display_lbl) > 4:
+                        display_lbl = display_lbl[:-1]
+                    display_lbl = display_lbl.rstrip() + ".."
+                txt = font_to_use.render(display_lbl, True, (255, 255, 255))
+                totem_x = b["rect"].x + 8
+                QuickActionBar._draw_totem(screen, "sword", totem_x, b["rect"].centery)
+                screen.blit(txt, (totem_x + 8, b["rect"].centery - txt.get_height() // 2))
+                
+            elif b["id"] == "dodge":
+                bg_col = (35, 55, 85) if not is_hover else (50, 80, 120)
+                border_col = (200, 215, 240) if is_hover else (130, 160, 200)
+                pygame.draw.rect(screen, bg_col, b["rect"], border_radius=4)
+                pygame.draw.rect(screen, border_col, b["rect"], 2, border_radius=4)
+                txt = font_to_use.render(b["label"], True, (240, 245, 255))
+                totem_x = b["rect"].x + 8
+                QuickActionBar._draw_totem(screen, "shield", totem_x, b["rect"].centery)
+                screen.blit(txt, (totem_x + 8, b["rect"].centery - txt.get_height() // 2))
+                
+            elif b["id"] == "disengage":
+                bg_col = (28, 65, 48) if not is_hover else (40, 95, 68)
+                border_col = (160, 230, 180) if is_hover else (100, 175, 130)
+                pygame.draw.rect(screen, bg_col, b["rect"], border_radius=4)
+                pygame.draw.rect(screen, border_col, b["rect"], 2, border_radius=4)
+                txt = font_to_use.render(b["label"], True, (235, 255, 245))
+                totem_x = b["rect"].x + 8
+                QuickActionBar._draw_totem(screen, "run", totem_x, b["rect"].centery)
+                screen.blit(txt, (totem_x + 8, b["rect"].centery - txt.get_height() // 2))
+                
+            elif b.get("totem"):
+                draw_ui_button(screen, b["rect"], "", font_to_use, is_hover, True)
+                txt = font_to_use.render(b["label"], True, (255, 255, 235) if not is_hover else (255, 255, 255))
+                totem_x = b["rect"].centerx - (txt.get_width() + 14) // 2
+                QuickActionBar._draw_totem(screen, b["totem"], totem_x, b["rect"].centery)
+                screen.blit(txt, (totem_x + 12, b["rect"].centery - txt.get_height() // 2))
             else:
-                draw_ui_button(screen, b["rect"], b["label"], self.font, is_hover, True)
+                draw_ui_button(screen, b["rect"], b["label"], font_to_use, is_hover, True)
+
+        if self.flyout_open:
+            self._draw_flyout(screen, mouse_pos)
+
+    def _draw_flyout(self, screen: pygame.Surface, mouse_pos: tuple):
+        btn_id = "skills" if self.flyout_mode == "skills" else "spells"
+        target_btn = next((b for b in self.buttons if b["id"] == btn_id), None)
+        base_rect = target_btn["rect"] if target_btn else self.rect
+        
+        items = self.get_active_skills() if self.flyout_mode == "skills" else self.get_active_spells()
+        totem_kind = "lightning" if self.flyout_mode == "skills" else "star"
+        title_text = "HABILIDADES" if self.flyout_mode == "skills" else "MAGIAS"
+
+        flyout_w = 236
+        item_h = 36
+        header_h = 26
+        flyout_h = header_h + (len(items) * item_h if items else 36) + 8
+        flyout_x = max(12, min(base_rect.centerx - flyout_w // 2, self.rect.right - flyout_w))
+        flyout_y = base_rect.top - flyout_h - 4
+        flyout_rect = pygame.Rect(flyout_x, flyout_y, flyout_w, flyout_h)
+
+        # Painel gótico flutuante pré-alocado (Zero Garbage por frame)
+        pygame.draw.rect(screen, (18, 15, 22), flyout_rect, border_radius=6)
+        pygame.draw.rect(screen, (190, 155, 65), flyout_rect, 2, border_radius=6)
+        pygame.draw.line(screen, (100, 85, 45), (flyout_x + 6, flyout_y + header_h), (flyout_x + flyout_w - 6, flyout_y + header_h), 1)
+
+        # Cabeçalho com totem semântico
+        QuickActionBar._draw_totem(screen, totem_kind, flyout_x + 16, flyout_y + 13)
+        lbl = self.font_title.render(title_text, True, (245, 215, 80))
+        screen.blit(lbl, (flyout_x + 28, flyout_y + 6))
+
+        self.flyout_items = []
+        cur_y = flyout_y + header_h + 4
+
+        if not items:
+            empty_rect = pygame.Rect(flyout_x + 6, cur_y, flyout_w - 12, 30)
+            pygame.draw.rect(screen, (28, 24, 30), empty_rect, border_radius=4)
+            empty_msg = "Nenhuma habilidade ativa" if self.flyout_mode == "skills" else "Nenhuma magia conhecida"
+            empty_txt = self.font_desc.render(empty_msg, True, (150, 140, 130))
+            screen.blit(empty_txt, (empty_rect.centerx - empty_txt.get_width() // 2, empty_rect.centery - empty_txt.get_height() // 2))
+            return
+
+        for it in items:
+            row_rect = pygame.Rect(flyout_x + 6, cur_y, flyout_w - 12, item_h - 2)
+            is_hover = row_rect.collidepoint(mouse_pos)
+            bg_c = (52, 42, 30) if is_hover else (28, 24, 32)
+            border_c = (255, 215, 80) if is_hover else (75, 60, 42)
+            pygame.draw.rect(screen, bg_c, row_rect, border_radius=4)
+            pygame.draw.rect(screen, border_c, row_rect, 1, border_radius=4)
+
+            QuickActionBar._draw_totem(screen, totem_kind, row_rect.x + 14, row_rect.y + 12)
+            name_c = (255, 255, 255) if is_hover else (235, 225, 205)
+            txt_n = self.font_item.render(it["name"], True, name_c)
+            screen.blit(txt_n, (row_rect.x + 26, row_rect.y + 3))
+            txt_d = self.font_desc.render(it.get("short_desc", ""), True, (175, 165, 145))
+            screen.blit(txt_d, (row_rect.x + 26, row_rect.y + 18))
+
+            self.flyout_items.append({"item": it, "rect": row_rect, "mode": self.flyout_mode})
+            cur_y += item_h
 
     def handle_event(self, event: pygame.event.Event) -> str:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.flyout_open:
+                for f_entry in self.flyout_items:
+                    if f_entry["rect"].collidepoint(event.pos):
+                        it = f_entry["item"]
+                        mode = f_entry.get("mode", "skills")
+                        self.flyout_open = False
+                        if mode == "spells":
+                            s_name = it.get("name", it.get("id"))
+                            return f"cast_spell:{s_name}"
+                        else:
+                            sk_id = it.get("canonical_id") or it["id"]
+                            return f"use_skill:{sk_id}|{it['name']}"
+
             for b in self.buttons:
                 if b["rect"].collidepoint(event.pos):
-                    return b["id"]
+                    if b["id"] == "skills":
+                        if self.flyout_open and self.flyout_mode == "skills":
+                            self.flyout_open = False
+                        else:
+                            self.flyout_open = True
+                            self.flyout_mode = "skills"
+                        return ""
+                    elif b["id"] == "spells":
+                        spells = self.get_active_spells()
+                        if spells:
+                            if self.flyout_open and self.flyout_mode == "spells":
+                                self.flyout_open = False
+                            else:
+                                self.flyout_open = True
+                                self.flyout_mode = "spells"
+                            return ""
+                        else:
+                            self.flyout_open = False
+                            return "spells"
+                    else:
+                        self.flyout_open = False
+                        return b["id"]
+
+            if self.flyout_open:
+                self.flyout_open = False
+
         return ""
 
 

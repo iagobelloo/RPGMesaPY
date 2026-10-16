@@ -30,6 +30,7 @@ from ui.hud_components import (
     QuickActionBar,
     PlayerManualModal,
 )
+from ui.widgets import MainMenuWidget, InGameHUD, CONSUMED, BarMode
 from ui.menu_components import (
     CharacterCreationPanel,
     PauseMenuPanel,
@@ -67,7 +68,10 @@ def main():
     menu_x = (WINDOW_WIDTH - menu_width) // 2
     menu_y = (WINDOW_HEIGHT - menu_height) // 2
 
-    main_menu = MainMenuPanel(menu_x, menu_y, menu_width, menu_height)
+    bg_menu = AssetManager.get_background("tavern_bg.jpg")
+    main_menu = MainMenuWidget(background=bg_menu)
+    hud = InGameHUD()
+
     save_selection_panel = SaveSelectionPanel(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
     creation_menu = CharacterCreationPanel(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
@@ -88,9 +92,6 @@ def main():
     player_manual = PlayerManualModal((WINDOW_WIDTH - 840) // 2, (WINDOW_HEIGHT - 560) // 2, 840, 560)
     player_manual.is_visible = False
 
-    panel_w = int(WINDOW_WIDTH * 0.40)
-    quick_bar = QuickActionBar(12, WINDOW_HEIGHT - 76, panel_w, 28)
-    chat_box = ChatBox(12, WINDOW_HEIGHT - 44, panel_w, 36, max_chars=120)
     dice_anim = LoadingDiceAnimation()
 
     scene_renderer = SceneRenderer(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -111,6 +112,7 @@ def main():
     overlay_grimoire = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
     overlay_grimoire.fill((0, 0, 0, 180))
     running = True
+    dt = 0.016
 
     while running:
         # --- CAPTURA DE EVENTOS ---
@@ -141,6 +143,15 @@ def main():
                     player_manual.is_visible = True
                 elif action == "action_new_game":
                     session = SessionManager(ai_master)
+                    # Determina o primeiro slot vazio como padrão para o novo herói (1, 2 ou 3)
+                    first_empty_slot = 1
+                    for s in [1, 2, 3]:
+                        meta = SessionManager.get_slot_metadata(s)
+                        if meta.get("is_empty"):
+                            first_empty_slot = s
+                            break
+                    session.current_save_slot = first_empty_slot
+
                     journal_modal.game_state_ref = session.game_state
                     grimoire.game_state_ref = session.game_state
                     grimoire.session_ref = session
@@ -152,6 +163,7 @@ def main():
                     creation_menu.is_visible = True
                     current_state = "CHARACTER_CREATION"
                 elif action == "action_load_game" or (event.type == pygame.MOUSEBUTTONDOWN and main_menu.btn_load_game.collidepoint(event.pos)):
+                    save_selection_panel.mode = "load"
                     save_selection_panel.refresh_slots()
                     main_menu.is_visible = False
                     save_selection_panel.is_visible = True
@@ -160,10 +172,14 @@ def main():
             # Delegação de Estado: SAVE SELECTION (3 SLOTS)
             elif current_state == "SAVE_SELECTION":
                 save_action = save_selection_panel.handle_event(event)
-                if save_action == "back_to_menu":
+                if save_action in ("back_to_menu", "back_to_game"):
                     save_selection_panel.is_visible = False
-                    main_menu.is_visible = True
-                    current_state = "MAIN_MENU"
+                    if getattr(save_selection_panel, "mode", "load") == "save" and session.game_state.get("player_character"):
+                        pause_menu.is_visible = True
+                        current_state = "PAUSE_MENU"
+                    else:
+                        main_menu.is_visible = True
+                        current_state = "MAIN_MENU"
                 elif isinstance(save_action, tuple):
                     cmd, slot_num = save_action
                     if cmd == "load_slot":
@@ -178,19 +194,27 @@ def main():
                             session._push_event("system_event", {"text": f"O Mestre retoma as crônicas do Registro {slot_num}..."})
                         else:
                             print(f"[Sistema] Nenhum save encontrado no Slot {slot_num}.")
-                    elif cmd == "new_game_slot":
-                        session = SessionManager(ai_master)
-                        session.current_save_slot = slot_num
-                        journal_modal.game_state_ref = session.game_state
-                        grimoire.game_state_ref = session.game_state
-                        grimoire.session_ref = session
-                        backpack.game_state_ref = session.game_state
-                        current_bubble_message = None
-                        last_hitboxes = {}
-                        creation_menu.reset()
-                        save_selection_panel.is_visible = False
-                        creation_menu.is_visible = True
-                        current_state = "CHARACTER_CREATION"
+                    elif cmd in ("save_slot", "new_game_slot"):
+                        if getattr(save_selection_panel, "mode", "load") == "load" or cmd == "new_game_slot" or not session.game_state.get("player_character"):
+                            session = SessionManager(ai_master)
+                            session.current_save_slot = slot_num
+                            journal_modal.game_state_ref = session.game_state
+                            grimoire.game_state_ref = session.game_state
+                            grimoire.session_ref = session
+                            backpack.game_state_ref = session.game_state
+                            current_bubble_message = None
+                            last_hitboxes = {}
+                            creation_menu.reset()
+                            save_selection_panel.is_visible = False
+                            creation_menu.is_visible = True
+                            current_state = "CHARACTER_CREATION"
+                        else:
+                            session.save_game(slot=slot_num)
+                            session.current_save_slot = slot_num
+                            session._push_event("system_event", {"text": f"Jogo gravado com sucesso no Pergaminho {slot_num}!"})
+                            save_selection_panel.refresh_slots()
+                            save_selection_panel.is_visible = False
+                            current_state = "IN_GAME"
                     elif cmd == "delete_slot":
                         SessionManager.delete_save_slot(slot_num)
                         save_selection_panel.refresh_slots()
@@ -276,136 +300,206 @@ def main():
                         backpack.is_visible = True
                     elif grimoire_action == "open_level_up_modal":
                         pass
-                    elif grimoire_action.startswith("cast_spell:") or grimoire_action == "level_up" or grimoire_action.startswith("travel_side_quest:") or grimoire_action.startswith("accept_side_quest:"):
+                    elif grimoire_action.startswith("cast_spell:") or grimoire_action.startswith("use_skill:") or grimoire_action == "level_up" or grimoire_action.startswith("travel_side_quest:") or grimoire_action.startswith("accept_side_quest:"):
                         grimoire.is_visible = False
                         current_bubble_message = None
                         is_ai_thinking = True
                         current_state = "AGUARDANDO_IA"
 
                         action_to_dispatch = "subir de nivel" if grimoire_action == "level_up" else grimoire_action
+                        if grimoire_action.startswith("use_skill:"):
+                            skill_label = grimoire_action.split("|")[-1] if "|" in grimoire_action else grimoire_action.replace("use_skill:", "")
+                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                            scene_renderer._add_chat_message({"text": f"⚡ Usou habilidade: {skill_label}", "type": "player", "npc_falando": pc_name})
                         bgs = AssetManager.get_narrative_backgrounds()
                         lista_bestiario = list(BESTIARIO_5E.keys())
                         session.process_action_async(action_to_dispatch, bgs, lista_bestiario)
 
-                if event.type == pygame.MOUSEBUTTONDOWN and not grimoire.is_visible and not backpack.is_visible:
-                    # Captura clique na barra de atalhos rápidos
-                    quick_cmd = quick_bar.handle_event(event)
-                    if quick_cmd:
-                        if quick_cmd == "attack" and not is_ai_thinking:
-                            if session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                if not grimoire.is_visible and not backpack.is_visible:
+                    # Delega eventos prioritariamente ao InGameHUD (Hotbar, Chat, Dock, Iniciativa, Card)
+                    hud_action = hud.handle_event(event)
+                    if hud_action == CONSUMED:
+                        continue
+
+                    if hud_action:
+                        if hud_action.startswith("say:"):
+                            cmd_text = hud_action[4:].strip()
+                            if cmd_text and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                                pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                                hud.push_narration(pc_name, cmd_text, "player")
+                                scene_renderer._add_chat_message({"text": cmd_text, "type": "player", "npc_falando": pc_name})
                                 current_bubble_message = None
                                 is_ai_thinking = True
                                 current_state = "AGUARDANDO_IA"
                                 bgs = AssetManager.get_narrative_backgrounds()
                                 lista_bestiario = list(BESTIARIO_5E.keys())
-                                target_name = "o inimigo"
-                                if getattr(session, "active_combat_targets", None):
-                                    living = [t for t in session.active_combat_targets.values() if isinstance(t, dict) and t.get("status") != "morto" and t.get("faction") != "ally"]
-                                    if living:
-                                        target_name = living[0].get("name") or living[0].get("id") or "o inimigo"
-                                attack_cmd = f"Atacar {target_name}"
-                                pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
-                                scene_renderer._add_chat_message({"text": attack_cmd, "type": "player", "npc_falando": pc_name})
-                                session.process_action_async(attack_cmd, bgs, lista_bestiario)
-                        elif quick_cmd == "inventory":
+                                session.process_action_async(cmd_text, bgs, lista_bestiario)
+
+                        elif hud_action.startswith("select_target:"):
+                            target_uid = hud_action.split(":", 1)[1]
+                            scene_renderer.selected_target_id = target_uid
+
+                        elif hud_action == "inventory":
                             backpack.is_visible = True
                             grimoire.is_visible = False
-                        elif quick_cmd == "grimoire":
+
+                        elif hud_action == "grimoire":
                             grimoire.is_visible = True
                             backpack.is_visible = False
-                        elif quick_cmd == "observe" and not is_ai_thinking:
-                            if session.game_mode not in ["EPILOGO", "GAME_OVER"]:
-                                current_bubble_message = None
-                                is_ai_thinking = True
-                                current_state = "AGUARDANDO_IA"
-                                bgs = AssetManager.get_narrative_backgrounds()
-                                lista_bestiario = list(BESTIARIO_5E.keys())
-                                session.process_action_async("Observo atentamente o cenário ao redor, procurando detalhes, pistas e perigos.", bgs, lista_bestiario)
-                        elif quick_cmd == "talk" and not is_ai_thinking:
-                            if session.game_mode not in ["EPILOGO", "GAME_OVER"]:
-                                current_bubble_message = None
-                                is_ai_thinking = True
-                                current_state = "AGUARDANDO_IA"
-                                bgs = AssetManager.get_narrative_backgrounds()
-                                lista_bestiario = list(BESTIARIO_5E.keys())
-                                session.process_action_async("Aproximo-me e tento conversar com quem estiver por perto para obter informações.", bgs, lista_bestiario)
-                        elif quick_cmd == "rest" and not is_ai_thinking:
-                            if session.game_mode not in ["EPILOGO", "GAME_OVER"]:
-                                current_bubble_message = None
-                                is_ai_thinking = True
-                                current_state = "AGUARDANDO_IA"
-                                bgs = AssetManager.get_narrative_backgrounds()
-                                lista_bestiario = list(BESTIARIO_5E.keys())
-                                session.process_action_async("Descansar", bgs, lista_bestiario)
-                    else:
-                        # Captura clique direto em inimigos no tabuleiro para atacar
-                        clicked_enemy = None
-                        combat_targets = getattr(session, "active_combat_targets", {}) or {}
-                        for key, rect in last_hitboxes.items():
-                            if (key.startswith("enemy_") or key in combat_targets) and rect.collidepoint(event.pos):
-                                clicked_enemy = key.replace("enemy_", "")
-                                break
 
-                        if clicked_enemy and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
-                            current_bubble_message = None
-                            is_ai_thinking = True
-                            current_state = "AGUARDANDO_IA"
-                            bgs = AssetManager.get_narrative_backgrounds()
-                            lista_bestiario = list(BESTIARIO_5E.keys())
-                            attack_cmd = f"Atacar {clicked_enemy}"
-                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
-                            scene_renderer._add_chat_message({"text": attack_cmd, "type": "player", "npc_falando": pc_name})
-                            session.process_action_async(attack_cmd, bgs, lista_bestiario)
-
-                        # Captura clique no token do jogador para abrir o grimoire
-                        elif "player" in last_hitboxes and last_hitboxes["player"].collidepoint(event.pos):
-                            grimoire.is_visible = True
-
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        if backpack.is_visible:
-                            backpack.is_visible = False
-                        elif grimoire.is_visible:
-                            grimoire.is_visible = False
-                        else:
+                        elif hud_action == "system_menu":
                             current_state = "PAUSE_MENU"
                             pause_menu.is_visible = True
 
-                    elif event.key == pygame.K_TAB:
-                        if backpack.is_visible:
-                            backpack.is_visible = False
-                        else:
-                            grimoire.is_visible = not grimoire.is_visible
+                        elif hud_action == "skills":
+                            s_list = session.get_available_skills()
+                            hud.action_bar.open_skills_flyout(s_list)
 
-                    elif event.key == pygame.K_RETURN and not is_ai_thinking and not grimoire.is_visible and not backpack.is_visible:
-                        if session.game_mode == "EPILOGO" or session.game_mode == "GAME_OVER":
-                            continue
-                        action_text = chat_box.handle_event(event)
-                        if action_text:
-                            # Registra imediatamente a mensagem do jogador no chat visual
+                        elif hud_action == "spells":
+                            sp_list = session.get_available_spells()
+                            hud.action_bar.open_spells_flyout(sp_list)
+
+                        elif hud_action == "attack" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            target_name = "o inimigo"
+                            combat_targets = getattr(session, "active_combat_targets", {}) or {}
+                            selected_id = getattr(scene_renderer, "selected_target_id", None)
+                            if selected_id and selected_id in combat_targets:
+                                t_data = combat_targets[selected_id]
+                                target_name = (t_data.get("name") if isinstance(t_data, dict) else None) or selected_id
+                            elif combat_targets:
+                                living = [t for t in combat_targets.values() if isinstance(t, dict) and t.get("status") != "morto" and t.get("faction") != "ally"]
+                                if living:
+                                    target_name = living[0].get("name") or living[0].get("id") or "o inimigo"
+                            attack_cmd = f"Atacar {target_name}"
                             pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
-                            scene_renderer._add_chat_message({
-                                "text": action_text,
-                                "type": "player",
-                                "npc_falando": pc_name
-                            })
+                            hud.push_narration(pc_name, attack_cmd, "player")
+                            scene_renderer._add_chat_message({"text": attack_cmd, "type": "player", "npc_falando": pc_name})
                             current_bubble_message = None
                             is_ai_thinking = True
                             current_state = "AGUARDANDO_IA"
-
                             bgs = AssetManager.get_narrative_backgrounds()
                             lista_bestiario = list(BESTIARIO_5E.keys())
-                            session.process_action_async(action_text, bgs, lista_bestiario)
+                            session.process_action_async(attack_cmd, bgs, lista_bestiario)
 
-                    elif not grimoire.is_visible and not backpack.is_visible and not is_ai_thinking:
-                        if session.game_mode == "EPILOGO" or session.game_mode == "GAME_OVER":
-                            continue
-                        chat_box.handle_event(event)
+                        elif hud_action == "dodge" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                            hud.push_narration(pc_name, "🛡 Assumiu postura defensiva total (Esquivar / Dodge)!", "player")
+                            scene_renderer._add_chat_message({"text": "🛡 Assumiu postura defensiva total (Esquivar / Dodge). Ataques contra você terão Desvantagem!", "type": "player", "npc_falando": pc_name})
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Esquivar dos ataques adotando postura defensiva total (Dodge).", bgs, lista_bestiario)
 
-                elif event.type == pygame.MOUSEWHEEL and current_state == "IN_GAME" and not grimoire.is_visible and not backpack.is_visible:
-                    if getattr(scene_renderer, "scroll_y", None) is None:
-                        scene_renderer.scroll_y = 0
-                    scene_renderer.scroll_y -= event.y * 40
+                        elif hud_action == "disengage" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                            hud.push_narration(pc_name, "🏃 Recuou cautelosamente (Desengajar / Disengage)!", "player")
+                            scene_renderer._add_chat_message({"text": "🏃 Recuou cautelosamente da linha de frente (Desengajar / Disengage)!", "type": "player", "npc_falando": pc_name})
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Recuar cautelosamente sem provocar ataques de oportunidade (Disengage).", bgs, lista_bestiario)
+
+                        elif hud_action == "observe" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Observo atentamente o cenário ao redor, procurando detalhes, pistas e perigos.", bgs, lista_bestiario)
+
+                        elif hud_action == "talk" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Aproximo-me e tento conversar com quem estiver por perto para obter informações.", bgs, lista_bestiario)
+
+                        elif hud_action == "rest" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Descansar", bgs, lista_bestiario)
+
+                        elif hud_action == "travel" and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async("Partir para o próximo destino da jornada.", bgs, lista_bestiario)
+
+                        elif hud_action.startswith("use_skill:") and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            skill_payload = hud_action.split("use_skill:", 1)[1].strip()
+                            target_name = ""
+                            selected_id = getattr(scene_renderer, "selected_target_id", None)
+                            combat_targets = getattr(session, "active_combat_targets", {}) or {}
+                            if selected_id and selected_id in combat_targets:
+                                t_data = combat_targets[selected_id]
+                                target_name = (t_data.get("name") if isinstance(t_data, dict) else None) or selected_id
+                            cmd_str = f"use_skill:{skill_payload}|{target_name}" if target_name else f"use_skill:{skill_payload}"
+                            display_name = skill_payload.split("|")[-1] if "|" in skill_payload else skill_payload
+                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                            hud.push_narration(pc_name, f"⚡ Usou habilidade: {display_name}", "player")
+                            scene_renderer._add_chat_message({"text": f"⚡ Usou habilidade: {display_name}", "type": "player", "npc_falando": pc_name})
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async(cmd_str, bgs, lista_bestiario)
+
+                        elif hud_action.startswith("cast_spell:") and not is_ai_thinking and session.game_mode not in ["EPILOGO", "GAME_OVER"]:
+                            spell_name = hud_action.split("cast_spell:", 1)[1].strip()
+                            target_name = ""
+                            selected_id = getattr(scene_renderer, "selected_target_id", None)
+                            combat_targets = getattr(session, "active_combat_targets", {}) or {}
+                            if selected_id and selected_id in combat_targets:
+                                t_data = combat_targets[selected_id]
+                                target_name = (t_data.get("name") if isinstance(t_data, dict) else None) or selected_id
+                            cmd_str = f"cast_spell:{spell_name}:{target_name}" if target_name else f"cast_spell:{spell_name}"
+                            pc_name = session.game_state.get("player_character", {}).get("name", "Herói")
+                            hud.push_narration(pc_name, f"✨ Conjurou magia: {spell_name}", "player")
+                            scene_renderer._add_chat_message({"text": f"✨ Conjurou magia: {spell_name}", "type": "player", "npc_falando": pc_name})
+                            current_bubble_message = None
+                            is_ai_thinking = True
+                            current_state = "AGUARDANDO_IA"
+                            bgs = AssetManager.get_narrative_backgrounds()
+                            lista_bestiario = list(BESTIARIO_5E.keys())
+                            session.process_action_async(cmd_str, bgs, lista_bestiario)
+
+                    # Interação direta com o palco visual 2.5D (seleção de tokens de monstros e herói)
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        clicked_enemy = None
+                        combat_targets = getattr(session, "active_combat_targets", {}) or {}
+                        for key, rect in last_hitboxes.items():
+                            if rect.collidepoint(event.pos):
+                                if key.startswith("enemy_") or key in combat_targets:
+                                    clicked_enemy = key.replace("enemy_", "")
+                                    break
+
+                        if clicked_enemy:
+                            # Apenas seleciona como alvo ativo (NUNCA dispara ataque automático)
+                            scene_renderer.selected_target_id = clicked_enemy
+                            t_data = combat_targets.get(clicked_enemy, {})
+                            t_name = (t_data.get("name") if isinstance(t_data, dict) else None) or clicked_enemy
+                            hud.action_bar.set_target(t_name)
+
+                        elif "player" in last_hitboxes and last_hitboxes["player"].collidepoint(event.pos):
+                            grimoire.is_visible = True
+
+                    elif event.type == pygame.KEYDOWN and not hud.console.has_focus:
+                        if event.key == pygame.K_ESCAPE:
+                            current_state = "PAUSE_MENU"
+                            pause_menu.is_visible = True
+                        elif event.key == pygame.K_TAB:
+                            grimoire.is_visible = not grimoire.is_visible
 
             # Delegação de Estado: PAUSE MENU
             elif current_state == "PAUSE_MENU":
@@ -425,10 +519,11 @@ def main():
                     elif action == "action_player_manual":
                         player_manual.is_visible = True
                     elif action == "save":
-                        session.save_game()
-                        session._push_event("system_event", {"text": "Jogo salvo com sucesso!"})
+                        save_selection_panel.mode = "save"
+                        save_selection_panel.refresh_slots()
                         pause_menu.is_visible = False
-                        current_state = "IN_GAME"
+                        save_selection_panel.is_visible = True
+                        current_state = "SAVE_SELECTION"
                     elif action == "quit":
                         pause_menu.is_visible = False
                         main_menu.is_visible = True
@@ -452,9 +547,18 @@ def main():
                 current_bubble_message = {"text": "Rolando dados e consultando os deuses...", "type": "narrative"}
             elif event_type in ["damage", "heal", "system_event", "gain_xp", "gain_item"]:
                 scene_renderer.handle_ui_event(ui_event, session.game_state)
+                if event_type == "damage":
+                    hud.push_narration("Combate", f"{ui_event.get('target')} sofreu {ui_event.get('amount', 0)} de dano.", "damage")
+                elif event_type == "heal":
+                    hud.push_narration("Cura", f"{ui_event.get('target')} recuperou {ui_event.get('amount', 0)} PV.", "narration")
+                elif event_type == "gain_xp":
+                    hud.push_narration("Experiência", f"+{ui_event.get('amount', 0)} XP", "system")
+                elif event_type == "gain_item":
+                    hud.push_narration("Item", f"+ {ui_event.get('item', '')}", "system")
             elif event_type in ["narrative", "dialogue"]:
                 is_ai_thinking = False
                 current_bubble_message = ui_event
+                hud.push_narration(ui_event.get("npc_falando") or "Mestre", ui_event.get("text") or "", "narration")
 
         # --- RENDERIZAÇÃO (DRAWING) E POLLING DA FILA ---
         while True:
@@ -482,6 +586,7 @@ def main():
                 sys_text = msg.get("content", "")
                 if sys_text:
                     scene_renderer.add_combat_log(sys_text)
+                    hud.push_narration("Sistema", sys_text, "combat")
                     session.game_state["recent_history"].append(sys_text)
                     m_roll = re.search(r"d20[:\s\(]*(\d+)", sys_text, re.IGNORECASE)
                     if m_roll:
@@ -496,6 +601,7 @@ def main():
                 falante = msg.get("npc_falando") or "Mestre"
                 if content:
                     current_bubble_message = {"text": content, "type": "narrative", "npc_falando": falante}
+                    hud.push_narration(falante, content, "narration")
                     if not scene_renderer.chat_history or scene_renderer.chat_history[-1].get("text") != content:
                         scene_renderer._add_chat_message(current_bubble_message)
                         session.game_state["recent_history"].append(f"Mestre: {content}")
@@ -510,6 +616,7 @@ def main():
                     falante = msg.get("npc_falando") or "Mestre"
                 if texto:
                     current_bubble_message = {"text": texto, "type": "narrative", "npc_falando": falante}
+                    hud.push_narration(falante, texto, "narration")
                     if not scene_renderer.chat_history or scene_renderer.chat_history[-1].get("text") != texto:
                         scene_renderer._add_chat_message(current_bubble_message)
                         session.game_state["recent_history"].append(f"Mestre: {texto}")
@@ -518,10 +625,12 @@ def main():
                 fallback_txt = msg.get("text") or msg.get("content") or ""
                 if fallback_txt:
                     scene_renderer.add_combat_log(fallback_txt)
+                    hud.push_narration("Sistema", fallback_txt, "system")
 
         screen.fill(COLOR_BG)
 
         if current_state == "MAIN_MENU":
+            main_menu.update(dt)
             main_menu.draw(screen)
 
         elif current_state == "SAVE_SELECTION":
@@ -534,22 +643,37 @@ def main():
             beat_transition_scene.draw(screen)
 
         elif current_state in ["IN_GAME", "PAUSE_MENU", "AGUARDANDO_IA"]:
-            last_hitboxes = scene_renderer.draw_in_game(screen, session, current_bubble_message)
+            # Atualização e sincronização da nova HUD
+            hud.update(dt)
+            hud.sync(session)
+
+            # Sincroniza alvo selecionado na Hotbar
+            selected_id = getattr(scene_renderer, "selected_target_id", None)
+            combat_targets = getattr(session, "active_combat_targets", {}) or {}
+            if selected_id and selected_id in combat_targets:
+                t_data = combat_targets[selected_id]
+                t_name = (t_data.get("name") if isinstance(t_data, dict) else None) or selected_id
+            elif combat_targets:
+                living = [t for t in combat_targets.values() if isinstance(t, dict) and t.get("status") != "morto" and t.get("faction") != "ally"]
+                t_name = living[0].get("name") or living[0].get("id") or None if living else None
+            else:
+                t_name = None
+            hud.action_bar.set_target(t_name)
+
+            # Renderiza o palco 2.5D sem HUD legada
+            last_hitboxes = scene_renderer.draw_in_game(screen, session, current_bubble_message, render_legacy_hud=False)
+
+            # Renderiza o HUD completo (5 blocos + tooltips no topo)
+            hud.draw(screen)
 
             if current_state == "AGUARDANDO_IA":
                 dice_anim.draw(screen, WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
             else:
-                if session.game_mode not in ["EPILOGO", "GAME_OVER"]:
-                    is_combat = (getattr(session, "game_mode", "") == "COMBATE" or bool(getattr(session, "active_combat_targets", None)))
-                    quick_bar.draw(screen, is_combat=is_combat)
-                    chat_box.active = True
-                    chat_box.draw(screen)
                 if dice_anim.is_showing_result():
                     dice_anim.draw(screen, WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40)
 
             if current_state == "PAUSE_MENU":
                 screen.blit(overlay_pause, (0, 0))
-
                 pause_menu.draw(screen)
                 if journal_modal.is_visible:
                     journal_modal.draw(screen)
@@ -567,7 +691,7 @@ def main():
             player_manual.draw(screen)
 
         pygame.display.flip()
-        clock.tick(FPS)
+        dt = clock.tick(FPS) / 1000.0
 
     pygame.quit()
     sys.exit()

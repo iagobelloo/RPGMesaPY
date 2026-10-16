@@ -100,11 +100,11 @@ def _format_race_description(item_name: str, data: dict, selected_class: str = "
 
     ref_class = selected_class or "Guerreiro"
     g_info = get_protagonist_gender_info(item_name, ref_class)
-    parts.append(f"Arquétipo ({g_info['class_display']}): {g_info['label']} {g_info['symbol']}")
+    parts.append(f"Arquétipo ({g_info['class_display']}): {g_info['label']}")
     return " | ".join(parts)
 
 def _format_class_description(item_name: str, data: dict, selected_race: str = "") -> str:
-    from core.dnd_rules import EQUIPAMENTOS_5E, ITENS_UNICOS_RACIAIS, get_protagonist_gender_info
+    from core.dnd_rules import EQUIPAMENTOS_5E, get_protagonist_gender_info
     desc = data.get("descricao_ui", "")
     dado = data.get("dado_vida", 8)
     parts = [desc, f"Dado de Vida: d{dado}"]
@@ -115,11 +115,7 @@ def _format_class_description(item_name: str, data: dict, selected_race: str = "
 
     ref_race = selected_race or "Humano"
     g_info = get_protagonist_gender_info(ref_race, item_name)
-    parts.append(f"Arquétipo: {g_info['label']} {g_info['symbol']} ({g_info['class_display']})")
-
-    racial_item = ITENS_UNICOS_RACIAIS.get(ref_race)
-    if racial_item:
-        parts.append(f"Item Único Racial ({ref_race}): {racial_item['name']}")
+    parts.append(f"Arquétipo: {g_info['label']} ({g_info['class_display']})")
     return " | ".join(parts)
 
 def _format_standard_description(item_name: str, data: dict) -> str:
@@ -199,8 +195,9 @@ class GenericSelectionPanel(Panel):
 
             tag_text = self.button_tags.get(item, "")
             if tag_text:
-                tag_color = (145, 35, 45) if "♀" in tag_text else (45, 70, 105)
-                tag_surf = self.font_ink_small.render(clean_tofu_glyphs(tag_text), True, tag_color)
+                tag_color = (185, 45, 60) if "Feminino" in tag_text else (40, 75, 130)
+                clean_tag = clean_tofu_glyphs(tag_text).strip()
+                tag_surf = self.font_ink_small.render(clean_tag, True, tag_color)
                 tag_rect = tag_surf.get_rect(midright=(r.right - 14, r.centery - 1))
                 screen.blit(tag_surf, tag_rect)
 
@@ -244,12 +241,8 @@ class RaceSelectionPanel(GenericSelectionPanel):
         ref_cls = selected_class or "Guerreiro"
         for r_name in items:
             g_info = get_protagonist_gender_info(r_name, ref_cls)
-            if selected_class:
-                btn_labels[r_name] = f"{r_name} ({g_info['symbol']})"
-                btn_tags[r_name] = f"{g_info['symbol']} {g_info['label']}"
-            else:
-                btn_labels[r_name] = r_name
-                btn_tags[r_name] = f"{g_info['symbol']}"
+            btn_labels[r_name] = r_name
+            btn_tags[r_name] = f"[{g_info['label']}]" if selected_class else ""
 
         super().__init__(
             items,
@@ -262,7 +255,7 @@ class RaceSelectionPanel(GenericSelectionPanel):
         self.racas_data = RACAS_5E
 
 class ClassSelectionPanel(GenericSelectionPanel):
-    """Tela full-screen dedicada à seleção de Classes, com background customizado e indicativo de gênero (♂/♀)."""
+    """Tela full-screen dedicada à seleção de Classes, com background customizado e indicativo de gênero."""
     def __init__(self, items: List[str], selected_race: str = ""):
         from core.dnd_rules import CLASSES, get_protagonist_gender_info
         self.selected_race = selected_race
@@ -271,8 +264,8 @@ class ClassSelectionPanel(GenericSelectionPanel):
         ref_race = selected_race or "Humano"
         for c_name in items:
             g_info = get_protagonist_gender_info(ref_race, c_name)
-            btn_labels[c_name] = f"{g_info['class_display']} ({g_info['symbol']})"
-            btn_tags[c_name] = f"{g_info['symbol']} {g_info['label']}"
+            btn_labels[c_name] = f"{g_info['class_display']} {g_info['symbol']}"
+            btn_tags[c_name] = f"[{g_info['label']}]"
 
         super().__init__(
             items,
@@ -345,8 +338,8 @@ class CharacterCreationPanel(Panel):
                 "nome": (298, 168, 330, 35),
                 "raca": (755, 168, 350, 35),
                 "classe": (298, 228, 172, 35),
-                "antecedentes": (700, 228, 92, 35),
-                "tendencia": (970, 228, 135, 35)
+                "antecedentes": (540, 228, 175, 35),
+                "tendencia": (785, 228, 165, 35)
             },
             "status": {
                 "pv": (608, 358), "ca": (702, 358),
@@ -375,7 +368,7 @@ class CharacterCreationPanel(Panel):
         self.hb_align = pygame.Rect(*c_cabe["tendencia"])
 
         self.btn_cancel = pygame.Rect(40, sh - 70, 150, 45)
-        self.btn_start = pygame.Rect(sw - 260, sh - 70, 220, 45)
+        self.btn_start = pygame.Rect(sw - 280, sh - 75, 230, 44)
         
         self.active_modal = None
         self.target_slot = ""
@@ -387,8 +380,8 @@ class CharacterCreationPanel(Panel):
         self.font_ink_12 = AssetManager.get_font(12, bold=True)
 
         # Badges/Selos de Gênero pré-renderizados (Zero Garbage por frame a 60 FPS)
-        self._badge_male_surf = self._build_gender_badge("♂ Masculino", (222, 212, 188, 240), (55, 80, 110), (35, 55, 85))
-        self._badge_female_surf = self._build_gender_badge("♀ Feminino", (228, 212, 190, 240), (150, 45, 55), (125, 30, 40))
+        self._badge_male_surf = self._build_gender_badge("Masculino", (222, 212, 188, 240), (55, 80, 110), (35, 55, 85))
+        self._badge_female_surf = self._build_gender_badge("Feminino", (228, 212, 190, 240), (150, 45, 55), (125, 30, 40))
 
         # Cache de status derivados (Zero Garbage e zero cálculos pesados a cada frame)
         self._cached_stats = None
@@ -490,10 +483,8 @@ class CharacterCreationPanel(Panel):
             if text:
                 display_text = text
                 avail_w = (max_w_override if max_w_override is not None else hb.width) - 6
-                # Adaptação de fonte: tenta 20px, 16px, 14px e 12px antes de truncar
-                font = self.font_ink
-                if font.size(display_text)[0] > avail_w:
-                    font = self.font_ink_small
+                # Tipografia uniforme 16px bold (self.font_ink_small) com fallback de escala e reticências
+                font = self.font_ink_small
                 if font.size(display_text)[0] > avail_w:
                     font = getattr(self, "font_ink_14", AssetManager.get_font(14, bold=True))
                 if font.size(display_text)[0] > avail_w:
@@ -542,16 +533,18 @@ class CharacterCreationPanel(Panel):
         
         attr_map = {"FOR": "forca", "DES": "destreza", "CON": "constituicao", "INT": "inteligencia", "SAB": "sabedoria", "CAR": "carisma"}
         for attr_key, attr_pt in attr_map.items():
-            # Coluna 1: Atributo Base (apenas quando classe estiver selecionada)
-            if self.selected_class:
-                base_val = self.base_attributes.get(attr_key, stats["attributes"].get(attr_key, 10))
-                draw_aligned_text(str(base_val), self.coords["atributos"][attr_pt]["base"], "center", self.font_ink)
+            r_bonus = RACAS_5E.get(self.selected_race, {}).get("bonus", {}).get(attr_key, 0) if self.selected_race else 0
             
-            # Coluna 2: Bônus Racial (apenas quando raça estiver selecionada)
-            if self.selected_race:
-                r_bonus = RACAS_5E.get(self.selected_race, {}).get("bonus", {}).get(attr_key, 0)
-                bonus_str = f"+{r_bonus}" if r_bonus > 0 else "0"
-                draw_aligned_text(bonus_str, self.coords["atributos"][attr_pt]["mod"], "center", self.font_ink)
+            if self.selected_class:
+                # Coluna 1: Valor Total do Atributo somado (Base + Bônus Racial)
+                base_val = self.base_attributes.get(attr_key, stats["attributes"].get(attr_key, 10))
+                total_val = base_val + r_bonus
+                draw_aligned_text(str(total_val), self.coords["atributos"][attr_pt]["base"], "center", self.font_ink)
+                
+                # Coluna 2: Verdadeiro Modificador D&D 5e: (Total - 10) // 2
+                mod_val = (total_val - 10) // 2
+                mod_str = f"+{mod_val}" if mod_val >= 0 else str(mod_val)
+                draw_aligned_text(mod_str, self.coords["atributos"][attr_pt]["mod"], "center", self.font_ink)
             
         if self.selected_class:
             c_stat = self.coords["status"]
@@ -808,26 +801,51 @@ class SessionZeroPanel(Panel):
         return ""
 
 class PauseMenuPanel(Panel):
-    """Menu de Pausa In-Game."""
+    """Menu de Pausa In-Game com estética Dark Fantasy e renderização nítida."""
     def __init__(self, x: int, y: int, width: int, height: int):
         super().__init__(x, y, width, height, title="Menu de Pausa")
-        btn_w, btn_h = 250, 40
+        btn_w, btn_h = 260, 42
         btn_x = x + (width - btn_w) // 2
         
-        self.btn_resume = pygame.Rect(btn_x, y + 70, btn_w, btn_h)
-        self.btn_journal = pygame.Rect(btn_x, y + 120, btn_w, btn_h)
-        self.btn_manual = pygame.Rect(btn_x, y + 170, btn_w, btn_h)
-        self.btn_save = pygame.Rect(btn_x, y + 220, btn_w, btn_h)
-        self.btn_quit = pygame.Rect(btn_x, y + 270, btn_w, btn_h)
+        self.btn_resume = pygame.Rect(btn_x, y + 75, btn_w, btn_h)
+        self.btn_journal = pygame.Rect(btn_x, y + 125, btn_w, btn_h)
+        self.btn_manual = pygame.Rect(btn_x, y + 175, btn_w, btn_h)
+        self.btn_save = pygame.Rect(btn_x, y + 225, btn_w, btn_h)
+        self.btn_quit = pygame.Rect(btn_x, y + 275, btn_w, btn_h)
         
+        self.font_header = AssetManager.get_font(20, bold=True)
+        self.font_btn = AssetManager.get_font(16)
+        
+        # Moldura gótica pré-renderizada para o menu de pausa (Zero Garbage)
+        self.frame_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.frame_surf.fill((16, 12, 10, 230))
+        pygame.draw.rect(self.frame_surf, (60, 44, 25), (0, 0, width, height), 2, border_radius=6)
+        pygame.draw.rect(self.frame_surf, COLOR_GOLD, (3, 3, width - 6, height - 6), 1, border_radius=5)
+        # Cantoneiras douradas ornamentais
+        c_len = 12
+        for cx, cy, dx, dy in [(3, 3, 1, 1), (width - 4, 3, -1, 1), (3, height - 4, 1, -1), (width - 4, height - 4, -1, -1)]:
+            pygame.draw.line(self.frame_surf, (245, 215, 110), (cx, cy), (cx + dx * c_len, cy), 2)
+            pygame.draw.line(self.frame_surf, (245, 215, 110), (cx, cy), (cx, cy + dy * c_len), 2)
+
     def _draw_button(self, screen, rect, text):
         from ui.hud_components import draw_ui_button
         mouse_pos = pygame.mouse.get_pos()
-        draw_ui_button(screen, rect, text, self.font_title, rect.collidepoint(mouse_pos), True)
+        draw_ui_button(screen, rect, text, self.font_btn, rect.collidepoint(mouse_pos), True)
 
     def draw(self, screen: pygame.Surface):
-        super().draw(screen)
         if not self.is_visible: return
+        screen.blit(self.frame_surf, (self.rect.x, self.rect.y))
+        
+        # Banner de Título Superior
+        title_surf = self.font_header.render("Menu de Pausa", True, COLOR_GOLD)
+        tx = self.rect.x + (self.rect.width - title_surf.get_width()) // 2
+        ty = self.rect.y + 22
+        screen.blit(title_surf, (tx, ty))
+        
+        # Divisor Ornamental
+        div_surf = self.font_btn.render("-----------------", True, (160, 125, 60))
+        screen.blit(div_surf, (self.rect.x + (self.rect.width - div_surf.get_width()) // 2, ty + 24))
+
         self._draw_button(screen, self.btn_resume, "Retomar")
         self._draw_button(screen, self.btn_journal, "Diário de Aventuras")
         self._draw_button(screen, self.btn_manual, "Manual do Jogador")
@@ -836,12 +854,14 @@ class PauseMenuPanel(Panel):
 
     def handle_event(self, event: pygame.event.Event) -> str:
         if not self.is_visible: return ""
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_resume.collidepoint(event.pos): return "resume"
             if self.btn_journal.collidepoint(event.pos): return "journal"
             if hasattr(self, "btn_manual") and self.btn_manual.collidepoint(event.pos): return "action_player_manual"
             if self.btn_save.collidepoint(event.pos): return "save"
             if self.btn_quit.collidepoint(event.pos): return "quit"
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            return "resume"
         return ""
 
 class JournalModal(Panel):
@@ -890,8 +910,9 @@ class JournalModal(Panel):
 class SaveSelectionPanel(Panel):
     """Tela de Seleção de 3 Slots de Salvamento com estética de páginas de pergaminho antigo."""
     
-    def __init__(self, x: int = 0, y: int = 0, width: int = 1280, height: int = 720):
+    def __init__(self, x: int = 0, y: int = 0, width: int = 1280, height: int = 720, mode: str = "load"):
         super().__init__(0, 0, 1280, 720, title="")
+        self.mode = mode  # "load" ou "save"
         
         sw, sh = 1280, 720
         raw_bg = AssetManager.get_image("background", "menu_bg")
@@ -1019,12 +1040,20 @@ class SaveSelectionPanel(Panel):
         c_ink_dim = (80, 60, 45)
         c_sep = (160, 125, 60)
         
-        # Cabeçalho Principal
-        title_surf = self.font_header.render("Crônicas da Taverna • Tomo de Destinos", True, c_gold)
+        # Cabeçalho Principal (dinâmico conforme modo load/save)
+        is_save_mode = getattr(self, "mode", "load") == "save"
+        if is_save_mode:
+            title_text = "Crônicas da Taverna • Gravar Destino"
+            sub_text = "Selecione um pergaminho para registrar a jornada do seu herói"
+        else:
+            title_text = "Crônicas da Taverna • Tomo de Destinos"
+            sub_text = "Selecione um pergaminho para retomar sua campanha ou forjar uma nova lenda"
+            
+        title_surf = self.font_header.render(title_text, True, c_gold)
         title_rect = title_surf.get_rect(center=(1280 // 2, 42))
         screen.blit(title_surf, title_rect)
         
-        sub_surf = self.font_sub.render("Selecione um pergaminho para retomar sua campanha ou forjar uma nova lenda", True, (215, 200, 175))
+        sub_surf = self.font_sub.render(sub_text, True, (215, 200, 175))
         sub_rect = sub_surf.get_rect(center=(1280 // 2, 74))
         screen.blit(sub_surf, sub_rect)
         
@@ -1065,23 +1094,33 @@ class SaveSelectionPanel(Panel):
                     screen.blit(portrait_surf, port_rect)
                 pygame.draw.rect(screen, (190, 150, 65), (cx - 52, port_y - 4, 104, 104), 2, border_radius=4)
                 
-                # Nome do Herói
+                # Nome do Herói com proteção contra overflow
                 name_txt = slot_data.get("name", "Herói")
-                if len(name_txt) > 20:
-                    name_txt = name_txt[:18] + ".."
+                if self.font_hero_name.size(name_txt)[0] > self.card_w - 40:
+                    while len(name_txt) > 3 and self.font_hero_name.size(name_txt + "..")[0] > self.card_w - 40:
+                        name_txt = name_txt[:-1]
+                    name_txt = name_txt.rstrip() + ".."
                 name_surf = self.font_hero_name.render(name_txt, True, c_ink)
                 screen.blit(name_surf, name_surf.get_rect(center=(cx, card_rect.y + 192)))
                 
-                # Raça, Classe e Nível
+                # Raça, Classe e Nível com proteção contra overflow
                 r_c_txt = f"{slot_data.get('race', '')} {slot_data.get('class', '')} • Nível {slot_data.get('level', 1)}"
+                if self.font_info_bold.size(r_c_txt)[0] > self.card_w - 40:
+                    while len(r_c_txt) > 3 and self.font_info_bold.size(r_c_txt + "..")[0] > self.card_w - 40:
+                        r_c_txt = r_c_txt[:-1]
+                    r_c_txt = r_c_txt.rstrip() + ".."
                 rc_surf = self.font_info_bold.render(r_c_txt, True, (120, 30, 20))
                 screen.blit(rc_surf, rc_surf.get_rect(center=(cx, card_rect.y + 220)))
                 
                 # Divisor interno
                 screen.blit(div_surf, div_surf.get_rect(center=(cx, card_rect.y + 242)))
                 
-                # Localização / Capítulo Atual
+                # Localização / Capítulo Atual com proteção contra overflow
                 loc_txt = slot_data.get("location", "Ato I • Taverna")
+                if self.font_info_bold.size(loc_txt)[0] > self.card_w - 40:
+                    while len(loc_txt) > 3 and self.font_info_bold.size(loc_txt + "..")[0] > self.card_w - 40:
+                        loc_txt = loc_txt[:-1]
+                    loc_txt = loc_txt.rstrip() + ".."
                 loc_surf = self.font_info_bold.render(loc_txt, True, c_ink)
                 screen.blit(loc_surf, loc_surf.get_rect(center=(cx, card_rect.y + 266)))
                 
@@ -1107,16 +1146,18 @@ class SaveSelectionPanel(Panel):
                     screen.blit(val_surf, (card_rect.right - 36 - val_surf.get_width(), info_start_y))
                     info_start_y += 24
                     
-                # Botão Continuar Jornada
+                # Botão Principal do Slot (Sobrescrever no modo save ou Continuar no modo load)
                 btn_load = btns["load"]
-                draw_ui_button(screen, btn_load, "Continuar Jornada", self.font_btn, btn_load.collidepoint(mouse_pos), True)
-                
-                # Botão Excluir (Discreto)
-                btn_del = btns["delete"]
-                draw_ui_button(screen, btn_del, "Excluir", self.font_btn_sm, btn_del.collidepoint(mouse_pos), True)
+                if is_save_mode:
+                    draw_ui_button(screen, btn_load, "Sobrescrever", self.font_btn, btn_load.collidepoint(mouse_pos), True)
+                else:
+                    draw_ui_button(screen, btn_load, "Continuar Jornada", self.font_btn, btn_load.collidepoint(mouse_pos), True)
+                    # Botão Excluir (Discreto, apenas em modo load)
+                    btn_del = btns["delete"]
+                    draw_ui_button(screen, btn_del, "Excluir", self.font_btn_sm, btn_del.collidepoint(mouse_pos), True)
                 
             else:
-                # CARD VAZIO: PÁGINA EM BRANCO PARA NOVA CAMPANHA
+                # CARD VAZIO: PÁGINA EM BRANCO
                 empty_y = card_rect.y + 110
                 
                 icon_rect = pygame.Rect(cx - 45, empty_y, 90, 110)
@@ -1138,22 +1179,29 @@ class SaveSelectionPanel(Panel):
                 screen.blit(line3, line3.get_rect(center=(cx, empty_y + 242)))
                 
                 btn_new = btns["new"]
-                draw_ui_button(screen, btn_new, "+ Nova Campanha", self.font_btn, btn_new.collidepoint(mouse_pos), True)
+                if is_save_mode:
+                    draw_ui_button(screen, btn_new, "Salvar no Pergaminho", self.font_btn, btn_new.collidepoint(mouse_pos), True)
+                else:
+                    draw_ui_button(screen, btn_new, "+ Nova Campanha", self.font_btn, btn_new.collidepoint(mouse_pos), True)
                 
-        # Botão inferior "Voltar ao Menu Principal"
-        draw_ui_button(screen, self.btn_back, "Voltar ao Menu Principal", self.font_btn, self.btn_back.collidepoint(mouse_pos), True)
+        # Botão inferior "Voltar ao Menu Principal" ou "Voltar ao Jogo"
+        back_label = "Voltar ao Jogo" if is_save_mode else "Voltar ao Menu Principal"
+        draw_ui_button(screen, self.btn_back, back_label, self.font_btn, self.btn_back.collidepoint(mouse_pos), True)
 
     def handle_event(self, event: pygame.event.Event):
         if not self.is_visible:
             return None
             
+        is_save_mode = getattr(self, "mode", "load") == "save"
+        back_return = "back_to_game" if is_save_mode else "back_to_menu"
+
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            return "back_to_menu"
+            return back_return
             
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             pos = event.pos
             if self.btn_back.collidepoint(pos):
-                return "back_to_menu"
+                return back_return
                 
             for i in range(3):
                 slot_num = i + 1
@@ -1162,11 +1210,17 @@ class SaveSelectionPanel(Panel):
                 
                 if not slot_data.get("is_empty"):
                     if btns.get("load") and btns["load"].collidepoint(pos):
-                        return ("load_slot", slot_num)
-                    elif btns.get("delete") and btns["delete"].collidepoint(pos):
+                        if is_save_mode:
+                            return ("save_slot", slot_num)
+                        else:
+                            return ("load_slot", slot_num)
+                    elif not is_save_mode and btns.get("delete") and btns["delete"].collidepoint(pos):
                         return ("delete_slot", slot_num)
                 else:
                     if btns.get("new") and btns["new"].collidepoint(pos):
-                        return ("new_game_slot", slot_num)
+                        if is_save_mode:
+                            return ("save_slot", slot_num)
+                        else:
+                            return ("new_game_slot", slot_num)
                         
         return None

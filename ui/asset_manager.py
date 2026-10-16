@@ -279,8 +279,15 @@ class AssetManager:
 
     BASE_ENEMIES = os.path.normpath("assets/sprites/enemies")
     BASE_HEROES = os.path.normpath("assets/sprites/heroes")
-    BASE_ICONS = [os.path.normpath("assets/sprites/heroes/icones"),
-                  os.path.normpath("assets/sprites/icones")]
+    BASE_PERSONAGENS = os.path.normpath("assets/sprites/personagens")
+    BASE_ICONS = [
+        os.path.normpath("assets/sprites/personagens/retratos"),
+        os.path.normpath("assets/sprites/personagens/icones"),
+        os.path.normpath("assets/sprites/personagens"),
+        os.path.normpath("assets/sprites/heroes/icones"),
+        os.path.normpath("assets/sprites/heroes"),
+        os.path.normpath("assets/sprites/icones")
+    ]
     BASE_SKILLS = os.path.normpath("assets/ui/skills")
     
     _PRIMARY_FONT = os.path.normpath("assets/fonts/Retro Gaming.ttf")
@@ -543,7 +550,8 @@ class AssetManager:
             return cls._image_cache[logical_key]
 
         names = cls.resolve_hero_candidates(race, char_class, gender)
-        candidates = [os.path.join(cls.BASE_HEROES, n) for n in names]
+        candidates = [os.path.join(cls.BASE_PERSONAGENS, n) for n in names] + \
+                     [os.path.join(cls.BASE_HEROES, n) for n in names]
         surf = None
         for path in candidates:
             surf = cls._load_file(path)
@@ -708,15 +716,16 @@ class AssetManager:
                         cls._image_cache[cache_key] = res
                         return res
 
-        # 3. Busca em sprites de corpo de heróis (assets/sprites/heroes/)
-        if os.path.isdir(cls.BASE_HEROES):
-            for ext in (".png", ".jpg"):
-                probe_path = os.path.join(cls.BASE_HEROES, clean_name + ext)
-                surf = cls._load_file(probe_path)
-                if surf is not None:
-                    res = cls.progressive_downscale(surf, size)
-                    cls._image_cache[cache_key] = res
-                    return res
+        # 3. Busca em sprites de corpo de personagens e heróis
+        for body_dir in (cls.BASE_PERSONAGENS, cls.BASE_HEROES):
+            if os.path.isdir(body_dir):
+                for ext in (".png", ".jpg"):
+                    probe_path = os.path.join(body_dir, clean_name + ext)
+                    surf = cls._load_file(probe_path)
+                    if surf is not None:
+                        res = cls.progressive_downscale(surf, size)
+                        cls._image_cache[cache_key] = res
+                        return res
 
         # 4. Busca na pasta de inimigos (assets/sprites/enemies/)
         enemy_filename = cls.resolve_enemy_filename(chave)
@@ -759,10 +768,10 @@ class AssetManager:
 
         raw = cls._load_file(filepath, alpha=False)
         if raw is not None:
-            surf = pygame.transform.scale(raw, (800, 600))
+            surf = pygame.transform.scale(raw, (1280, 720))
         else:
             print(f"[ERRO UI] Cenário ausente: '{filepath}'. Usando placeholder.")
-            surf = cls._placeholder(COLOR_MISSING_ENEMY, (800, 600))
+            surf = cls._placeholder(COLOR_MISSING_ENEMY, (1280, 720))
         cls._image_cache[cache_key] = surf
         return surf
 
