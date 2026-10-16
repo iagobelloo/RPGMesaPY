@@ -237,9 +237,11 @@ class TacticalActionBarWidget(UIWidget):
     """
 
     def __init__(self):
-        # Dimensões de combate: 584x68 centrada em STAGE_CX=874
-        combat_w = 584
+        # Dimensões de combate: 152 + (4 * 104) + (4 * 8) + 20 = 620x68 centrada em STAGE_CX=874
+        combat_w = Layout.SLOT_WIDE[0] + (4 * Layout.SLOT[0]) + (4 * Layout.GAP) + 20
         combat_x = Layout.STAGE_CX - combat_w // 2
+        self._combat_w: int = combat_w
+        self._explore_w: int = (4 * Layout.SLOT[0]) + (3 * Layout.GAP) + 20
         super().__init__((combat_x, Layout.BAR_Y, combat_w, Layout.BAR_H))
 
         self.mode: BarMode = BarMode.COMBAT
@@ -279,15 +281,15 @@ class TacticalActionBarWidget(UIWidget):
                 icon=icon_name,
                 sublabel=sub,
                 hotkey=hotkey_val,
-                font_size=13,
+                font_size=11,
             )
             self._combat_buttons.append(btn)
             cur_x += bw + Layout.GAP
 
-        # 2. Monta botões de exploração (444x68 centrada em STAGE_CX=874)
-        explore_w = 444
+        # 2. Monta botões de exploração (460x68 centrada em STAGE_CX=874)
+        explore_w = self._explore_w
         explore_x = Layout.STAGE_CX - explore_w // 2
-        cur_ex = explore_x + 18
+        cur_ex = explore_x + 10
         for action_id, label, icon_name, hotkey_val, _ in EXPLORATION_SLOTS:
             bw = Layout.SLOT[0]
             bh = Layout.SLOT[1]
@@ -298,7 +300,7 @@ class TacticalActionBarWidget(UIWidget):
                 variant="action",
                 icon=icon_name,
                 hotkey=hotkey_val,
-                font_size=13,
+                font_size=11,
             )
             self._explore_buttons.append(btn)
             cur_ex += bw + Layout.GAP
@@ -317,8 +319,8 @@ class TacticalActionBarWidget(UIWidget):
         self._locked_target_name = active_name
 
         if mode == BarMode.COMBAT:
-            self.rect.w = 584
-            self.rect.x = Layout.STAGE_CX - 584 // 2
+            self.rect.w = self._combat_w
+            self.rect.x = Layout.STAGE_CX - self._combat_w // 2
             self.economy.visible = True
             for b in self._combat_buttons:
                 b.visible = True
@@ -327,8 +329,8 @@ class TacticalActionBarWidget(UIWidget):
                 b.visible = False
 
         elif mode == BarMode.LOCKED:
-            self.rect.w = 584
-            self.rect.x = Layout.STAGE_CX - 584 // 2
+            self.rect.w = self._combat_w
+            self.rect.x = Layout.STAGE_CX - self._combat_w // 2
             self.economy.visible = True
             for b in self._combat_buttons:
                 b.visible = True
@@ -337,8 +339,8 @@ class TacticalActionBarWidget(UIWidget):
                 b.visible = False
 
         elif mode == BarMode.EXPLORATION:
-            self.rect.w = 444
-            self.rect.x = Layout.STAGE_CX - 444 // 2
+            self.rect.w = self._explore_w
+            self.rect.x = Layout.STAGE_CX - self._explore_w // 2
             self.economy.visible = False
             for b in self._combat_buttons:
                 b.visible = False
@@ -396,8 +398,8 @@ class TacticalActionBarWidget(UIWidget):
 
     def _rebuild(self) -> None:
         """Pré-renderiza molduras de fundo e banner de turno travado."""
-        self._bg_combat = FrameFactory.panel((584, Layout.BAR_H), style="gothic")
-        self._bg_explore = FrameFactory.panel((444, Layout.BAR_H), style="gothic")
+        self._bg_combat = FrameFactory.panel((self._combat_w, Layout.BAR_H), style="gothic")
+        self._bg_explore = FrameFactory.panel((self._explore_w, Layout.BAR_H), style="gothic")
 
         if self.mode == BarMode.LOCKED and self._locked_target_name:
             font = AssetManager.get_font(12, bold=True)

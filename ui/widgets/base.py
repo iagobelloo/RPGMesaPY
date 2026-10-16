@@ -135,7 +135,9 @@ class UIButton(UIWidget):
         self.sublabel: Optional[str] = sublabel
         self.hotkey: Optional[int] = hotkey
         self.tooltip: Optional[str] = tooltip
-        self.font_size: int = font_size
+        self.font_size: int = 11 if variant == "action" else font_size
+        self.icon_sz: int = 16 if variant == "action" else min(24, max(14, self.rect.h - 16))
+        self._icon_sz: int = self.icon_sz
 
         self.state: ButtonState = ButtonState.IDLE
         self._pressed_inside: bool = False
@@ -178,9 +180,21 @@ class UIButton(UIWidget):
         w, h = self.rect.w, self.rect.h
         self._frames = FrameFactory.button_states((w, h), variant=self.variant)
 
-        font = AssetManager.get_font(self.font_size, bold=True)
-        sub_font = AssetManager.get_font(max(10, self.font_size - 4), bold=False)
-        hotkey_font = AssetManager.get_font(max(9, self.font_size - 6), bold=True)
+        if self.variant == "action":
+            self.font_size = 11
+            icon_sz = 16
+            self.icon_sz = 16
+            self._icon_sz = 16
+            font = AssetManager.get_font(11, bold=True)
+            sub_font = AssetManager.get_font(9, bold=False)
+            hotkey_font = AssetManager.get_font(8, bold=True)
+        else:
+            icon_sz = min(24, max(14, h - 16))
+            self.icon_sz = icon_sz
+            self._icon_sz = icon_sz
+            font = AssetManager.get_font(self.font_size, bold=True)
+            sub_font = AssetManager.get_font(max(10, self.font_size - 4), bold=False)
+            hotkey_font = AssetManager.get_font(max(9, self.font_size - 6), bold=True)
 
         # Paleta de cores do rótulo por estado
         color_map = {
@@ -216,20 +230,28 @@ class UIButton(UIWidget):
                     shadow_offset=(1, 1),
                 )
             if self.icon_name:
-                icon_sz = min(24, max(14, h - 16))
                 self._icon_surfs[st] = IconAtlas.get(self.icon_name, size=icon_sz, color=col)
 
         # Hotkey badge sutil
         if self.hotkey is not None:
             key_name = pygame.key.name(self.hotkey).upper()
             if len(key_name) == 1 or key_name in ("ESC", "TAB", "SPACE"):
-                self._hotkey_surf = default_text_cache.get(
+                txt_surf = default_text_cache.get(
                     key_name,
                     hotkey_font,
                     color=Palette.GOLD_HI,
                     shadow=True,
                     shadow_color=Palette.INK,
                 )
+                if self.variant == "action":
+                    badge_w = txt_surf.get_width() + 4
+                    badge_h = txt_surf.get_height() + 2
+                    badge_surf = pygame.Surface((badge_w, badge_h), pygame.SRCALPHA)
+                    badge_surf.fill((12, 8, 4, 140))
+                    badge_surf.blit(txt_surf, (2, 1))
+                    self._hotkey_surf = badge_surf
+                else:
+                    self._hotkey_surf = txt_surf
             else:
                 self._hotkey_surf = None
         else:
@@ -248,27 +270,43 @@ class UIButton(UIWidget):
         sub_w = sub_surf.get_width() if sub_surf else 0
         sub_h = sub_surf.get_height() if sub_surf else 0
 
-        gap = 6
+        gap = 4 if self.variant == "action" else 6
         if self.sublabel and sub_surf:
-            # Layout vertical com sublabel
-            total_content_w = max(lbl_w, sub_w)
-            if icon_surf:
-                total_content_w += icon_w + gap
+            if self.variant == "action":
+                # Centralização horizontal rigorosa do conjunto [Ícone 16px] [Espaço 4px] [Rótulo 11px]
+                row_w = lbl_w + (icon_w + gap if icon_surf else 0)
+                content_start_x = (w - row_w) // 2
+                top_h = max(lbl_h, icon_h)
+                total_content_h = top_h + sub_h + 2
+                content_start_y = (h - total_content_h) // 2
 
-            content_start_x = (w - total_content_w) // 2
-            total_content_h = lbl_h + sub_h + 2
-            content_start_y = (h - total_content_h) // 2
+                if icon_surf:
+                    self._icon_pos = (content_start_x, content_start_y + (top_h - icon_h) // 2)
+                    self._label_pos = (content_start_x + icon_w + gap, content_start_y + (top_h - lbl_h) // 2)
+                else:
+                    self._label_pos = ((w - lbl_w) // 2, content_start_y)
 
-            if icon_surf:
-                self._icon_pos = (content_start_x, (h - icon_h) // 2)
-                text_x = content_start_x + icon_w + gap
+                self._sublabel_pos = ((w - sub_w) // 2, content_start_y + top_h + 2)
             else:
-                text_x = (w - lbl_w) // 2
+                # Layout vertical com sublabel (demais variantes)
+                total_content_w = max(lbl_w, sub_w)
+                if icon_surf:
+                    total_content_w += icon_w + gap
 
-            self._label_pos = (text_x, content_start_y)
-            self._sublabel_pos = (text_x, content_start_y + lbl_h + 1)
+                content_start_x = (w - total_content_w) // 2
+                total_content_h = lbl_h + sub_h + 2
+                content_start_y = (h - total_content_h) // 2
+
+                if icon_surf:
+                    self._icon_pos = (content_start_x, (h - icon_h) // 2)
+                    text_x = content_start_x + icon_w + gap
+                else:
+                    text_x = (w - lbl_w) // 2
+
+                self._label_pos = (text_x, content_start_y)
+                self._sublabel_pos = (text_x, content_start_y + lbl_h + 1)
         else:
-            # Layout horizontal padrão
+            # Layout horizontal padrão: [Ícone] [Espaço] [Rótulo]
             total_content_w = lbl_w + (icon_w + gap if icon_surf else 0)
             content_start_x = (w - total_content_w) // 2
 
@@ -279,7 +317,8 @@ class UIButton(UIWidget):
                 self._label_pos = ((w - lbl_w) // 2, (h - lbl_h) // 2)
 
         if self._hotkey_surf:
-            self._hotkey_pos = (w - self._hotkey_surf.get_width() - 6, 4)
+            hotkey_w = self._hotkey_surf.get_width()
+            self._hotkey_pos = (w - hotkey_w - 4, 3)
 
     def handle_event(self, event: pygame.event.Event) -> str:
         if not self.visible:

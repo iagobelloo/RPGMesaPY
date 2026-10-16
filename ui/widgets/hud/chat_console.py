@@ -16,73 +16,69 @@ from ..base import UIWidget, CONSUMED
 
 class NarrativeLogView(UIWidget):
     """
-    Visualizador do log narrativo com rolagem por roda do mouse.
+    Visualizador do log narrativo com rolagem por roda do mouse e efeito typewriter real.
     Buffer em deque(maxlen=300).
-    Zero Garbage: Superfícies de texto geradas no push_message(), NUNCA no draw().
+    Zero Garbage: Superfícies de texto obtidas via default_text_cache, sem recriar fontes em _draw_self().
     """
 
     LINE_H: int = 18
     MAX_LINES: int = 300
 
+    COLOR_MAP: dict[str, tuple[int, ...]] = {
+        "narration": Palette.PARCHMENT,
+        "player": Palette.GOLD_HI,
+        "combat": (230, 160, 120),
+        "damage": Palette.BLOOD,
+        "dice": Palette.GOLD_HI,
+        "system": (170, 195, 220),
+    }
+
     def __init__(self, rect: tuple[int, int, int, int] | pygame.Rect):
         super().__init__(rect)
 
-        # Buffer de tuplas (surface, kind)
+        # Buffer de tuplas definitivas (surface, kind)
         self._lines: deque[tuple[pygame.Surface, str]] = deque(maxlen=self.MAX_LINES)
+
+        # Estado do Typewriter caractere a caractere (45 chars/s)
+        self._typing_text: str = ""
+        self._typing_speaker: str = ""
+        self._typing_kind: str = "narration"
+        self._typing_index: float = 0.0
+        self._typing_speed: float = 45.0
+        self._typing_queue: deque[tuple[str, str, str]] = deque()
+        self._active_typing_lines: list[tuple[pygame.Surface, str]] = []
+        self._last_typed_len: int = -1
+
+        # Compatibilidade retroativa
         self._pending_typewriter_lines: deque[tuple[pygame.Surface, str]] = deque()
         self._typewriter_timer: float = 0.0
-        self._typewriter_interval: float = 0.06  # Libera linhas progressivamente a cada ~60ms
+        self._typewriter_interval: float = 0.06
+
         self._scroll_offset: int = 0  # 0 = fixo no final (mais recente)
         self._font_size: int = 12
+        self._font: Optional[pygame.font.Font] = None
 
         # Dimensões de visualização
         self._visible_lines_count: int = max(1, self.rect.h // self.LINE_H)
 
-    def flush_typewriter(self) -> None:
-        """Despeja todas as linhas pendentes do typewriter instantaneamente."""
-        while self._pending_typewriter_lines:
-            surf, kind = self._pending_typewriter_lines.popleft()
-            self._lines.append((surf, kind))
-            if self._scroll_offset > 0:
-                self._scroll_offset += 1
-                max_scroll = max(0, len(self._lines) - self._visible_lines_count)
-                self._scroll_offset = min(self._scroll_offset, max_scroll)
+    @property
+    def is_typing(self) -> bool:
+        """Indica se há mensagem ativa sendo digitada ou aguardando na fila do typewriter."""
+        return bool(self._typing_text or self._typing_queue or self._pending_typewriter_lines)
 
-    def update(self, dt: float) -> None:
-        super().update(dt)
-        if self._pending_typewriter_lines:
-            self._typewriter_timer += dt
-            while self._pending_typewriter_lines and self._typewriter_timer >= self._typewriter_interval:
-                self._typewriter_timer -= self._typewriter_interval
-                surf, kind = self._pending_typewriter_lines.popleft()
-                self._lines.append((surf, kind))
-                if self._scroll_offset > 0:
-                    self._scroll_offset += 1
-                    max_scroll = max(0, len(self._lines) - self._visible_lines_count)
-                    self._scroll_offset = min(self._scroll_offset, max_scroll)
-
-    def push_message(self, speaker: str, text: str, kind: str = "narration") -> None:
+    def _wrap_and_render(
+        self, speaker: str, text: str, kind: str
+    ) -> list[tuple[pygame.Surface, str]]:
         """
-        Recebe a mensagem, aplica Word-wrap e assa as linhas no TextCache.
-        Custo por evento de chegada, zero custo em draw().
+        Envolve o texto nas dimensões úteis do console e obtém as superfícies do default_text_cache.
         """
         if not text:
-            return
+            return []
 
-        font = AssetManager.get_font(self._font_size, bold=False)
-
-        # Mapeamento de cor por tipo de narrativa
-        color_map = {
-            "narration": Palette.PARCHMENT,
-            "player": Palette.GOLD_HI,
-            "combat": (230, 160, 120),
-            "damage": Palette.BLOOD,
-            "dice": Palette.GOLD_HI,
-            "system": (170, 195, 220),
-        }
-        text_color = color_map.get(kind, Palette.PARCHMENT)
-
-        # Largura útil para quebra de linha (descontando espaço da scrollbar)
+        if self._font is None:
+            self._font = AssetManager.get_font(self._font_size, bold=False)
+        font = self._font
+        text_color = self.COLOR_MAP.get(kind, Palette.PARCHMENT)
         usable_w = self.rect.w - 14
 
         paragraphs = str(text).split("\n")
@@ -111,8 +107,7 @@ class NarrativeLogView(UIWidget):
             if current_line:
                 wrapped_lines.append(current_line)
 
-        # Renderiza e armazena cada linha com sombra
-        new_surfs: list[tuple[pygame.Surface, str]] = []
+        rendered: list[tuple[pygame.Surface, str]] = []
         for line_str in wrapped_lines:
             render_str = line_str if line_str else " "
             surf = default_text_cache.get(
@@ -123,15 +118,147 @@ class NarrativeLogView(UIWidget):
                 shadow_color=Palette.INK,
                 shadow_offset=(1, 1),
             )
-            new_surfs.append((surf, kind))
+            rendered.append((surf, kind))
+        return rendered
 
-        if kind == "narration":
-            # Narração do Mestre entra na fila do typewriter para digitação suave
-            for item in new_surfs:
-                self._pending_typewriter_lines.append(item)
+    def _append_finalized_lines(self, surfs: list[tuple[pygame.Surface, str]]) -> None:
+        """Adiciona linhas definitivas ao histórico _lines preservando o scroll."""
+        for item in surfs:
+            self._lines.append(item)
+        if self._scroll_offset > 0:
+            self._scroll_offset += len(surfs)
+            max_scroll = max(0, len(self._lines) - self._visible_lines_count)
+            self._scroll_offset = min(self._scroll_offset, max_scroll)
+
+    def _start_next_from_queue(self) -> None:
+        """Inicia a próxima mensagem narrativa da fila ou limpa o estado ativo."""
+        if self._typing_queue:
+            spk, txt, knd = self._typing_queue.popleft()
+            self._typing_speaker = spk
+            self._typing_text = txt
+            self._typing_kind = knd
+            self._typing_index = 0.0
+            self._last_typed_len = 0
+            self._active_typing_lines = []
         else:
-            # Mensagens de combate/dados/jogador descarregam pendências e aparecem imediatamente
+            self._typing_speaker = ""
+            self._typing_text = ""
+            self._typing_kind = "narration"
+            self._typing_index = 0.0
+            self._last_typed_len = -1
+            self._active_typing_lines = []
+
+    def flush_typewriter(self) -> None:
+        """
+        Completa imediatamente a mensagem em digitação (_typing_index = len(_typing_text)),
+        converte-a em linhas definitivas e descarrega a fila pendente.
+        """
+        while self._pending_typewriter_lines:
+            surf, kind = self._pending_typewriter_lines.popleft()
+            self._lines.append((surf, kind))
+            if self._scroll_offset > 0:
+                self._scroll_offset += 1
+                max_scroll = max(0, len(self._lines) - self._visible_lines_count)
+                self._scroll_offset = min(self._scroll_offset, max_scroll)
+
+        if self._typing_text:
+            self._typing_index = float(len(self._typing_text))
+            final_surfs = self._wrap_and_render(
+                self._typing_speaker, self._typing_text, self._typing_kind
+            )
+            self._append_finalized_lines(final_surfs)
+            self._typing_text = ""
+            self._typing_speaker = ""
+            self._typing_index = 0.0
+            self._last_typed_len = -1
+            self._active_typing_lines = []
+
+        while self._typing_queue:
+            spk, txt, knd = self._typing_queue.popleft()
+            final_surfs = self._wrap_and_render(spk, txt, knd)
+            self._append_finalized_lines(final_surfs)
+
+    def clear(self) -> None:
+        """Limpa todo o histórico e filas do log narrativo."""
+        self._lines.clear()
+        self._typing_queue.clear()
+        self._pending_typewriter_lines.clear()
+        self._active_typing_lines.clear()
+        self._typing_text = ""
+        self._typing_speaker = ""
+        self._typing_kind = "narration"
+        self._typing_index = 0.0
+        self._last_typed_len = -1
+        self._scroll_offset = 0
+
+    def append_entry(self, speaker: str, text: str, kind: str = "narration") -> None:
+        """Alias de compatibilidade para push_message."""
+        self.push_message(speaker, text, kind)
+
+    def update(self, dt: float) -> None:
+        super().update(dt)
+
+        # Compatibilidade com linhas legadas em _pending_typewriter_lines
+        if self._pending_typewriter_lines:
+            self._typewriter_timer += dt
+            while self._pending_typewriter_lines and self._typewriter_timer >= self._typewriter_interval:
+                self._typewriter_timer -= self._typewriter_interval
+                surf, kind = self._pending_typewriter_lines.popleft()
+                self._lines.append((surf, kind))
+                if self._scroll_offset > 0:
+                    self._scroll_offset += 1
+                    max_scroll = max(0, len(self._lines) - self._visible_lines_count)
+                    self._scroll_offset = min(self._scroll_offset, max_scroll)
+
+        if not self._typing_text and self._typing_queue:
+            self._start_next_from_queue()
+
+        if self._typing_text:
+            self._typing_index += self._typing_speed * dt
+            char_idx = int(self._typing_index)
+
+            if char_idx >= len(self._typing_text):
+                self._typing_index = float(len(self._typing_text))
+                final_surfs = self._wrap_and_render(
+                    self._typing_speaker, self._typing_text, self._typing_kind
+                )
+                self._append_finalized_lines(final_surfs)
+                self._active_typing_lines = []
+                self._start_next_from_queue()
+            else:
+                if char_idx != self._last_typed_len:
+                    self._last_typed_len = char_idx
+                    current_slice = self._typing_text[:char_idx]
+                    if current_slice:
+                        self._active_typing_lines = self._wrap_and_render(
+                            self._typing_speaker, current_slice, self._typing_kind
+                        )
+                    else:
+                        self._active_typing_lines = []
+
+    def push_message(self, speaker: str, text: str, kind: str = "narration") -> None:
+        """
+        Recebe a mensagem. Mensagens narrativas entram no fluxo cadenciado caractere a caractere;
+        mensagens de sistema/dano/combate/jogador descarregam o typewriter e aparecem imediatamente.
+        """
+        if not text:
+            return
+
+        clean_text = str(text)
+        if kind == "narration":
+            if not self._typing_text:
+                self._typing_speaker = speaker
+                self._typing_text = clean_text
+                self._typing_kind = kind
+                self._typing_index = 0.0
+                self._last_typed_len = 0
+                self._active_typing_lines = []
+            else:
+                self._typing_queue.append((speaker, clean_text, kind))
+        else:
+            # Mensagens de combate/dados/sistema/jogador descarregam pendências e aparecem imediatamente
             self.flush_typewriter()
+            new_surfs = self._wrap_and_render(speaker, clean_text, kind)
             for item in new_surfs:
                 self._lines.append(item)
             if self._scroll_offset > 0:
@@ -147,13 +274,13 @@ class NarrativeLogView(UIWidget):
 
         # Clique no log descarrega digitação do typewriter imediatamente
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.rect.collidepoint(event.pos) and self._pending_typewriter_lines:
+            if self.rect.collidepoint(event.pos) and self.is_typing:
                 self.flush_typewriter()
                 return CONSUMED
 
         # Rolagem da roda do mouse (MOUSEWHEEL)
         if event.type == pygame.MOUSEWHEEL:
-            total = len(self._lines)
+            total = len(self._lines) + len(self._active_typing_lines)
             max_scroll = max(0, total - self._visible_lines_count)
 
             if event.y > 0:  # Rola para cima (mensagens antigas)
@@ -166,7 +293,8 @@ class NarrativeLogView(UIWidget):
         return super().handle_event(event)
 
     def _draw_self(self, surface: pygame.Surface) -> None:
-        total = len(self._lines)
+        all_lines = list(self._lines) + self._active_typing_lines
+        total = len(all_lines)
         if total == 0:
             return
 
@@ -178,7 +306,7 @@ class NarrativeLogView(UIWidget):
         end_idx = total - self._scroll_offset
         start_idx = max(0, end_idx - self._visible_lines_count)
 
-        visible_slice = list(self._lines)[start_idx:end_idx]
+        visible_slice = all_lines[start_idx:end_idx]
 
         cur_y = self.rect.y + 2
         for surf, _ in visible_slice:

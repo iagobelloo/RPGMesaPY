@@ -60,8 +60,8 @@ class Layout:
     STAGE_CX: int = 874
     BAR_Y: int = 640
     BAR_H: int = 68
-    SLOT: tuple[int, int] = (96, 52)
-    SLOT_WIDE: tuple[int, int] = (148, 52)
+    SLOT: tuple[int, int] = (104, 52)
+    SLOT_WIDE: tuple[int, int] = (152, 52)
     GAP: int = 8
     PAD: int = 10
     TOKEN_FEET_Y: int = 560
