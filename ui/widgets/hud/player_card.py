@@ -294,8 +294,10 @@ class PlayerCardWidget(UIWidget):
 
         # 1. Retrato chanfrado 92x92 em (12, 12)
         portrait_rect = pygame.Rect(12, 12, 92, 92)
-        portrait_raw = AssetManager.get_hero_icon(self._race, self._cls, self._gender, size=(92, 92))
-        if portrait_raw is None:
+        portrait_raw = None
+        if self._race and self._cls:
+            portrait_raw = AssetManager.get_hero_icon(self._race, self._cls, self._gender, size=(92, 92))
+        if portrait_raw is None and self._name:
             portrait_raw = AssetManager.get_portrait_sprite(self._name, size=(92, 92))
 
         if portrait_raw is not None:
